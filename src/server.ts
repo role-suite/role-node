@@ -6,7 +6,13 @@ import { logger } from "./shared/logger.js";
 
 const startServer = async (): Promise<void> => {
   try {
-    await validateStartupOrThrow();
+    if (env.ENABLE_STARTUP_VALIDATION) {
+      await validateStartupOrThrow();
+    } else {
+      logger.warn(
+        "Startup validation is disabled by ENABLE_STARTUP_VALIDATION",
+      );
+    }
 
     app.listen(env.PORT, () => {
       logger.info(`Server is running on port ${env.PORT}`);

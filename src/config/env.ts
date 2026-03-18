@@ -17,6 +17,10 @@ const envSchema = z
       .enum(["true", "false"])
       .default("false")
       .transform((value) => value === "true"),
+    ENABLE_STARTUP_VALIDATION: z
+      .enum(["true", "false"])
+      .default("true")
+      .transform((value) => value === "true"),
   })
   .refine((input) => input.DB_POOL_MAX >= input.DB_POOL_MIN, {
     message: "DB_POOL_MAX must be greater than or equal to DB_POOL_MIN",
