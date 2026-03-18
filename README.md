@@ -8,7 +8,7 @@ TypeScript + Express backend starter focused on clean module boundaries, request
 - Express 5
 - Zod for runtime validation
 - `pg` + `mysql2` for SQL connectivity
-- Vitest + Supertest for unit/integration tests
+- Vitest + Supertest for multi-layer backend testing
 
 ## Project structure
 
@@ -43,7 +43,11 @@ src/
   types/
     db.ts
 tests/
+  contract/
+  e2e/
   integration/
+  security/
+  smoke/
   unit/
 ```
 
@@ -90,8 +94,19 @@ Validated in `src/config/env.ts` using Zod.
 - `DB_POOL_MIN`: minimum pool size (default: `0`)
 - `DB_POOL_MAX`: maximum pool size (default: `10`)
 - `DB_SSL`: `true` | `false` (default: `false`)
+- `ENABLE_STARTUP_VALIDATION`: `true` | `false` (default: `true`)
 
 On startup, the app validates environment values and checks database connectivity with `SELECT 1` before listening for requests.
+Set `ENABLE_STARTUP_VALIDATION=false` when running locally without a configured database.
+
+## Testing layers
+
+- `tests/unit`: isolated logic checks (service/repo/schema/middleware/logger/errors/db adapters)
+- `tests/integration`: module HTTP behavior against Express app wiring
+- `tests/contract`: API response shape and envelope contract checks
+- `tests/security`: input hardening and defensive HTTP behavior checks
+- `tests/smoke`: quick liveness and baseline runtime checks
+- `tests/e2e`: end-to-end feature flows across multiple endpoints
 
 ## API overview
 

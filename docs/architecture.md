@@ -24,14 +24,14 @@ Current example module: `src/modules/users`.
 ## Global app concerns
 
 - `src/config/env.ts`: validates environment before app boot.
-- `src/config/startup-validation.ts`: validates DB URL/dialect consistency and DB readiness.
+- `src/config/startup-validation.ts`: validates DB URL/dialect consistency and DB readiness (toggleable with `ENABLE_STARTUP_VALIDATION`).
 - `src/config/db.ts`: creates and manages singleton DB client lifecycle.
 - `src/shared/db/*`: adapter and driver integration (PostgreSQL, MySQL/MariaDB).
 - `src/types/db.ts`: shared DB client and query contracts.
 - `src/shared/errors/error-handler.ts`: maps known errors to HTTP responses.
 - `src/shared/errors/db-error.ts`: normalizes database-layer failures.
 - `src/shared/middleware/not-found.ts`: handles unmatched routes.
-- `src/shared/logger.ts`: simple JSON console logger.
+- `src/shared/logger.ts`: environment-aware logger (readable dev output, structured JSON in production).
 
 ## Extending architecture
 

@@ -8,7 +8,7 @@ cp .env.example .env
 pnpm dev
 ```
 
-`pnpm dev` runs startup validation before the HTTP server listens.
+`pnpm dev` runs startup validation before the HTTP server listens (unless disabled).
 
 ## Environment and startup integrity
 
@@ -21,12 +21,15 @@ Database-related environment variables:
 - `DB_POOL_MIN`: minimum connection pool size
 - `DB_POOL_MAX`: maximum connection pool size
 - `DB_SSL`: `true` | `false`
+- `ENABLE_STARTUP_VALIDATION`: `true` | `false` (`false` skips startup DB checks)
 
 Startup checks in `src/config/startup-validation.ts` verify:
 
 - `DATABASE_URL` is present and a valid URL
 - URL protocol matches `DB_DIALECT`
 - Database is reachable (`SELECT 1`)
+
+When local DB is not available yet, set `ENABLE_STARTUP_VALIDATION=false`.
 
 ## Build and run
 
@@ -62,6 +65,10 @@ Coverage thresholds are defined in `vitest.config.ts`.
 - Unit tests (`tests/unit`): schemas, repo, service, middleware, logger, error classes.
 - Unit tests (`tests/unit`) also cover DB adapters, DB client factory/config, and startup validation.
 - Integration tests (`tests/integration`): HTTP behavior using `supertest` against `app`.
+- Contract tests (`tests/contract`): response envelope and schema stability checks.
+- Security tests (`tests/security`): malformed input and defensive HTTP behavior checks.
+- Smoke tests (`tests/smoke`): quick baseline health checks.
+- E2E tests (`tests/e2e`): full user flows across endpoints.
 
 ## Conventions for future development
 
