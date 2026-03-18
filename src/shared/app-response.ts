@@ -1,6 +1,10 @@
 import type { Response } from "express";
 
-import type { ApiResponse } from "../types/api-response.js";
+type ApiResponse<T> = {
+  success: boolean;
+  data?: T;
+  message?: string;
+};
 
 export type ErrorResponseWithStatus = ApiResponse<unknown> & {
   success: false;
