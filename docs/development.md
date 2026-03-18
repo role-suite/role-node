@@ -3,16 +3,16 @@
 ## Local setup
 
 ```bash
-npm install
+pnpm install
 cp .env.example .env
-npm run dev
+pnpm dev
 ```
 
 ## Build and run
 
 ```bash
-npm run build
-npm run start
+pnpm build
+pnpm start
 ```
 
 ## Testing
@@ -20,19 +20,19 @@ npm run start
 Run all tests once:
 
 ```bash
-npm run test:run
+pnpm test:run
 ```
 
 Run watch mode:
 
 ```bash
-npm run test:watch
+pnpm test:watch
 ```
 
 Run coverage:
 
 ```bash
-npm run test:coverage
+pnpm test:coverage
 ```
 
 Coverage thresholds are defined in `vitest.config.ts`.

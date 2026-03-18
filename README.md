@@ -42,7 +42,7 @@ tests/
 1. Install dependencies
 
 ```bash
-npm install
+pnpm install
 ```
 
 2. Create your local environment file
@@ -54,20 +54,20 @@ cp .env.example .env
 3. Start development server
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 The server starts on `PORT` (default `3000`).
 
 ## Scripts
 
-- `npm run dev`: run server with file watch
-- `npm run build`: compile TypeScript to `dist/`
-- `npm run start`: run compiled server from `dist/`
-- `npm test`: run tests in Vitest
-- `npm run test:watch`: run tests in watch mode
-- `npm run test:run`: run tests once
-- `npm run test:coverage`: run tests with coverage report
+- `pnpm dev`: run server with file watch
+- `pnpm build`: compile TypeScript to `dist/`
+- `pnpm start`: run compiled server from `dist/`
+- `pnpm test`: run tests in Vitest
+- `pnpm test:watch`: run tests in watch mode
+- `pnpm test:run`: run tests once
+- `pnpm test:coverage`: run tests with coverage report
 
 ## Environment variables
 
