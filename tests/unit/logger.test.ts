@@ -1,29 +1,77 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { logger } from "../../src/shared/logger.js";
+const loadLogger = async (nodeEnv: "development" | "production") => {
+  vi.resetModules();
+  vi.doMock("../../src/config/env.js", () => ({
+    env: {
+      NODE_ENV: nodeEnv,
+    },
+  }));
+
+  return import("../../src/shared/logger.js");
+};
 
 describe("logger", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.resetModules();
   });
 
-  it("writes info messages to console.log", () => {
+  it("writes readable logs in development mode", async () => {
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const { logger } = await loadLogger("development");
 
     logger.info("test-info", { value: 1 });
 
     expect(logSpy).toHaveBeenCalledOnce();
-    expect(logSpy.mock.calls[0][0]).toContain('"level":"info"');
-    expect(logSpy.mock.calls[0][0]).toContain('"message":"test-info"');
+    expect(logSpy.mock.calls[0][0]).toContain("INFO test-info");
+    expect(logSpy.mock.calls[0][1]).toEqual({ value: 1 });
   });
 
-  it("writes error messages to console.error", () => {
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  it("serializes production logs as json", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const { logger } = await loadLogger("production");
 
-    logger.error("test-error", { value: 2 });
+    logger.info("prod-info", { requestId: "abc" });
+
+    expect(logSpy).toHaveBeenCalledOnce();
+    const payload = JSON.parse(String(logSpy.mock.calls[0][0])) as {
+      level: string;
+      message: string;
+      env: string;
+      payload: { requestId: string };
+    };
+
+    expect(payload.level).toBe("info");
+    expect(payload.message).toBe("prod-info");
+    expect(payload.env).toBe("production");
+    expect(payload.payload.requestId).toBe("abc");
+  });
+
+  it("writes errors to console.error and normalizes Error payload", async () => {
+    const errorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    const { logger } = await loadLogger("development");
+
+    logger.error("test-error", new Error("boom"));
 
     expect(errorSpy).toHaveBeenCalledOnce();
-    expect(errorSpy.mock.calls[0][0]).toContain('"level":"error"');
-    expect(errorSpy.mock.calls[0][0]).toContain('"message":"test-error"');
+    expect(errorSpy.mock.calls[0][0]).toContain("ERROR test-error");
+    expect(errorSpy.mock.calls[0][1]).toEqual(
+      expect.objectContaining({
+        name: "Error",
+        message: "boom",
+      }),
+    );
+  });
+
+  it("does not emit debug logs in production", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const { logger } = await loadLogger("production");
+
+    logger.debug("debug-hidden", { key: 1 });
+
+    expect(logSpy).not.toHaveBeenCalled();
   });
 });
