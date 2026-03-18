@@ -74,7 +74,7 @@ Coverage thresholds are defined in `vitest.config.ts`.
 
 - Keep module boundaries strict (no controller-to-repo direct access).
 - Validate all external input with Zod schemas.
-- Throw `AppError` for expected domain failures.
+- Throw centralized `appResponse.withStatus(...)` payloads for expected domain failures.
 - Keep side effects (I/O, DB) isolated to repository layer.
 - Add tests for both happy paths and failure paths.
 

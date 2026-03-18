@@ -2,34 +2,35 @@ import type { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
 
 import { env } from "../../config/env.js";
-import { AppError } from "./app-error.js";
+import { appResponse } from "../app-response.js";
 
 export const errorHandler = (
   error: unknown,
   _req: Request,
   res: Response,
-  _next: NextFunction
+  _next: NextFunction,
 ): void => {
   if (error instanceof ZodError) {
-    res.status(400).json({
-      success: false,
-      message: "Validation failed",
-      data: error.flatten().fieldErrors
-    });
+    appResponse.sendError(
+      res,
+      400,
+      "Validation failed",
+      error.flatten().fieldErrors,
+    );
     return;
   }
 
-  if (error instanceof AppError) {
-    res.status(error.statusCode).json({
-      success: false,
-      message: error.message
-    });
+  if (appResponse.isErrorWithStatus(error)) {
+    appResponse.sendError(res, error.statusCode, error.message, error.data);
     return;
   }
 
-  res.status(500).json({
-    success: false,
-    message: "Internal server error",
-    data: env.NODE_ENV === "development" && error instanceof Error ? error.message : undefined
-  });
+  appResponse.sendError(
+    res,
+    500,
+    "Internal server error",
+    env.NODE_ENV === "development" && error instanceof Error
+      ? error.message
+      : undefined,
+  );
 };

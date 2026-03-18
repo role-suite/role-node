@@ -1,4 +1,4 @@
-import { AppError } from "../../shared/errors/app-error.js";
+import { appResponse } from "../../shared/app-response.js";
 
 import { usersRepo } from "./users.repo.js";
 import type { CreateUserInput } from "./users.schema.js";
@@ -12,7 +12,7 @@ export const usersService = {
     const user = usersRepo.findById(id);
 
     if (!user) {
-      throw new AppError("User not found", 404);
+      throw appResponse.withStatus(404, "User not found");
     }
 
     return user;
@@ -22,9 +22,9 @@ export const usersService = {
     const userWithSameEmail = usersRepo.findByEmail(payload.email);
 
     if (userWithSameEmail) {
-      throw new AppError("Email already in use", 409);
+      throw appResponse.withStatus(409, "Email already in use");
     }
 
     return usersRepo.create(payload);
-  }
+  },
 };

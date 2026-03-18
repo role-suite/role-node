@@ -1,8 +1,11 @@
 import type { Request, Response } from "express";
 
+import { appResponse } from "../app-response.js";
+
 export const notFoundHandler = (req: Request, res: Response): void => {
-  res.status(404).json({
-    success: false,
-    message: `Route not found: ${req.method} ${req.originalUrl}`
-  });
+  appResponse.sendError(
+    res,
+    404,
+    `Route not found: ${req.method} ${req.originalUrl}`,
+  );
 };

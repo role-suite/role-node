@@ -28,6 +28,7 @@ src/
       users.repo.ts
       users.schema.ts
   shared/
+    app-response.ts
     logger.ts
     db/
       client-factory.ts
@@ -35,7 +36,6 @@ src/
         postgres.adapter.ts
         mysql.adapter.ts
     errors/
-      app-error.ts
       db-error.ts
       error-handler.ts
     middleware/
@@ -146,7 +146,7 @@ Validation rules:
 ## Error handling
 
 - Validation errors return `400` with `message: "Validation failed"`.
-- Domain errors use `AppError` with explicit status code.
+- Domain errors use centralized `appResponse.withStatus(...)` payloads with explicit status codes.
 - Unknown errors return `500` with generic message.
 - Unknown routes return `404` from `notFoundHandler`.
 

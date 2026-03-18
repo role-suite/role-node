@@ -1,6 +1,7 @@
 import express from "express";
 
 import { usersRouter } from "./modules/users/users.route.js";
+import { appResponse } from "./shared/app-response.js";
 import { errorHandler } from "./shared/errors/error-handler.js";
 import { notFoundHandler } from "./shared/middleware/not-found.js";
 import { requestLogger } from "./shared/middleware/request-logger.js";
@@ -11,7 +12,7 @@ app.use(requestLogger);
 app.use(express.json());
 
 app.get("/health", (_req, res) => {
-  res.status(200).json({ success: true, data: { status: "ok" } });
+  appResponse.sendSuccess(res, 200, { status: "ok" });
 });
 
 app.use("/api/users", usersRouter);

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { AppError } from "../../src/shared/errors/app-error.js";
+import { appResponse } from "../../src/shared/app-response.js";
 import { usersRepo } from "../../src/modules/users/users.repo.js";
 import { usersService } from "../../src/modules/users/users.service.js";
 
@@ -18,22 +18,37 @@ describe("users service", () => {
   });
 
   it("gets a user by id", () => {
-    const user = usersService.createUser({ name: "Lookup", email: "lookup@example.com" });
+    const user = usersService.createUser({
+      name: "Lookup",
+      email: "lookup@example.com",
+    });
     const found = usersService.getUserById(user.id);
 
     expect(found.email).toBe("lookup@example.com");
   });
 
-  it("throws AppError for missing user", () => {
-    expect(() => usersService.getUserById(999)).toThrowError(AppError);
-    expect(() => usersService.getUserById(999)).toThrowError("User not found");
+  it("throws centralized app-response error payload for missing user", () => {
+    expect.assertions(1);
+
+    try {
+      usersService.getUserById(999);
+    } catch (error) {
+      expect(error).toMatchObject(
+        appResponse.withStatus(404, "User not found"),
+      );
+    }
   });
 
-  it("throws AppError for duplicate email", () => {
+  it("throws centralized app-response error payload for duplicate email", () => {
     usersService.createUser({ name: "One", email: "dup@example.com" });
+    expect.assertions(1);
 
-    expect(() =>
-      usersService.createUser({ name: "Two", email: "dup@example.com" })
-    ).toThrowError(AppError);
+    try {
+      usersService.createUser({ name: "Two", email: "dup@example.com" });
+    } catch (error) {
+      expect(error).toMatchObject(
+        appResponse.withStatus(409, "Email already in use"),
+      );
+    }
   });
 });
