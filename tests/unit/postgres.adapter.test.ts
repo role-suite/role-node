@@ -52,6 +52,17 @@ describe("postgres adapter", () => {
     });
   });
 
+  it("adds ssl configuration when enabled", () => {
+    createPostgresClient({ ...config, ssl: true });
+
+    expect(poolState.poolConfig).toEqual({
+      connectionString: config.connectionString,
+      min: 1,
+      max: 5,
+      ssl: { rejectUnauthorized: false },
+    });
+  });
+
   it("runs query and normalizes result", async () => {
     poolState.query.mockResolvedValue({
       rows: [{ id: 1 }],
@@ -90,15 +101,41 @@ describe("postgres adapter", () => {
     poolState.connect.mockResolvedValue({ query: txQuery, release });
 
     const client = createPostgresClient(config);
-    const result = await client.transaction(async (tx) =>
-      tx.query("select * from users", []),
-    );
+    const result = await client.transaction(async (tx) => {
+      await tx.transaction(async (innerTx) => {
+        await innerTx.close();
+        return undefined;
+      });
+
+      return tx.query("select * from users", []);
+    });
 
     expect(result).toEqual({ rows: [{ name: "ok" }], rowCount: 1 });
     expect(txQuery).toHaveBeenNthCalledWith(1, "BEGIN");
     expect(txQuery).toHaveBeenNthCalledWith(2, "select * from users", []);
     expect(txQuery).toHaveBeenNthCalledWith(3, "COMMIT");
     expect(release).toHaveBeenCalledOnce();
+  });
+
+  it("wraps transaction query failures", async () => {
+    const txQuery = vi.fn();
+    const release = vi.fn();
+
+    txQuery.mockResolvedValueOnce(undefined);
+    txQuery.mockRejectedValueOnce(new Error("tx query failed"));
+    txQuery.mockResolvedValueOnce(undefined);
+
+    poolState.connect.mockResolvedValue({ query: txQuery, release });
+
+    const client = createPostgresClient(config);
+
+    await expect(
+      client.transaction(async (tx) => tx.query("select * from users", [])),
+    ).rejects.toMatchObject({
+      message: "PostgreSQL transaction query failed",
+      dialect: "postgres",
+    });
+    expect(txQuery).toHaveBeenNthCalledWith(3, "ROLLBACK");
   });
 
   it("rolls back transaction on failure", async () => {
@@ -121,6 +158,28 @@ describe("postgres adapter", () => {
     expect(txQuery).toHaveBeenNthCalledWith(1, "BEGIN");
     expect(txQuery).toHaveBeenNthCalledWith(2, "ROLLBACK");
     expect(release).toHaveBeenCalledOnce();
+  });
+
+  it("rethrows DbError from transaction callback", async () => {
+    const txQuery = vi.fn();
+    const release = vi.fn();
+    const dbError = new DbError("custom db error", { dialect: "postgres" });
+
+    txQuery.mockResolvedValueOnce(undefined);
+    txQuery.mockResolvedValueOnce(undefined);
+
+    poolState.connect.mockResolvedValue({ query: txQuery, release });
+
+    const client = createPostgresClient(config);
+
+    await expect(
+      client.transaction(async () => {
+        throw dbError;
+      }),
+    ).rejects.toBe(dbError);
+
+    expect(txQuery).toHaveBeenNthCalledWith(1, "BEGIN");
+    expect(txQuery).toHaveBeenNthCalledWith(2, "ROLLBACK");
   });
 
   it("closes pool", async () => {

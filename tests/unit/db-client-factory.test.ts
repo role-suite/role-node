@@ -59,4 +59,10 @@ describe("database client factory", () => {
     expect(client).toBe(fakeClient);
     expect(createMysqlClientMock).toHaveBeenCalledWith(baseConfig, "mariadb");
   });
+
+  it("throws for unsupported dialect values", () => {
+    expect(() =>
+      createDatabaseClient("sqlite" as never, baseConfig),
+    ).toThrowError("Unsupported database dialect: sqlite");
+  });
 });

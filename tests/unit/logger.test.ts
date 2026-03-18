@@ -66,6 +66,50 @@ describe("logger", () => {
     );
   });
 
+  it("writes warn message without payload in development", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const { logger } = await loadLogger("development");
+
+    logger.warn("warn-only");
+
+    expect(logSpy).toHaveBeenCalledOnce();
+    expect(logSpy.mock.calls[0][0]).toContain("WARN warn-only");
+    expect(logSpy.mock.calls[0]).toHaveLength(1);
+  });
+
+  it("writes error message without payload in development", async () => {
+    const errorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    const { logger } = await loadLogger("development");
+
+    logger.error("error-only");
+
+    expect(errorSpy).toHaveBeenCalledOnce();
+    expect(errorSpy.mock.calls[0][0]).toContain("ERROR error-only");
+    expect(errorSpy.mock.calls[0]).toHaveLength(1);
+  });
+
+  it("writes error logs to console.error in production json mode", async () => {
+    const errorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    const { logger } = await loadLogger("production");
+
+    logger.error("prod-error", { code: "E_FAIL" });
+
+    expect(errorSpy).toHaveBeenCalledOnce();
+    const payload = JSON.parse(String(errorSpy.mock.calls[0][0])) as {
+      level: string;
+      message: string;
+      payload: { code: string };
+    };
+
+    expect(payload.level).toBe("error");
+    expect(payload.message).toBe("prod-error");
+    expect(payload.payload.code).toBe("E_FAIL");
+  });
+
   it("does not emit debug logs in production", async () => {
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
     const { logger } = await loadLogger("production");

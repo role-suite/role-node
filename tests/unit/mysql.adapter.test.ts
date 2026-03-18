@@ -49,6 +49,16 @@ describe("mysql adapter", () => {
     });
   });
 
+  it("adds ssl option when enabled", () => {
+    createMysqlClient({ ...config, ssl: true }, "mysql");
+
+    expect(mysqlState.options).toEqual({
+      uri: config.connectionString,
+      connectionLimit: 10,
+      ssl: {},
+    });
+  });
+
   it("runs query and returns rows for select statements", async () => {
     mysqlState.execute.mockResolvedValue([[{ id: 7 }], []]);
 
@@ -98,15 +108,45 @@ describe("mysql adapter", () => {
     });
 
     const client = createMysqlClient(config, "mysql");
-    const result = await client.transaction(async (tx) =>
-      tx.query("select 1", []),
-    );
+    const result = await client.transaction(async (tx) => {
+      await tx.transaction(async (innerTx) => {
+        await innerTx.close();
+        return undefined;
+      });
+
+      return tx.query("select 1", []);
+    });
 
     expect(result).toEqual({ rows: [{ id: 1 }], rowCount: 1 });
     expect(beginTransaction).toHaveBeenCalledOnce();
     expect(commit).toHaveBeenCalledOnce();
     expect(rollback).not.toHaveBeenCalled();
     expect(release).toHaveBeenCalledOnce();
+  });
+
+  it("wraps transaction client query failures", async () => {
+    const execute = vi.fn().mockRejectedValue(new Error("tx query failed"));
+    const beginTransaction = vi.fn().mockResolvedValue(undefined);
+    const commit = vi.fn().mockResolvedValue(undefined);
+    const rollback = vi.fn().mockResolvedValue(undefined);
+    const release = vi.fn();
+
+    mysqlState.getConnection.mockResolvedValue({
+      execute,
+      beginTransaction,
+      commit,
+      rollback,
+      release,
+    });
+
+    const client = createMysqlClient(config, "mysql");
+
+    await expect(
+      client.transaction(async (tx) => tx.query("select 1", [])),
+    ).rejects.toMatchObject({
+      message: "mysql transaction query failed",
+      dialect: "mysql",
+    });
   });
 
   it("rolls back transaction on failure", async () => {
@@ -134,6 +174,32 @@ describe("mysql adapter", () => {
     expect(commit).not.toHaveBeenCalled();
     expect(rollback).toHaveBeenCalledOnce();
     expect(release).toHaveBeenCalledOnce();
+  });
+
+  it("rethrows DbError from transaction callback", async () => {
+    const beginTransaction = vi.fn().mockResolvedValue(undefined);
+    const commit = vi.fn().mockResolvedValue(undefined);
+    const rollback = vi.fn().mockResolvedValue(undefined);
+    const release = vi.fn();
+
+    mysqlState.getConnection.mockResolvedValue({
+      execute: vi.fn(),
+      beginTransaction,
+      commit,
+      rollback,
+      release,
+    });
+
+    const client = createMysqlClient(config, "mysql");
+    const dbError = new DbError("custom db error", { dialect: "mysql" });
+
+    await expect(
+      client.transaction(async () => {
+        throw dbError;
+      }),
+    ).rejects.toBe(dbError);
+    expect(commit).not.toHaveBeenCalled();
+    expect(rollback).toHaveBeenCalledOnce();
   });
 
   it("closes pool", async () => {
