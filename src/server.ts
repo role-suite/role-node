@@ -15,7 +15,9 @@ const startServer = async (): Promise<void> => {
     }
 
     app.listen(env.PORT, () => {
-      logger.info(`Server is running on port ${env.PORT}`);
+      logger.info(`Server is running on port ${env.PORT}`, {
+        localUrl: `http://localhost:${env.PORT}`,
+      });
     });
   } catch (error) {
     logger.error("Startup validation failed", error);

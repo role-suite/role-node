@@ -13,16 +13,17 @@ describe("App integration", () => {
     const response = await request(app).get("/health");
 
     expect(response.status).toBe(200);
+    expect(response.headers["x-request-id"]).toBeDefined();
     expect(response.body).toEqual({
       success: true,
-      data: { status: "ok" }
+      data: { status: "ok" },
     });
   });
 
   it("creates and fetches a user", async () => {
     const createResponse = await request(app).post("/api/users").send({
       name: "Altay",
-      email: "altay@example.com"
+      email: "altay@example.com",
     });
 
     expect(createResponse.status).toBe(201);
@@ -40,12 +41,12 @@ describe("App integration", () => {
   it("returns created users in list endpoint", async () => {
     await request(app).post("/api/users").send({
       name: "Alpha",
-      email: "alpha@example.com"
+      email: "alpha@example.com",
     });
 
     await request(app).post("/api/users").send({
       name: "Beta",
-      email: "beta@example.com"
+      email: "beta@example.com",
     });
 
     const listResponse = await request(app).get("/api/users");
@@ -58,18 +59,18 @@ describe("App integration", () => {
   it("rejects duplicate user emails", async () => {
     await request(app).post("/api/users").send({
       name: "First",
-      email: "dup@example.com"
+      email: "dup@example.com",
     });
 
     const duplicateResponse = await request(app).post("/api/users").send({
       name: "Second",
-      email: "dup@example.com"
+      email: "dup@example.com",
     });
 
     expect(duplicateResponse.status).toBe(409);
     expect(duplicateResponse.body).toEqual({
       success: false,
-      message: "Email already in use"
+      message: "Email already in use",
     });
   });
 
@@ -83,7 +84,7 @@ describe("App integration", () => {
   it("returns 400 for invalid create payload", async () => {
     const response = await request(app).post("/api/users").send({
       name: "A",
-      email: "not-an-email"
+      email: "not-an-email",
     });
 
     expect(response.status).toBe(400);
@@ -97,7 +98,7 @@ describe("App integration", () => {
     expect(response.status).toBe(404);
     expect(response.body).toEqual({
       success: false,
-      message: "User not found"
+      message: "User not found",
     });
   });
 });
