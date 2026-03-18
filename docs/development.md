@@ -52,6 +52,29 @@ pnpm create:module audit-logs
 
 See `docs/module-template.md` for generated files and post-generation steps.
 
+## Database migrations
+
+Migration files are placed in `migrations/` and must match:
+
+- `<timestamp-or-seq>_<name>.migration.ts`
+
+Commands:
+
+```bash
+pnpm db:migrate
+pnpm db:migrate:status
+pnpm db:migrate:down
+```
+
+Optional count examples:
+
+```bash
+pnpm db:migrate up 2
+pnpm db:migrate down 1
+```
+
+See `migrations/README.md` for migration file template and dialect notes.
+
 ## Testing
 
 Run all tests once:

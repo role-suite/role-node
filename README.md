@@ -49,6 +49,8 @@ tests/
   security/
   smoke/
   unit/
+migrations/
+  *.migration.ts
 ```
 
 ## Quick start
@@ -79,6 +81,10 @@ The server starts on `PORT` (default `3000`).
 - `pnpm build`: compile TypeScript to `dist/`
 - `pnpm start`: run compiled server from `dist/`
 - `pnpm create:module <name>`: scaffold a new feature module template
+- `pnpm db:migrate`: apply pending migrations
+- `pnpm db:migrate:up`: apply pending migrations (optionally with count)
+- `pnpm db:migrate:down`: rollback latest migration (optionally with count)
+- `pnpm db:migrate:status`: print applied/pending migration status
 - `pnpm test`: run tests in Vitest
 - `pnpm test:watch`: run tests in watch mode
 - `pnpm test:run`: run tests once
@@ -158,3 +164,4 @@ See:
 - `docs/architecture.md`
 - `docs/development.md`
 - `docs/module-template.md`
+- `migrations/README.md`
