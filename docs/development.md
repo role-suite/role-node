@@ -38,6 +38,20 @@ pnpm build
 pnpm start
 ```
 
+## Scaffolding a module
+
+```bash
+pnpm create:module <module-name>
+```
+
+Example:
+
+```bash
+pnpm create:module audit-logs
+```
+
+See `docs/module-template.md` for generated files and post-generation steps.
+
 ## Testing
 
 Run all tests once:

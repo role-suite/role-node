@@ -78,6 +78,7 @@ The server starts on `PORT` (default `3000`).
 - `pnpm dev`: run server with file watch
 - `pnpm build`: compile TypeScript to `dist/`
 - `pnpm start`: run compiled server from `dist/`
+- `pnpm create:module <name>`: scaffold a new feature module template
 - `pnpm test`: run tests in Vitest
 - `pnpm test:watch`: run tests in watch mode
 - `pnpm test:run`: run tests once
@@ -156,3 +157,4 @@ See:
 
 - `docs/architecture.md`
 - `docs/development.md`
+- `docs/module-template.md`
