@@ -24,7 +24,12 @@ Current example module: `src/modules/users`.
 ## Global app concerns
 
 - `src/config/env.ts`: validates environment before app boot.
+- `src/config/startup-validation.ts`: validates DB URL/dialect consistency and DB readiness.
+- `src/config/db.ts`: creates and manages singleton DB client lifecycle.
+- `src/shared/db/*`: adapter and driver integration (PostgreSQL, MySQL/MariaDB).
+- `src/types/db.ts`: shared DB client and query contracts.
 - `src/shared/errors/error-handler.ts`: maps known errors to HTTP responses.
+- `src/shared/errors/db-error.ts`: normalizes database-layer failures.
 - `src/shared/middleware/not-found.ts`: handles unmatched routes.
 - `src/shared/logger.ts`: simple JSON console logger.
 
@@ -39,4 +44,6 @@ When adding a new feature module:
 
 ## Data layer note
 
-`users.repo.ts` currently uses in-memory state for demo/test speed. Replace repo internals with a real database implementation later while keeping service/controller contracts stable.
+Database infrastructure is centralized under `shared/db` and `config/db`, while SQL/query logic belongs in module repositories only (`src/modules/*/*.repo.ts`).
+
+Current `users.repo.ts` still uses in-memory state for demo/test speed; migrate module repos incrementally to the shared DB client without changing controller/service contracts.
