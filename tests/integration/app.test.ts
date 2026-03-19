@@ -1,12 +1,23 @@
 import request from "supertest";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { app } from "../../src/app.js";
-import { usersRepo } from "../../src/modules/users/users.repo.js";
+import {
+  authRepo,
+  setAuthRepoDbClient,
+} from "../../src/modules/auth/auth.repo.js";
+import { createAuthTestDb } from "../helpers/auth-test-db.js";
+
+const testDb = createAuthTestDb();
 
 describe("App integration", () => {
-  beforeEach(() => {
-    usersRepo.clear();
+  beforeEach(async () => {
+    setAuthRepoDbClient(testDb);
+    await authRepo.clear();
+  });
+
+  afterAll(() => {
+    setAuthRepoDbClient(null);
   });
 
   it("returns health status", async () => {
@@ -20,52 +31,53 @@ describe("App integration", () => {
     });
   });
 
-  it("creates and fetches a user", async () => {
-    const createResponse = await request(app).post("/api/users").send({
-      name: "Altay",
+  it("registers and logs in a user", async () => {
+    const registerResponse = await request(app)
+      .post("/api/auth/register")
+      .send({
+        name: "Altay",
+        email: "altay@example.com",
+        password: "password123",
+        accountType: "single",
+      });
+
+    expect(registerResponse.status).toBe(201);
+    expect(registerResponse.body.success).toBe(true);
+    expect(registerResponse.body.data.user.email).toBe("altay@example.com");
+
+    const loginResponse = await request(app).post("/api/auth/login").send({
       email: "altay@example.com",
+      password: "password123",
     });
 
-    expect(createResponse.status).toBe(201);
-    expect(createResponse.body.success).toBe(true);
-    expect(createResponse.body.data.id).toBe(1);
-    expect(createResponse.body.data.email).toBe("altay@example.com");
-
-    const getResponse = await request(app).get("/api/users/1");
-
-    expect(getResponse.status).toBe(200);
-    expect(getResponse.body.success).toBe(true);
-    expect(getResponse.body.data.name).toBe("Altay");
+    expect(loginResponse.status).toBe(200);
+    expect(loginResponse.body.success).toBe(true);
+    expect(loginResponse.body.data.tokens.accessToken).toBeTypeOf("string");
   });
 
-  it("returns created users in list endpoint", async () => {
-    await request(app).post("/api/users").send({
-      name: "Alpha",
-      email: "alpha@example.com",
-    });
-
-    await request(app).post("/api/users").send({
-      name: "Beta",
-      email: "beta@example.com",
-    });
-
+  it("returns 404 for removed users endpoint", async () => {
     const listResponse = await request(app).get("/api/users");
 
-    expect(listResponse.status).toBe(200);
-    expect(listResponse.body.success).toBe(true);
-    expect(listResponse.body.data).toHaveLength(2);
+    expect(listResponse.status).toBe(404);
+    expect(listResponse.body.success).toBe(false);
   });
 
-  it("rejects duplicate user emails", async () => {
-    await request(app).post("/api/users").send({
+  it("rejects duplicate auth emails", async () => {
+    await request(app).post("/api/auth/register").send({
       name: "First",
       email: "dup@example.com",
+      password: "password123",
+      accountType: "single",
     });
 
-    const duplicateResponse = await request(app).post("/api/users").send({
-      name: "Second",
-      email: "dup@example.com",
-    });
+    const duplicateResponse = await request(app)
+      .post("/api/auth/register")
+      .send({
+        name: "Second",
+        email: "dup@example.com",
+        password: "password123",
+        accountType: "single",
+      });
 
     expect(duplicateResponse.status).toBe(409);
     expect(duplicateResponse.body).toEqual({
@@ -81,10 +93,12 @@ describe("App integration", () => {
     expect(response.body.success).toBe(false);
   });
 
-  it("returns 400 for invalid create payload", async () => {
-    const response = await request(app).post("/api/users").send({
+  it("returns 400 for invalid register payload", async () => {
+    const response = await request(app).post("/api/auth/register").send({
       name: "A",
       email: "not-an-email",
+      password: "123",
+      accountType: "single",
     });
 
     expect(response.status).toBe(400);
@@ -92,13 +106,13 @@ describe("App integration", () => {
     expect(response.body.message).toBe("Validation failed");
   });
 
-  it("returns 404 when user does not exist", async () => {
-    const response = await request(app).get("/api/users/999");
+  it("returns 401 for missing token on protected route", async () => {
+    const response = await request(app).get("/api/workspaces");
 
-    expect(response.status).toBe(404);
+    expect(response.status).toBe(401);
     expect(response.body).toEqual({
       success: false,
-      message: "User not found",
+      message: "Missing access token",
     });
   });
 });

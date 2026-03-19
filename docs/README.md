@@ -15,3 +15,4 @@ This folder is organized by concern.
 ## Modules
 
 - `docs/modules/auth.md`: Full auth module design, API behavior, and testing strategy.
+- `docs/modules/workspaces.md`: Workspace listing and creation flows.

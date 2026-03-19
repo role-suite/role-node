@@ -10,7 +10,7 @@ This project uses a feature-first module layout with clear per-module layers.
 - `repo`: persistence and data access logic.
 - `schema`: Zod schemas for runtime validation and type inference.
 
-Current example module: `src/modules/users`.
+Current example modules: `src/modules/auth` and `src/modules/workspaces`.
 
 ## Runtime flow
 
@@ -45,4 +45,4 @@ When adding a feature module:
 
 ## Data layer status
 
-Database infrastructure and migration tooling are in place, but `src/modules/users/users.repo.ts` and generated module repos are still in-memory by default. Incrementally migrate module repos to the shared DB client while keeping controller/service contracts stable.
+Database infrastructure and migration tooling are in place, and auth/workspace flows are DB-backed. Generated module templates remain in-memory by default, so migrate each new module repo to shared DB clients as features become production-ready.

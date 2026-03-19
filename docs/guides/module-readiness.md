@@ -16,11 +16,11 @@ This project is ready for module-by-module implementation. Core architecture, sc
 ## Gaps to address while scaling
 
 1. **Move repositories to real DB access**
-   - Generated repos and `users.repo.ts` currently use in-memory storage by default.
+   - Generated repos currently use in-memory storage by default.
    - Add SQL-backed repository implementations module by module.
 
 2. **Seed initial migration files**
-   - Migration framework exists, but there are no concrete migration files yet.
+   - Migration framework exists; continue adding concrete migration files per module.
 
 3. **Stable domain error codes**
    - Extend `appResponse.withStatus(...)` usage with consistent error codes (for example, `USER_NOT_FOUND`).
