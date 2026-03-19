@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import { requireAuth } from "../../shared/middleware/require-auth.js";
+import { collectionsRouter } from "../collections/collections.route.js";
 import { workspacesController } from "./workspaces.controller.js";
 
 export const workspacesRouter = Router();
@@ -21,3 +22,4 @@ workspacesRouter.delete(
   workspacesController.removeMember,
 );
 workspacesRouter.post("/:workspaceId/leave", workspacesController.leave);
+workspacesRouter.use("/:workspaceId/collections", collectionsRouter);

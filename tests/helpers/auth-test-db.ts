@@ -40,6 +40,32 @@ type SessionRow = {
   created_at: Date;
 };
 
+type CollectionRow = {
+  id: number;
+  workspace_id: number;
+  name: string;
+  description: string | null;
+  created_by_user_id: number;
+  created_at: Date;
+  updated_at: Date;
+};
+
+type CollectionEndpointRow = {
+  id: number;
+  collection_id: number;
+  name: string;
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD" | "OPTIONS";
+  url: string;
+  headers_json: string;
+  query_params_json: string;
+  body_json: string | null;
+  auth_json: string | null;
+  position: number;
+  created_by_user_id: number;
+  created_at: Date;
+  updated_at: Date;
+};
+
 const normalizeSql = (sql: string): string => {
   return sql.replace(/\s+/g, " ").trim().toLowerCase();
 };
@@ -68,6 +94,10 @@ export const createAuthTestDb = (): DatabaseClient => {
   let workspaces: WorkspaceRow[] = [];
   let memberships: MembershipRow[] = [];
   let sessions: SessionRow[] = [];
+  let collections: CollectionRow[] = [];
+  let collectionEndpoints: CollectionEndpointRow[] = [];
+  let collectionId = 1;
+  let collectionEndpointId = 1;
 
   const query = async <TRow extends QueryRow = QueryRow>(
     sql: string,
@@ -84,10 +114,14 @@ export const createAuthTestDb = (): DatabaseClient => {
       workspaces = [];
       memberships = [];
       sessions = [];
+      collections = [];
+      collectionEndpoints = [];
       userId = 1;
       workspaceId = 1;
       membershipId = 1;
       sessionId = 1;
+      collectionId = 1;
+      collectionEndpointId = 1;
       return { rows: [] as TRow[], rowCount: 0 };
     }
 
@@ -256,6 +290,150 @@ export const createAuthTestDb = (): DatabaseClient => {
       return {
         rows: castRows<TRow>([{ count }]),
         rowCount: 1,
+      };
+    }
+
+    if (
+      normalized.startsWith("insert into collections") &&
+      normalized.includes("returning")
+    ) {
+      const now = new Date();
+      const row: CollectionRow = {
+        id: collectionId++,
+        workspace_id: expectParam<number>(params, 0),
+        name: expectParam<string>(params, 1),
+        description: expectParam<string | null>(params, 2),
+        created_by_user_id: expectParam<number>(params, 3),
+        created_at: now,
+        updated_at: now,
+      };
+      collections.push(row);
+      return { rows: castRows<TRow>([row]), rowCount: 1 };
+    }
+
+    if (
+      normalized.startsWith(
+        "select id, workspace_id, name, description, created_by_user_id, created_at, updated_at from collections where workspace_id =",
+      )
+    ) {
+      const workspace = expectParam<number>(params, 0);
+      const rows = collections
+        .filter((item) => item.workspace_id === workspace)
+        .sort((a, b) => a.id - b.id);
+      return { rows: castRows<TRow>(rows), rowCount: rows.length };
+    }
+
+    if (
+      normalized.startsWith(
+        "select id, workspace_id, name, description, created_by_user_id, created_at, updated_at from collections where id =",
+      )
+    ) {
+      const id = expectParam<number>(params, 0);
+      const row = collections.find((item) => item.id === id);
+      const rows = row ? castRows<TRow>([row]) : [];
+      return { rows, rowCount: rows.length };
+    }
+
+    if (normalized.startsWith("update collections set name =")) {
+      const row = collections.find(
+        (item) => item.id === expectParam<number>(params, 0),
+      );
+
+      if (row) {
+        row.name = expectParam<string>(params, 1);
+        row.description = expectParam<string | null>(params, 2);
+        row.updated_at = new Date();
+      }
+
+      return { rows: [] as TRow[], rowCount: row ? 1 : 0 };
+    }
+
+    if (normalized.startsWith("delete from collections where id =")) {
+      const id = expectParam<number>(params, 0);
+      const before = collections.length;
+      collections = collections.filter((item) => item.id !== id);
+      collectionEndpoints = collectionEndpoints.filter(
+        (item) => item.collection_id !== id,
+      );
+      return { rows: [] as TRow[], rowCount: before - collections.length };
+    }
+
+    if (
+      normalized.startsWith("insert into collection_endpoints") &&
+      normalized.includes("returning")
+    ) {
+      const now = new Date();
+      const row: CollectionEndpointRow = {
+        id: collectionEndpointId++,
+        collection_id: expectParam<number>(params, 0),
+        name: expectParam<string>(params, 1),
+        method: expectParam<CollectionEndpointRow["method"]>(params, 2),
+        url: expectParam<string>(params, 3),
+        headers_json: expectParam<string>(params, 4),
+        query_params_json: expectParam<string>(params, 5),
+        body_json: expectParam<string | null>(params, 6),
+        auth_json: expectParam<string | null>(params, 7),
+        position: expectParam<number>(params, 8),
+        created_by_user_id: expectParam<number>(params, 9),
+        created_at: now,
+        updated_at: now,
+      };
+      collectionEndpoints.push(row);
+      return { rows: castRows<TRow>([row]), rowCount: 1 };
+    }
+
+    if (
+      normalized.startsWith(
+        "select id, collection_id, name, method, url, headers_json, query_params_json, body_json, auth_json, position, created_by_user_id, created_at, updated_at from collection_endpoints where collection_id =",
+      )
+    ) {
+      const collection = expectParam<number>(params, 0);
+      const rows = collectionEndpoints
+        .filter((item) => item.collection_id === collection)
+        .sort((a, b) => a.position - b.position || a.id - b.id);
+      return { rows: castRows<TRow>(rows), rowCount: rows.length };
+    }
+
+    if (
+      normalized.startsWith(
+        "select id, collection_id, name, method, url, headers_json, query_params_json, body_json, auth_json, position, created_by_user_id, created_at, updated_at from collection_endpoints where id =",
+      )
+    ) {
+      const id = expectParam<number>(params, 0);
+      const row = collectionEndpoints.find((item) => item.id === id);
+      const rows = row ? castRows<TRow>([row]) : [];
+      return { rows, rowCount: rows.length };
+    }
+
+    if (normalized.startsWith("update collection_endpoints set name =")) {
+      const row = collectionEndpoints.find(
+        (item) => item.id === expectParam<number>(params, 0),
+      );
+
+      if (row) {
+        row.name = expectParam<string>(params, 1);
+        row.method = expectParam<CollectionEndpointRow["method"]>(params, 2);
+        row.url = expectParam<string>(params, 3);
+        row.headers_json = expectParam<string>(params, 4);
+        row.query_params_json = expectParam<string>(params, 5);
+        row.body_json = expectParam<string | null>(params, 6);
+        row.auth_json = expectParam<string | null>(params, 7);
+        row.position = expectParam<number>(params, 8);
+        row.updated_at = new Date();
+      }
+
+      return { rows: [] as TRow[], rowCount: row ? 1 : 0 };
+    }
+
+    if (normalized.startsWith("delete from collection_endpoints where id =")) {
+      const id = expectParam<number>(params, 0);
+      const before = collectionEndpoints.length;
+      collectionEndpoints = collectionEndpoints.filter(
+        (item) => item.id !== id,
+      );
+      return {
+        rows: [] as TRow[],
+        rowCount: before - collectionEndpoints.length,
       };
     }
 
