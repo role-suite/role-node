@@ -21,6 +21,24 @@ const envSchema = z
       .enum(["true", "false"])
       .default("true")
       .transform((value) => value === "true"),
+    AUTH_ACCESS_TOKEN_SECRET: z
+      .string()
+      .min(16)
+      .default("dev-access-secret-change-me"),
+    AUTH_REFRESH_TOKEN_SECRET: z
+      .string()
+      .min(16)
+      .default("dev-refresh-secret-change-me"),
+    AUTH_ACCESS_TOKEN_TTL_SECONDS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(900),
+    AUTH_REFRESH_TOKEN_TTL_SECONDS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(60 * 60 * 24 * 7),
   })
   .refine((input) => input.DB_POOL_MAX >= input.DB_POOL_MIN, {
     message: "DB_POOL_MAX must be greater than or equal to DB_POOL_MIN",
