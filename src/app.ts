@@ -1,5 +1,6 @@
 import express from "express";
 
+import { authRouter } from "./modules/auth/auth.route.js";
 import { usersRouter } from "./modules/users/users.route.js";
 import { appResponse } from "./shared/app-response.js";
 import { errorHandler } from "./shared/errors/error-handler.js";
@@ -15,6 +16,7 @@ app.get("/health", (_req, res) => {
   appResponse.sendSuccess(res, 200, { status: "ok" });
 });
 
+app.use("/api/auth", authRouter);
 app.use("/api/users", usersRouter);
 
 app.use(notFoundHandler);
