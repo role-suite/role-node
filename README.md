@@ -33,6 +33,12 @@ src/
       workspaces.service.ts
       workspaces.repo.ts
       workspaces.schema.ts
+    collections/
+      collections.route.ts
+      collections.controller.ts
+      collections.service.ts
+      collections.repo.ts
+      collections.schema.ts
   shared/
     app-response.ts
     logger.ts
@@ -155,6 +161,19 @@ Response:
 - `DELETE /api/workspaces/:workspaceId/members/:memberUserId`
 - `POST /api/workspaces/:workspaceId/leave`
 
+### Collections
+
+- `GET /api/workspaces/:workspaceId/collections`
+- `GET /api/workspaces/:workspaceId/collections/:collectionId`
+- `POST /api/workspaces/:workspaceId/collections`
+- `PATCH /api/workspaces/:workspaceId/collections/:collectionId`
+- `DELETE /api/workspaces/:workspaceId/collections/:collectionId`
+- `GET /api/workspaces/:workspaceId/collections/:collectionId/endpoints`
+- `GET /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
+- `POST /api/workspaces/:workspaceId/collections/:collectionId/endpoints`
+- `PATCH /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
+- `DELETE /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
+
 ## Error handling
 
 - Validation errors return `400` with `message: "Validation failed"`.
@@ -172,4 +191,5 @@ See:
 - `docs/guides/module-template.md`
 - `docs/modules/auth.md`
 - `docs/modules/workspaces.md`
+- `docs/modules/collections.md`
 - `migrations/README.md`
