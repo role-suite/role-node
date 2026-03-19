@@ -2,6 +2,8 @@
 
 Use the module generator to scaffold a new feature with consistent structure.
 
+The generator creates compile-ready module and test skeletons, but it does not auto-register routes in `src/app.ts`.
+
 ## Command
 
 ```bash
@@ -32,6 +34,8 @@ The command creates:
 - `tests/unit/<module>.repo.test.ts`
 - `tests/unit/<module>.service.test.ts`
 - `tests/integration/<module>.test.ts` (created as `describe.skip` placeholder)
+
+Generated repository templates are in-memory by default; replace them with DB-backed implementations when wiring real persistence.
 
 ## After generation checklist
 

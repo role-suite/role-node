@@ -1,24 +1,26 @@
 # Module-by-Module Readiness
 
-This project is close to ready for module-by-module implementation. Core architecture and tooling are in place, but a few additions will improve consistency and scalability.
+This project is ready for module-by-module implementation. Core architecture, scaffolding, startup validation, and migration tooling are already in place.
 
-## Current status
+## Readiness snapshot
 
 - Layered module architecture is established (`schema -> repo -> service -> controller -> route`).
 - Response and error envelopes are centralized with `appResponse`.
 - Request logging with request IDs is integrated.
 - Test setup covers multiple layers (`unit`, `integration`, `contract`, `security`, `smoke`, `e2e`).
-- Database adapter scaffolding is available for PostgreSQL/MySQL/MariaDB.
+- Database adapters and client factory support PostgreSQL/MySQL/MariaDB.
 - Startup validation exists and can be toggled with `ENABLE_STARTUP_VALIDATION`.
+- Migration runner and CLI scripts are available (`db:migrate`, `db:migrate:up`, `db:migrate:down`, `db:migrate:status`).
+- Module generator is available via `pnpm create:module <module-name>`.
 
-## Recommended additions before scaling modules
+## Gaps to address while scaling
 
-1. **Database migrations (high priority)**
-   - Add migration workflow and scripts (`up/down`) so schema changes are trackable and reproducible.
+1. **Move repositories to real DB access**
+   - Generated repos and `users.repo.ts` currently use in-memory storage by default.
+   - Add SQL-backed repository implementations module by module.
 
-2. **Module template and conventions**
-   - Implemented via `pnpm create:module <module-name>`.
-   - See `docs/module-template.md` for usage and post-generation checklist.
+2. **Seed initial migration files**
+   - Migration framework exists, but there are no concrete migration files yet.
 
 3. **Stable domain error codes**
    - Extend `appResponse.withStatus(...)` usage with consistent error codes (for example, `USER_NOT_FOUND`).
@@ -37,6 +39,6 @@ This project is close to ready for module-by-module implementation. Core archite
 
 ## Suggested next implementation order
 
-1. Migration setup
-2. Stable error codes and shared response metadata
-3. CI + API docs
+1. First DB-backed module + initial migrations
+2. Stable error codes and list/pagination contract
+3. CI checks + API contract docs

@@ -8,7 +8,7 @@ cp .env.example .env
 pnpm dev
 ```
 
-`pnpm dev` runs startup validation before the HTTP server listens (unless disabled).
+`pnpm dev` runs startup validation before the HTTP server starts listening (unless disabled).
 
 ## Environment and startup integrity
 
@@ -17,7 +17,7 @@ Environment values are validated in `src/config/env.ts`.
 Database-related environment variables:
 
 - `DB_DIALECT`: `postgres` | `mysql` | `mariadb`
-- `DATABASE_URL`: required connection URL
+- `DATABASE_URL`: required when startup validation is enabled and for migration commands
 - `DB_POOL_MIN`: minimum connection pool size
 - `DB_POOL_MAX`: maximum connection pool size
 - `DB_SSL`: `true` | `false`
@@ -30,6 +30,17 @@ Startup checks in `src/config/startup-validation.ts` verify:
 - Database is reachable (`SELECT 1`)
 
 When local DB is not available yet, set `ENABLE_STARTUP_VALIDATION=false`.
+
+## Common scripts
+
+- `pnpm dev`: start server with watch mode (`tsx` + `nodemon`)
+- `pnpm build`: compile TypeScript to `dist/`
+- `pnpm start`: run compiled server
+- `pnpm create:module <name>`: scaffold module boilerplate and test stubs
+- `pnpm db:migrate`: apply pending migrations
+- `pnpm db:migrate:up [count]`: apply pending migrations (optionally limited)
+- `pnpm db:migrate:down [count]`: rollback last applied migrations
+- `pnpm db:migrate:status`: show applied/pending migration IDs
 
 ## Build and run
 
@@ -62,6 +73,7 @@ Commands:
 
 ```bash
 pnpm db:migrate
+pnpm db:migrate:up
 pnpm db:migrate:status
 pnpm db:migrate:down
 ```
@@ -107,7 +119,7 @@ Coverage thresholds are defined in `vitest.config.ts`.
 - Smoke tests (`tests/smoke`): quick baseline health checks.
 - E2E tests (`tests/e2e`): full user flows across endpoints.
 
-## Conventions for future development
+## Conventions
 
 - Keep module boundaries strict (no controller-to-repo direct access).
 - Validate all external input with Zod schemas.
@@ -125,10 +137,9 @@ Coverage thresholds are defined in `vitest.config.ts`.
 6. Add unit tests (schema/service/repo).
 7. Add integration tests for endpoint behavior.
 
-## Suggested next upgrades
+## Current improvement backlog
 
-- Add schema migration workflow for multi-dialect environments.
-- Add request logging middleware with request ids.
-- Add auth module (JWT/session strategy).
-- Add CI workflow for `build + test:coverage`.
-- Add lint/format scripts and pre-commit hooks.
+- Migrate module repositories from in-memory storage to shared DB clients.
+- Add baseline auth/authorization middleware for protected routes.
+- Add CI workflow for `pnpm build` + `pnpm test:run` (and optional coverage gate).
+- Add API contract docs (OpenAPI or equivalent).

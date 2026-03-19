@@ -1,49 +1,48 @@
 # Architecture
 
-This project uses a feature-first module layout and simple layer separation inside each module.
+This project uses a feature-first module layout with clear per-module layers.
 
 ## Layer responsibilities
 
-- `route`: HTTP route registration only.
-- `controller`: parse request inputs and return HTTP responses.
-- `service`: business logic and domain checks.
-- `repo`: data access and persistence abstraction.
-- `schema`: Zod schemas for runtime validation and TS inference.
+- `route`: route registration and HTTP method/path mapping.
+- `controller`: request parsing + schema validation + HTTP response handling.
+- `service`: domain logic and business rules.
+- `repo`: persistence and data access logic.
+- `schema`: Zod schemas for runtime validation and type inference.
 
 Current example module: `src/modules/users`.
 
-## Request lifecycle
+## Runtime flow
 
-1. `app.ts` registers middleware and module routes.
-2. Route delegates to controller.
-3. Controller validates inputs with Zod schema.
-4. Service runs business logic.
-5. Repo reads/writes data source.
-6. Errors bubble to `errorHandler`.
+1. `src/server.ts` validates startup constraints (when enabled) and starts listening.
+2. `src/app.ts` runs middleware (`requestLogger`, `express.json`) and mounts routers.
+3. Router delegates to controller handlers.
+4. Controller parses params/body with Zod schemas.
+5. Service executes business rules and throws domain errors via `appResponse.withStatus(...)`.
+6. Repository reads/writes data.
+7. `errorHandler` normalizes validation/domain/unexpected errors.
 
 ## Global app concerns
 
-- `src/config/env.ts`: validates environment before app boot.
-- `src/config/startup-validation.ts`: validates DB URL/dialect consistency and DB readiness (toggleable with `ENABLE_STARTUP_VALIDATION`).
-- `src/config/db.ts`: creates and manages singleton DB client lifecycle.
-- `src/shared/db/*`: adapter and driver integration (PostgreSQL, MySQL/MariaDB).
-- `src/types/db.ts`: shared DB client and query contracts.
-- `src/shared/errors/error-handler.ts`: maps known errors to HTTP responses.
-- `src/shared/errors/db-error.ts`: normalizes database-layer failures.
-- `src/shared/middleware/not-found.ts`: handles unmatched routes.
-- `src/shared/logger.ts`: environment-aware logger (readable dev output, structured JSON in production).
+- `src/config/env.ts`: environment schema validation.
+- `src/config/startup-validation.ts`: URL/dialect checks + DB connectivity check (`SELECT 1`).
+- `src/config/db.ts`: singleton DB client lifecycle (`getDb`, `closeDb`).
+- `src/shared/db/adapters/*`: PostgreSQL and MySQL/MariaDB client adapters.
+- `src/shared/db/migrations/runner.ts`: migration table management + up/down/status operations.
+- `src/shared/middleware/request-logger.ts`: per-request logging with `x-request-id` propagation.
+- `src/shared/middleware/not-found.ts`: fallback 404 handler.
+- `src/shared/errors/error-handler.ts`: centralized error mapping for Zod/domain/unexpected errors.
+- `src/shared/logger.ts`: environment-aware logger output.
 
-## Extending architecture
+## Module extension pattern
 
-When adding a new feature module:
+When adding a feature module:
 
-1. Create `src/modules/<feature>/`.
-2. Add `*.schema.ts`, `*.repo.ts`, `*.service.ts`, `*.controller.ts`, `*.route.ts`.
-3. Register `<feature>Router` in `src/app.ts`.
-4. Add unit tests for schema/service/repo and integration tests for routes.
+1. Generate scaffold with `pnpm create:module <module-name>`.
+2. Implement domain schema/repo/service/controller logic.
+3. Register `<module>Router` in `src/app.ts`.
+4. Complete generated unit tests and unskip the integration test placeholder.
 
-## Data layer note
+## Data layer status
 
-Database infrastructure is centralized under `shared/db` and `config/db`, while SQL/query logic belongs in module repositories only (`src/modules/*/*.repo.ts`).
-
-Current `users.repo.ts` still uses in-memory state for demo/test speed; migrate module repos incrementally to the shared DB client without changing controller/service contracts.
+Database infrastructure and migration tooling are in place, but `src/modules/users/users.repo.ts` and generated module repos are still in-memory by default. Incrementally migrate module repos to the shared DB client while keeping controller/service contracts stable.
