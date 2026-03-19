@@ -61,7 +61,7 @@ Example:
 pnpm create:module audit-logs
 ```
 
-See `docs/module-template.md` for generated files and post-generation steps.
+See `docs/guides/module-template.md` for generated files and post-generation steps.
 
 ## Database migrations
 

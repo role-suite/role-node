@@ -136,6 +136,14 @@ Response:
 - `GET /api/users/:id`
 - `POST /api/users`
 
+### Auth
+
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/refresh`
+- `POST /api/auth/logout`
+- `GET /api/auth/me`
+
 `POST /api/users` payload:
 
 ```json
@@ -161,7 +169,9 @@ Validation rules:
 
 See:
 
-- `docs/architecture.md`
-- `docs/development.md`
-- `docs/module-template.md`
+- `docs/README.md`
+- `docs/architecture/overview.md`
+- `docs/guides/development.md`
+- `docs/guides/module-template.md`
+- `docs/modules/auth.md`
 - `migrations/README.md`
