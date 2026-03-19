@@ -1,7 +1,7 @@
 import express from "express";
 
 import { authRouter } from "./modules/auth/auth.route.js";
-import { usersRouter } from "./modules/users/users.route.js";
+import { workspacesRouter } from "./modules/workspaces/workspaces.route.js";
 import { appResponse } from "./shared/app-response.js";
 import { errorHandler } from "./shared/errors/error-handler.js";
 import { notFoundHandler } from "./shared/middleware/not-found.js";
@@ -17,7 +17,7 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/api/auth", authRouter);
-app.use("/api/users", usersRouter);
+app.use("/api/workspaces", workspacesRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

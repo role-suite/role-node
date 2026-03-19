@@ -21,12 +21,18 @@ src/
     db.ts                     # DB client singleton + lifecycle
     startup-validation.ts     # Startup integrity and DB checks
   modules/
-    users/
-      users.route.ts
-      users.controller.ts
-      users.service.ts
-      users.repo.ts
-      users.schema.ts
+    auth/
+      auth.route.ts
+      auth.controller.ts
+      auth.service.ts
+      auth.repo.ts
+      auth.schema.ts
+    workspaces/
+      workspaces.route.ts
+      workspaces.controller.ts
+      workspaces.service.ts
+      workspaces.repo.ts
+      workspaces.schema.ts
   shared/
     app-response.ts
     logger.ts
@@ -130,12 +136,6 @@ Response:
 }
 ```
 
-### Users
-
-- `GET /api/users`
-- `GET /api/users/:id`
-- `POST /api/users`
-
 ### Auth
 
 - `POST /api/auth/register`
@@ -144,19 +144,16 @@ Response:
 - `POST /api/auth/logout`
 - `GET /api/auth/me`
 
-`POST /api/users` payload:
+### Workspaces
 
-```json
-{
-  "name": "Altay",
-  "email": "altay@example.com"
-}
-```
-
-Validation rules:
-
-- `name`: string, min 2, max 80 chars
-- `email`: valid email
+- `GET /api/workspaces`
+- `POST /api/workspaces`
+- `GET /api/workspaces/:workspaceId`
+- `GET /api/workspaces/:workspaceId/members`
+- `POST /api/workspaces/:workspaceId/members`
+- `PATCH /api/workspaces/:workspaceId/members/:memberUserId`
+- `DELETE /api/workspaces/:workspaceId/members/:memberUserId`
+- `POST /api/workspaces/:workspaceId/leave`
 
 ## Error handling
 
@@ -174,4 +171,5 @@ See:
 - `docs/guides/development.md`
 - `docs/guides/module-template.md`
 - `docs/modules/auth.md`
+- `docs/modules/workspaces.md`
 - `migrations/README.md`

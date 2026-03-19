@@ -364,6 +364,62 @@ export const authRepo = {
     return result.rows.map(mapMembershipRow);
   },
 
+  async listMembershipsByWorkspace(workspaceId: number): Promise<Membership[]> {
+    const workspaceToken = resolveToken(1);
+    const result = await resolveDb().query<MembershipRow>(
+      `SELECT id, user_id, workspace_id, role, created_at FROM ${MEMBERSHIPS_TABLE} WHERE workspace_id = ${workspaceToken} ORDER BY id ASC`,
+      [workspaceId],
+    );
+
+    return result.rows.map(mapMembershipRow);
+  },
+
+  async updateMembershipRole(
+    userId: number,
+    workspaceId: number,
+    role: MembershipRole,
+  ): Promise<void> {
+    const userToken = resolveToken(1);
+    const workspaceToken = resolveToken(2);
+    const roleToken = resolveToken(3);
+    await resolveDb().query(
+      `UPDATE ${MEMBERSHIPS_TABLE} SET role = ${roleToken} WHERE user_id = ${userToken} AND workspace_id = ${workspaceToken}`,
+      [userId, workspaceId, role],
+    );
+  },
+
+  async deleteMembershipByUserAndWorkspace(
+    userId: number,
+    workspaceId: number,
+  ): Promise<void> {
+    const userToken = resolveToken(1);
+    const workspaceToken = resolveToken(2);
+    await resolveDb().query(
+      `DELETE FROM ${MEMBERSHIPS_TABLE} WHERE user_id = ${userToken} AND workspace_id = ${workspaceToken}`,
+      [userId, workspaceId],
+    );
+  },
+
+  async countMembershipsByRole(
+    workspaceId: number,
+    role: MembershipRole,
+  ): Promise<number> {
+    const workspaceToken = resolveToken(1);
+    const roleToken = resolveToken(2);
+    const result = await resolveDb().query<{ count: number | string }>(
+      `SELECT COUNT(*) as count FROM ${MEMBERSHIPS_TABLE} WHERE workspace_id = ${workspaceToken} AND role = ${roleToken}`,
+      [workspaceId, role],
+    );
+
+    const value = result.rows[0]?.count;
+
+    if (value === undefined) {
+      return 0;
+    }
+
+    return typeof value === "number" ? value : Number(value);
+  },
+
   async createSession(payload: {
     userId: number;
     workspaceId: number;

@@ -205,6 +205,61 @@ export const createAuthTestDb = (): DatabaseClient => {
     }
 
     if (
+      normalized.startsWith(
+        "select id, user_id, workspace_id, role, created_at from workspace_memberships where workspace_id =",
+      )
+    ) {
+      const workspace = expectParam<number>(params, 0);
+      const rows = memberships
+        .filter((item) => item.workspace_id === workspace)
+        .sort((a, b) => a.id - b.id);
+      return { rows: castRows<TRow>(rows), rowCount: rows.length };
+    }
+
+    if (normalized.startsWith("update workspace_memberships set role =")) {
+      const membership = memberships.find(
+        (item) =>
+          item.user_id === expectParam<number>(params, 0) &&
+          item.workspace_id === expectParam<number>(params, 1),
+      );
+
+      if (membership) {
+        membership.role = expectParam<"owner" | "admin" | "member">(params, 2);
+      }
+
+      return { rows: [] as TRow[], rowCount: membership ? 1 : 0 };
+    }
+
+    if (
+      normalized.startsWith("delete from workspace_memberships where user_id =")
+    ) {
+      const user = expectParam<number>(params, 0);
+      const workspace = expectParam<number>(params, 1);
+      const before = memberships.length;
+      memberships = memberships.filter(
+        (item) => !(item.user_id === user && item.workspace_id === workspace),
+      );
+      const deleted = before - memberships.length;
+      return { rows: [] as TRow[], rowCount: deleted };
+    }
+
+    if (
+      normalized.startsWith(
+        "select count(*) as count from workspace_memberships where workspace_id =",
+      )
+    ) {
+      const workspace = expectParam<number>(params, 0);
+      const role = expectParam<"owner" | "admin" | "member">(params, 1);
+      const count = memberships.filter(
+        (item) => item.workspace_id === workspace && item.role === role,
+      ).length;
+      return {
+        rows: castRows<TRow>([{ count }]),
+        rowCount: 1,
+      };
+    }
+
+    if (
       normalized.startsWith("insert into auth_sessions") &&
       normalized.includes("returning")
     ) {
