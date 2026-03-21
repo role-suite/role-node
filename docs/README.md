@@ -5,6 +5,7 @@ This folder is organized by concern.
 ## Architecture
 
 - `docs/architecture/overview.md`: Application layers, runtime flow, and shared infrastructure.
+- `docs/architecture/request-runner-engine.md`: Internal-first request runner engine design and implementation plan.
 
 ## Guides
 
