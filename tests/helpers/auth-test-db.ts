@@ -131,6 +131,18 @@ type RequestRunResponseRow = {
   created_at: Date;
 };
 
+type ImportExportJobRow = {
+  id: number;
+  workspace_id: number;
+  type: "export" | "import";
+  status: "completed";
+  format: "json";
+  summary_json: string;
+  created_by_user_id: number;
+  created_at: Date;
+  completed_at: Date;
+};
+
 const normalizeSql = (sql: string): string => {
   return sql.replace(/\s+/g, " ").trim().toLowerCase();
 };
@@ -166,6 +178,7 @@ export const createAuthTestDb = (): DatabaseClient => {
   let requestRuns: RequestRunRow[] = [];
   let requestRunRequests: RequestRunRequestRow[] = [];
   let requestRunResponses: RequestRunResponseRow[] = [];
+  let importExportJobs: ImportExportJobRow[] = [];
   let collectionId = 1;
   let collectionEndpointId = 1;
   let environmentId = 1;
@@ -173,6 +186,7 @@ export const createAuthTestDb = (): DatabaseClient => {
   let requestRunId = 1;
   let requestRunRequestId = 1;
   let requestRunResponseId = 1;
+  let importExportJobId = 1;
 
   const query = async <TRow extends QueryRow = QueryRow>(
     sql: string,
@@ -196,6 +210,7 @@ export const createAuthTestDb = (): DatabaseClient => {
       requestRuns = [];
       requestRunRequests = [];
       requestRunResponses = [];
+      importExportJobs = [];
       userId = 1;
       workspaceId = 1;
       membershipId = 1;
@@ -207,6 +222,7 @@ export const createAuthTestDb = (): DatabaseClient => {
       requestRunId = 1;
       requestRunRequestId = 1;
       requestRunResponseId = 1;
+      importExportJobId = 1;
       return { rows: [] as TRow[], rowCount: 0 };
     }
 
@@ -367,6 +383,53 @@ export const createAuthTestDb = (): DatabaseClient => {
       }
 
       return { rows: [] as TRow[], rowCount: row ? 1 : 0 };
+    }
+
+    if (
+      normalized.startsWith("insert into import_export_jobs") &&
+      normalized.includes("returning")
+    ) {
+      const now = new Date();
+      const row: ImportExportJobRow = {
+        id: importExportJobId++,
+        workspace_id: expectParam<number>(params, 0),
+        type: expectParam<"export" | "import">(params, 1),
+        status: expectParam<"completed">(params, 2),
+        format: expectParam<"json">(params, 3),
+        summary_json: expectParam<string>(params, 4),
+        created_by_user_id: expectParam<number>(params, 5),
+        created_at: now,
+        completed_at: expectParam<Date>(params, 6),
+      };
+      importExportJobs.push(row);
+      return { rows: castRows<TRow>([row]), rowCount: 1 };
+    }
+
+    if (
+      normalized.startsWith(
+        "select id, workspace_id, type, status, format, summary_json, created_by_user_id, created_at, completed_at from import_export_jobs where workspace_id =",
+      ) &&
+      normalized.includes("and id =")
+    ) {
+      const workspaceId = expectParam<number>(params, 0);
+      const jobId = expectParam<number>(params, 1);
+      const row = importExportJobs.find(
+        (item) => item.workspace_id === workspaceId && item.id === jobId,
+      );
+      const rows = row ? castRows<TRow>([row]) : [];
+      return { rows, rowCount: rows.length };
+    }
+
+    if (
+      normalized.startsWith(
+        "select id, workspace_id, type, status, format, summary_json, created_by_user_id, created_at, completed_at from import_export_jobs where workspace_id =",
+      )
+    ) {
+      const workspaceId = expectParam<number>(params, 0);
+      const rows = importExportJobs
+        .filter((item) => item.workspace_id === workspaceId)
+        .sort((left, right) => right.id - left.id);
+      return { rows: castRows<TRow>(rows), rowCount: rows.length };
     }
 
     if (
