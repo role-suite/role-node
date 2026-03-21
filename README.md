@@ -47,6 +47,12 @@ src/
       environments.service.ts
       environments.repo.ts
       environments.schema.ts
+    import-export/
+      import-export.route.ts
+      import-export.controller.ts
+      import-export.service.ts
+      import-export.repo.ts
+      import-export.schema.ts
     runs/
       runs.route.ts
       runs.controller.ts
@@ -209,6 +215,13 @@ Response:
 - `GET /api/workspaces/:workspaceId/runs/:runId`
 - `POST /api/workspaces/:workspaceId/runs/:runId/cancel`
 
+### Import/Export
+
+- `GET /api/workspaces/:workspaceId/import-export/jobs`
+- `GET /api/workspaces/:workspaceId/import-export/jobs/:jobId`
+- `POST /api/workspaces/:workspaceId/import-export/exports`
+- `POST /api/workspaces/:workspaceId/import-export/imports`
+
 ## Error handling
 
 - Validation errors return `400` with `message: "Validation failed"`.
@@ -229,4 +242,5 @@ See:
 - `docs/modules/collections.md`
 - `docs/modules/environments.md`
 - `docs/modules/runs.md`
+- `docs/modules/import-export.md`
 - `migrations/README.md`
