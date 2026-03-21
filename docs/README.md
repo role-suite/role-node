@@ -19,3 +19,4 @@ This folder is organized by concern.
 - `docs/modules/workspaces.md`: Workspace listing and creation flows.
 - `docs/modules/collections.md`: Workspace-scoped API collections CRUD.
 - `docs/modules/environments.md`: Workspace-scoped environments and variables CRUD.
+- `docs/modules/runs.md`: Workspace-scoped request execution API and runner integration.

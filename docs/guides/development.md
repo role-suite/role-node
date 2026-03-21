@@ -139,7 +139,7 @@ Coverage thresholds are defined in `vitest.config.ts`.
 
 ## Current improvement backlog
 
-- Migrate module repositories from in-memory storage to shared DB clients.
-- Add baseline auth/authorization middleware for protected routes.
+- Add async worker mode for request runs (`queued -> running -> terminal` transitions).
+- Add run retention cleanup job for `request_runs` and related snapshots.
 - Add CI workflow for `pnpm build` + `pnpm test:run` (and optional coverage gate).
 - Add API contract docs (OpenAPI or equivalent).

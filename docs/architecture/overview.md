@@ -10,7 +10,7 @@ This project uses a feature-first module layout with clear per-module layers.
 - `repo`: persistence and data access logic.
 - `schema`: Zod schemas for runtime validation and type inference.
 
-Current example modules: `src/modules/auth`, `src/modules/workspaces`, `src/modules/collections`, and `src/modules/environments`.
+Current example modules: `src/modules/auth`, `src/modules/workspaces`, `src/modules/collections`, `src/modules/environments`, and `src/modules/runs`.
 
 ## Runtime flow
 
@@ -33,6 +33,7 @@ Current example modules: `src/modules/auth`, `src/modules/workspaces`, `src/modu
 - `src/shared/middleware/not-found.ts`: fallback 404 handler.
 - `src/shared/errors/error-handler.ts`: centralized error mapping for Zod/domain/unexpected errors.
 - `src/shared/logger.ts`: environment-aware logger output.
+- `src/internal/runner/*`: config-driven request runner engine composed from planning, policy, execution, and persistence modules.
 
 ## Module extension pattern
 
@@ -45,4 +46,4 @@ When adding a feature module:
 
 ## Data layer status
 
-Database infrastructure and migration tooling are in place, and auth/workspace flows are DB-backed. Generated module templates remain in-memory by default, so migrate each new module repo to shared DB clients as features become production-ready.
+Database infrastructure and migration tooling are in place, and auth/workspace/collections/environments/runs flows are DB-backed. Generated module templates remain in-memory by default, so migrate each new module repo to shared DB clients as features become production-ready.
