@@ -73,7 +73,7 @@ export const importExportService = {
     workspaceId: number,
   ): Promise<ImportExportJobResponse[]> {
     await requireWorkspaceMembership(userId, workspaceId);
-    return importExportRepo.listByWorkspace(workspaceId).map(mapJob);
+    return (await importExportRepo.listByWorkspace(workspaceId)).map(mapJob);
   },
 
   async getJobByIdForWorkspace(
@@ -82,7 +82,7 @@ export const importExportService = {
     jobId: number,
   ): Promise<ImportExportJobResponse> {
     await requireWorkspaceMembership(userId, workspaceId);
-    const job = importExportRepo.findByWorkspaceAndId(workspaceId, jobId);
+    const job = await importExportRepo.findByWorkspaceAndId(workspaceId, jobId);
 
     if (!job) {
       throw appResponse.withStatus(404, "Import/export job not found");
@@ -97,7 +97,7 @@ export const importExportService = {
     payload: CreateWorkspaceExportInput,
   ): Promise<ImportExportJobResponse> {
     await requireWorkspaceWriterRole(userId, workspaceId);
-    const job = importExportRepo.createJob({
+    const job = await importExportRepo.createJob({
       workspaceId,
       createdByUserId: userId,
       type: "export",
@@ -119,7 +119,7 @@ export const importExportService = {
   ): Promise<ImportExportJobResponse> {
     await requireWorkspaceWriterRole(userId, workspaceId);
     const rootKeys = Object.keys(payload.payload);
-    const job = importExportRepo.createJob({
+    const job = await importExportRepo.createJob({
       workspaceId,
       createdByUserId: userId,
       type: "import",

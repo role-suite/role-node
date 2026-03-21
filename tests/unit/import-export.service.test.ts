@@ -5,7 +5,7 @@ import {
   setAuthRepoDbClient,
 } from "../../src/modules/auth/auth.repo.js";
 import { authService } from "../../src/modules/auth/auth.service.js";
-import { importExportRepo } from "../../src/modules/import-export/import-export.repo.js";
+import { setImportExportRepoDbClient } from "../../src/modules/import-export/import-export.repo.js";
 import { importExportService } from "../../src/modules/import-export/import-export.service.js";
 import { workspacesService } from "../../src/modules/workspaces/workspaces.service.js";
 import { createAuthTestDb } from "../helpers/auth-test-db.js";
@@ -15,12 +15,13 @@ const testDb = createAuthTestDb();
 describe("import-export service", () => {
   beforeEach(async () => {
     setAuthRepoDbClient(testDb);
-    importExportRepo.clear();
+    setImportExportRepoDbClient(testDb);
     await authRepo.clear();
   });
 
   afterAll(() => {
     setAuthRepoDbClient(null);
+    setImportExportRepoDbClient(null);
   });
 
   it("allows owners to create export and import jobs", async () => {
