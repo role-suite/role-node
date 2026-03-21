@@ -1,0 +1,49 @@
+{
+  "mode": "sync",
+  "execution": {
+    "httpClient": "undici",
+    "followRedirectsDefault": true,
+    "maxRedirects": 5
+  },
+  "limits": {
+    "timeoutMsDefault": 10000,
+    "timeoutMsMax": 60000,
+    "maxRequestBytes": 1048576,
+    "maxResponseBytesDefault": 1048576
+  },
+  "policy": {
+    "allowHttp": true,
+    "allowHttps": true,
+    "blockLocalhost": true,
+    "blockPrivateCidrs": [
+      "127.0.0.0/8",
+      "10.0.0.0/8",
+      "172.16.0.0/12",
+      "192.168.0.0/16",
+      "::1",
+      "fc00::/7"
+    ],
+    "domainAllowlist": []
+  },
+  "redaction": {
+    "token": "***",
+    "secretHeaderKeys": [
+      "authorization",
+      "proxy-authorization",
+      "x-api-key",
+      "cookie",
+      "set-cookie"
+    ],
+    "secretQueryKeyPatterns": ["token", "secret", "key", "password"]
+  },
+  "persistence": {
+    "retentionDays": 30,
+    "persistBinaryBodies": true
+  },
+  "modules": {
+    "runStore": "postgres",
+    "networkPolicy": "default",
+    "limitsPolicy": "default",
+    "redactionPolicy": "default"
+  }
+}

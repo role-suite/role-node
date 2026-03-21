@@ -20,6 +20,8 @@ src/
     env.ts                    # Environment schema + parsing
     db.ts                     # DB client singleton + lifecycle
     startup-validation.ts     # Startup integrity and DB checks
+  internal/
+    runner/                   # Request runner engine internals (config + composition + execution)
   modules/
     auth/
       auth.route.ts
@@ -45,6 +47,12 @@ src/
       environments.service.ts
       environments.repo.ts
       environments.schema.ts
+    runs/
+      runs.route.ts
+      runs.controller.ts
+      runs.service.ts
+      runs.repo.ts
+      runs.schema.ts
   shared/
     app-response.ts
     logger.ts
@@ -69,6 +77,8 @@ tests/
   unit/
 migrations/
   *.migration.ts
+config/
+  request-runner.config.json  # Runner engine base config
 ```
 
 ## Quick start
@@ -193,6 +203,12 @@ Response:
 - `PATCH /api/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
 - `DELETE /api/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
 
+### Runs
+
+- `POST /api/workspaces/:workspaceId/runs`
+- `GET /api/workspaces/:workspaceId/runs/:runId`
+- `POST /api/workspaces/:workspaceId/runs/:runId/cancel`
+
 ## Error handling
 
 - Validation errors return `400` with `message: "Validation failed"`.
@@ -212,4 +228,5 @@ See:
 - `docs/modules/workspaces.md`
 - `docs/modules/collections.md`
 - `docs/modules/environments.md`
+- `docs/modules/runs.md`
 - `migrations/README.md`

@@ -42,3 +42,6 @@ junit.xml
 # Optional local tooling
 .eslintcache
 .prettier-cache/
+
+# Local runner config override
+config/request-runner.config.local.json
