@@ -88,6 +88,49 @@ type EnvironmentVariableRow = {
   updated_at: Date;
 };
 
+type RequestRunRow = {
+  id: number;
+  workspace_id: number;
+  initiated_by_user_id: number;
+  source_type: "adhoc" | "collection_endpoint";
+  source_collection_id: number | null;
+  source_endpoint_id: number | null;
+  status: "queued" | "running" | "completed" | "failed" | "cancelled";
+  started_at: Date | null;
+  completed_at: Date | null;
+  duration_ms: number | null;
+  error_code: string | null;
+  error_message: string | null;
+  error_json: string | null;
+  created_at: Date;
+};
+
+type RequestRunRequestRow = {
+  id: number;
+  run_id: number;
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD" | "OPTIONS";
+  url: string;
+  headers_json: string;
+  query_params_json: string;
+  body_text: string | null;
+  auth_json: string | null;
+  resolved_variables_json: string;
+  timeout_ms: number;
+  created_at: Date;
+};
+
+type RequestRunResponseRow = {
+  id: number;
+  run_id: number;
+  status_code: number;
+  headers_json: string;
+  body_text: string | null;
+  body_base64: string | null;
+  size_bytes: number;
+  truncated: boolean;
+  created_at: Date;
+};
+
 const normalizeSql = (sql: string): string => {
   return sql.replace(/\s+/g, " ").trim().toLowerCase();
 };
@@ -120,10 +163,16 @@ export const createAuthTestDb = (): DatabaseClient => {
   let collectionEndpoints: CollectionEndpointRow[] = [];
   let environments: EnvironmentRow[] = [];
   let environmentVariables: EnvironmentVariableRow[] = [];
+  let requestRuns: RequestRunRow[] = [];
+  let requestRunRequests: RequestRunRequestRow[] = [];
+  let requestRunResponses: RequestRunResponseRow[] = [];
   let collectionId = 1;
   let collectionEndpointId = 1;
   let environmentId = 1;
   let environmentVariableId = 1;
+  let requestRunId = 1;
+  let requestRunRequestId = 1;
+  let requestRunResponseId = 1;
 
   const query = async <TRow extends QueryRow = QueryRow>(
     sql: string,
@@ -144,6 +193,9 @@ export const createAuthTestDb = (): DatabaseClient => {
       collectionEndpoints = [];
       environments = [];
       environmentVariables = [];
+      requestRuns = [];
+      requestRunRequests = [];
+      requestRunResponses = [];
       userId = 1;
       workspaceId = 1;
       membershipId = 1;
@@ -152,7 +204,169 @@ export const createAuthTestDb = (): DatabaseClient => {
       collectionEndpointId = 1;
       environmentId = 1;
       environmentVariableId = 1;
+      requestRunId = 1;
+      requestRunRequestId = 1;
+      requestRunResponseId = 1;
       return { rows: [] as TRow[], rowCount: 0 };
+    }
+
+    if (
+      normalized.startsWith("insert into request_runs") &&
+      normalized.includes("returning id")
+    ) {
+      const now = new Date();
+      const row: RequestRunRow = {
+        id: requestRunId++,
+        workspace_id: expectParam<number>(params, 0),
+        initiated_by_user_id: expectParam<number>(params, 1),
+        source_type: expectParam<RequestRunRow["source_type"]>(params, 2),
+        source_collection_id: expectParam<number | null>(params, 3),
+        source_endpoint_id: expectParam<number | null>(params, 4),
+        status: expectParam<RequestRunRow["status"]>(params, 5),
+        started_at: expectParam<Date>(params, 6),
+        completed_at: null,
+        duration_ms: null,
+        error_code: null,
+        error_message: null,
+        error_json: null,
+        created_at: now,
+      };
+      requestRuns.push(row);
+      return { rows: castRows<TRow>([{ id: row.id }]), rowCount: 1 };
+    }
+
+    if (normalized.startsWith("insert into request_run_requests")) {
+      const now = new Date();
+      const row: RequestRunRequestRow = {
+        id: requestRunRequestId++,
+        run_id: expectParam<number>(params, 0),
+        method: expectParam<RequestRunRequestRow["method"]>(params, 1),
+        url: expectParam<string>(params, 2),
+        headers_json: expectParam<string>(params, 3),
+        query_params_json: expectParam<string>(params, 4),
+        body_text: expectParam<string | null>(params, 5),
+        auth_json: expectParam<string | null>(params, 6),
+        resolved_variables_json: expectParam<string>(params, 7),
+        timeout_ms: expectParam<number>(params, 8),
+        created_at: now,
+      };
+      requestRunRequests = requestRunRequests.filter(
+        (item) => item.run_id !== row.run_id,
+      );
+      requestRunRequests.push(row);
+      return { rows: [] as TRow[], rowCount: 1 };
+    }
+
+    if (
+      normalized.startsWith(
+        "select id, workspace_id, initiated_by_user_id, source_type, source_collection_id, source_endpoint_id, status, started_at, completed_at, duration_ms, error_code, error_message, error_json, created_at from request_runs where id =",
+      )
+    ) {
+      const id = expectParam<number>(params, 0);
+      const row = requestRuns.find((item) => item.id === id);
+      const rows = row ? castRows<TRow>([row]) : [];
+      return { rows, rowCount: rows.length };
+    }
+
+    if (
+      normalized.startsWith(
+        "select run_id, method, url, headers_json, query_params_json, body_text, auth_json, resolved_variables_json, timeout_ms from request_run_requests where run_id =",
+      )
+    ) {
+      const runId = expectParam<number>(params, 0);
+      const row = requestRunRequests.find((item) => item.run_id === runId);
+      const rows = row ? castRows<TRow>([row]) : [];
+      return { rows, rowCount: rows.length };
+    }
+
+    if (
+      normalized.startsWith(
+        "select run_id, status_code, headers_json, body_text, body_base64, size_bytes, truncated from request_run_responses where run_id =",
+      )
+    ) {
+      const runId = expectParam<number>(params, 0);
+      const row = requestRunResponses.find((item) => item.run_id === runId);
+      const rows = row ? castRows<TRow>([row]) : [];
+      return { rows, rowCount: rows.length };
+    }
+
+    if (
+      normalized.startsWith("delete from request_run_responses where run_id =")
+    ) {
+      const runId = expectParam<number>(params, 0);
+      const before = requestRunResponses.length;
+      requestRunResponses = requestRunResponses.filter(
+        (item) => item.run_id !== runId,
+      );
+      return {
+        rows: [] as TRow[],
+        rowCount: before - requestRunResponses.length,
+      };
+    }
+
+    if (normalized.startsWith("insert into request_run_responses")) {
+      const now = new Date();
+      const row: RequestRunResponseRow = {
+        id: requestRunResponseId++,
+        run_id: expectParam<number>(params, 0),
+        status_code: expectParam<number>(params, 1),
+        headers_json: expectParam<string>(params, 2),
+        body_text: expectParam<string | null>(params, 3),
+        body_base64: expectParam<string | null>(params, 4),
+        size_bytes: expectParam<number>(params, 5),
+        truncated: expectParam<boolean>(params, 6),
+        created_at: now,
+      };
+      requestRunResponses = requestRunResponses.filter(
+        (item) => item.run_id !== row.run_id,
+      );
+      requestRunResponses.push(row);
+      return { rows: [] as TRow[], rowCount: 1 };
+    }
+
+    if (normalized.startsWith("update request_runs set status = 'completed'")) {
+      const id = expectParam<number>(params, 0);
+      const row = requestRuns.find((item) => item.id === id);
+
+      if (row) {
+        row.status = "completed";
+        row.completed_at = new Date();
+        row.duration_ms = Math.max(
+          0,
+          row.completed_at.getTime() -
+            (row.started_at?.getTime() ?? row.created_at.getTime()),
+        );
+      }
+
+      return { rows: [] as TRow[], rowCount: row ? 1 : 0 };
+    }
+
+    if (
+      normalized.startsWith("update request_runs set status = 'failed'") ||
+      normalized.startsWith("update request_runs set status = 'cancelled'")
+    ) {
+      const id = expectParam<number>(params, 0);
+      const code = expectParam<string>(params, 1);
+      const message = expectParam<string>(params, 2);
+      const errorJson = expectParam<string>(params, 3);
+      const row = requestRuns.find((item) => item.id === id);
+
+      if (row) {
+        row.status = normalized.includes("status = 'cancelled'")
+          ? "cancelled"
+          : "failed";
+        row.completed_at = new Date();
+        row.duration_ms = Math.max(
+          0,
+          row.completed_at.getTime() -
+            (row.started_at?.getTime() ?? row.created_at.getTime()),
+        );
+        row.error_code = code;
+        row.error_message = message;
+        row.error_json = errorJson;
+      }
+
+      return { rows: [] as TRow[], rowCount: row ? 1 : 0 };
     }
 
     if (
