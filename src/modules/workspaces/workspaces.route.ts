@@ -3,6 +3,7 @@ import { Router } from "express";
 import { requireAuth } from "../../shared/middleware/require-auth.js";
 import { collectionsRouter } from "../collections/collections.route.js";
 import { environmentsRouter } from "../environments/environments.route.js";
+import { runsRouter } from "../runs/runs.route.js";
 import { workspacesController } from "./workspaces.controller.js";
 
 export const workspacesRouter = Router();
@@ -25,3 +26,4 @@ workspacesRouter.delete(
 workspacesRouter.post("/:workspaceId/leave", workspacesController.leave);
 workspacesRouter.use("/:workspaceId/environments", environmentsRouter);
 workspacesRouter.use("/:workspaceId/collections", collectionsRouter);
+workspacesRouter.use("/:workspaceId/runs", runsRouter);
