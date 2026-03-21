@@ -5,24 +5,28 @@ This document defines a backend request runner engine for frontend clients with 
 ## TL;DR
 
 - Expose only a tiny public API: create run, get run, optional cancel.
-- Keep all execution logic behind one internal facade: `runRequest(...)`.
-- Enforce policy checks before outbound network calls.
-- Resolve variables in a deterministic order.
-- Redact secrets by default in responses and logs.
+- Keep execution logic behind one internal facade: `runRequest(...)`.
+- Drive behavior from a typed engine config file, not hardcoded defaults.
+- Enforce authz and policy checks before outbound network calls.
+- Resolve variables in deterministic order and redact secrets by default.
+- Persist normalized request/response snapshots for auditing and debugging.
 
 ## Scope
 
 ### Goals
 
-- Support both ad-hoc runs and saved collection endpoint runs.
-- Persist run metadata and normalized request/response snapshots.
-- Keep the external contract stable while allowing internal refactors.
+- Support ad-hoc runs and saved collection endpoint runs.
+- Persist run metadata plus normalized request/response snapshots.
+- Keep external contracts stable while allowing internal refactors.
+- Start synchronous in v1, with an async worker migration path in v2.
+- Keep the engine modular so policies/executors/stores can be swapped by config.
 
 ### Non-goals (v1)
 
 - No pre-request/test scripting runtime.
 - No plugin architecture.
 - No mandatory distributed queue dependency.
+- No automatic retries for non-idempotent requests.
 
 ## Public API (minimal surface)
 
@@ -84,6 +88,13 @@ Example:
 }
 ```
 
+### API behavior guarantees
+
+- `runId` is globally unique and immutable.
+- `GET /runs/:runId` is strongly consistent in sync mode.
+- `GET /runs/:runId` may be eventually consistent in async mode (worker lag).
+- For canceled runs, `status = cancelled`, `response = null`, and `error` is cancellation-specific.
+
 ## Internal Architecture (hidden by design)
 
 ### Public boundary module
@@ -110,9 +121,21 @@ Example:
 - `src/internal/runner/persistence/run-store.ts`
 - `src/internal/runner/errors/runner-errors.ts`
 
+### Engine configuration and composition
+
+- `src/internal/runner/config/engine-config.ts` (typed schema + defaults)
+- `src/internal/runner/config/engine-config-loader.ts` (file/env loader)
+- `src/internal/runner/composition/module-registry.ts` (module key -> implementation)
+- `src/internal/runner/composition/build-engine.ts` (wires modules once at boot)
+
+Suggested config file location:
+
+- `config/request-runner.config.json` (deployment-specific)
+- optional `config/request-runner.config.local.json` (developer overrides, gitignored)
+
 ### Isolation rule
 
-`runs.service.ts` can import only `src/internal/runner/index.ts`.
+`runs.service.ts` can import only `src/internal/runner/index.ts` from the internal runner package.
 
 ## Engine facade contract
 
@@ -146,6 +169,64 @@ export type ExecuteRunResult = {
 export const runRequest: (input: ExecuteRunInput) => Promise<ExecuteRunResult>;
 ```
 
+## Configuration-driven modular engine
+
+### Config contract (v1)
+
+```ts
+type RequestRunnerEngineConfig = {
+  mode: "sync" | "async";
+  execution: {
+    httpClient: "undici" | "node-fetch";
+    followRedirectsDefault: boolean;
+    maxRedirects: number;
+  };
+  limits: {
+    timeoutMsDefault: number;
+    timeoutMsMax: number;
+    maxRequestBytes: number;
+    maxResponseBytesDefault: number;
+  };
+  policy: {
+    allowHttp: boolean;
+    allowHttps: boolean;
+    blockLocalhost: boolean;
+    blockPrivateCidrs: string[];
+    domainAllowlist: string[];
+  };
+  redaction: {
+    token: string;
+    secretHeaderKeys: string[];
+    secretQueryKeyPatterns: string[];
+  };
+  persistence: {
+    retentionDays: number;
+    persistBinaryBodies: boolean;
+  };
+  modules: {
+    runStore: "postgres";
+    networkPolicy: "default";
+    limitsPolicy: "default";
+    redactionPolicy: "default";
+  };
+};
+```
+
+### Boot sequence
+
+1. Load config from file, then apply env overrides.
+2. Validate config against typed schema.
+3. Resolve module implementations via registry keys.
+4. Build single engine instance and inject into `runs.service.ts`.
+5. Fail fast on invalid config or unknown module keys.
+
+### Modularity rules
+
+- `runner-engine.ts` depends only on interfaces, never concrete implementations.
+- Concrete modules are selected in `build-engine.ts` from config keys.
+- Modules are stateless where possible; shared resources are singleton-scoped.
+- New modules are additive: implement interface, register key, update config schema.
+
 ## Execution pipeline
 
 1. Validate input schema.
@@ -160,6 +241,66 @@ export const runRequest: (input: ExecuteRunInput) => Promise<ExecuteRunResult>;
 10. Redact sensitive values.
 11. Persist final state (`completed` or `failed`).
 12. Return projected API-safe result.
+
+### Pseudocode (orchestrator)
+
+```ts
+export async function runRequest(
+  input: ExecuteRunInput,
+): Promise<ExecuteRunResult> {
+  const now = new Date();
+  const validated = validateExecuteRunInput(input);
+  await authorizeOrThrow(
+    validated.workspaceId,
+    validated.initiatedByUserId,
+    validated.source,
+  );
+
+  const sourceDraft = await buildSourceRequest(validated);
+  const variableContext = await buildVariableContext(validated);
+  const resolvedDraft = resolveVariables(sourceDraft, variableContext);
+  const authResolvedDraft = resolveAuth(resolvedDraft, variableContext);
+
+  applyLimitsPolicyOrThrow(authResolvedDraft, validated.options);
+  await applyNetworkPolicyOrThrow(authResolvedDraft.url);
+
+  const run = await runStore.createRunning({
+    input: validated,
+    requestSnapshot: redactRequest(authResolvedDraft),
+    startedAt: now,
+  });
+
+  try {
+    const rawResponse = await httpClient.execute(
+      authResolvedDraft,
+      validated.options,
+    );
+    const normalized = normalizeResponse(rawResponse, validated.options);
+    const redacted = redactResponse(normalized);
+    return await runStore.completeSuccess(run.id, redacted);
+  } catch (err) {
+    const mapped = mapToRunnerPublicError(err);
+    return await runStore.completeFailure(run.id, mapped);
+  }
+}
+```
+
+### Pseudocode (boot-time composition)
+
+```ts
+const rawConfig = loadEngineConfigFile("config/request-runner.config.json");
+const config = validateEngineConfig(applyEnvOverrides(rawConfig));
+
+const modules = {
+  runStore: moduleRegistry.runStore[config.modules.runStore],
+  networkPolicy: moduleRegistry.networkPolicy[config.modules.networkPolicy],
+  limitsPolicy: moduleRegistry.limitsPolicy[config.modules.limitsPolicy],
+  redactionPolicy:
+    moduleRegistry.redactionPolicy[config.modules.redactionPolicy],
+};
+
+export const requestRunnerEngine = buildEngine({ config, modules });
+```
 
 ## Variable resolution
 
@@ -181,26 +322,36 @@ Precedence (highest first):
 
 v1 behavior for unresolved variables: keep literal `{{missing}}` unchanged.
 
+### Determinism rules
+
+- Variable lookup is case-sensitive.
+- Last-write-wins inside each source list (`variableOverrides`, environment variables).
+- Resolver is pure: no network IO, no randomness, no time-based values.
+
 ## Security defaults
 
 ### Network policy
 
-- Allowed protocols: `http`, `https`
-- Blocked by default: localhost and private ranges (`127.0.0.0/8`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `::1`, `fc00::/7`)
-- DNS must be resolved and checked before connecting
-- Optional allowlist for trusted internal domains
+- Allowed protocols: `http`, `https`.
+- Blocked by default: localhost and private ranges (`127.0.0.0/8`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `::1`, `fc00::/7`).
+- DNS must be resolved and checked before connecting.
+- Follow-up DNS revalidation recommended on redirect hops.
+- Optional allowlist for trusted internal domains.
 
 ### Limits policy
 
-- `timeoutMs`: default 10s, max 60s
-- response body cap: default 1MB (`truncated = true` when clipped)
-- request body size cap enforced
+- `timeoutMs`: default and max are read from config.
+- response body cap default is read from config (`truncated = true` when clipped).
+- request body size cap enforced before dispatch.
+- max redirect hops is read from config when `followRedirects = true`.
 
 ### Redaction policy
 
-- `isSecret = true` values are masked in API response and logs
-- redaction token: `***`
-- secrets may exist in process memory only during execution
+- `isSecret = true` values are masked in API response and logs.
+- header keys matching `authorization`, `proxy-authorization`, `x-api-key`, `cookie`, `set-cookie` are masked.
+- query keys containing `token`, `secret`, `key`, `password` are masked.
+- redaction token: `***`.
+- secrets may exist in process memory only during execution.
 
 ## Error model
 
@@ -216,6 +367,7 @@ type RunnerPublicError = {
     | "RUN_TIMEOUT"
     | "RUN_NETWORK_ERROR"
     | "RUN_RESPONSE_TOO_LARGE"
+    | "RUN_CANCELLED"
     | "RUN_INTERNAL_ERROR";
   message: string;
   details?: Record<string, unknown>;
@@ -232,65 +384,88 @@ Suggested HTTP mapping:
 | Policy blocked           | `422` |
 | Timeout                  | `408` |
 | Network upstream failure | `502` |
+| Cancelled                | `409` |
 | Internal error           | `500` |
 
 ## Persistence model
 
 ### `request_runs`
 
-- `id`
-- `workspace_id` (FK `workspaces`)
-- `initiated_by_user_id` (FK `auth_users`)
-- `source_type` (`adhoc` | `collection_endpoint`)
-- `source_collection_id` nullable
-- `source_endpoint_id` nullable
-- `status` (`queued` | `running` | `completed` | `failed` | `cancelled`)
-- `started_at`, `completed_at`, `duration_ms`
-- `error_code`, `error_message`, `error_json` nullable
-- `created_at`
+- `id` bigint primary key
+- `workspace_id` bigint not null (FK `workspaces`)
+- `initiated_by_user_id` bigint not null (FK `auth_users`)
+- `source_type` text not null (`adhoc` | `collection_endpoint`)
+- `source_collection_id` bigint null
+- `source_endpoint_id` bigint null
+- `status` text not null (`queued` | `running` | `completed` | `failed` | `cancelled`)
+- `started_at` timestamptz null
+- `completed_at` timestamptz null
+- `duration_ms` integer null
+- `error_code` text null
+- `error_message` text null
+- `error_json` jsonb null
+- `created_at` timestamptz not null default now()
 
 ### `request_run_requests`
 
-- `id`
-- `run_id` (FK `request_runs`, unique)
-- `method`, `url`
-- `headers_json`, `query_params_json`
-- `body_text` nullable
-- `auth_json` nullable (must be redacted)
-- `resolved_variables_json`
-- `timeout_ms`
-- `created_at`
+- `id` bigint primary key
+- `run_id` bigint not null unique (FK `request_runs`)
+- `method` text not null
+- `url` text not null
+- `headers_json` jsonb not null
+- `query_params_json` jsonb not null
+- `body_text` text null
+- `auth_json` jsonb null (must be redacted)
+- `resolved_variables_json` jsonb not null
+- `timeout_ms` integer not null
+- `created_at` timestamptz not null default now()
 
 ### `request_run_responses`
 
-- `id`
-- `run_id` (FK `request_runs`, unique)
-- `status_code`
-- `headers_json`
-- `body_text` nullable
-- `body_base64` nullable (for binary responses)
-- `size_bytes`
-- `truncated` boolean
-- `created_at`
+- `id` bigint primary key
+- `run_id` bigint not null unique (FK `request_runs`)
+- `status_code` integer not null
+- `headers_json` jsonb not null
+- `body_text` text null
+- `body_base64` text null (for binary responses)
+- `size_bytes` integer not null
+- `truncated` boolean not null default false
+- `created_at` timestamptz not null default now()
 
 ### Recommended indexes
 
 - `request_runs(workspace_id, created_at desc)`
 - `request_runs(workspace_id, status, created_at desc)`
+- `request_runs(initiated_by_user_id, created_at desc)`
+
+### Write ordering constraints
+
+- Insert `request_runs` row first (`running` for sync mode, `queued` for async mode).
+- Insert `request_run_requests` exactly once per run.
+- Upsert `request_run_responses` only for `completed` and response-bearing `failed` cases.
+- Final status update on `request_runs` must set `completed_at` and `duration_ms` atomically.
 
 ## Concurrency plan
 
 ### v1: synchronous
 
-- Run executes in request lifecycle
-- API returns final result directly
+- Run executes in request lifecycle.
+- API returns final result directly.
+- `cancel` endpoint may return `409` (`cannot cancel synchronous run`).
 
 ### v2: asynchronous worker
 
-- API creates `queued` run
-- Worker transitions `queued -> running -> completed|failed|cancelled`
-- API returns status and final snapshots
-- Cancel endpoint becomes active
+- API creates `queued` run.
+- Worker transitions `queued -> running -> completed|failed|cancelled`.
+- API returns status and final snapshots.
+- Cancel endpoint sets cancellation intent; worker cooperates at safe checkpoints.
+
+### State machine invariants
+
+- Terminal states: `completed`, `failed`, `cancelled`.
+- Terminal states are immutable.
+- `duration_ms` is non-null only for terminal states.
+- Exactly one of `response` or `error` is present for terminal non-cancelled runs.
 
 ## Observability
 
@@ -299,6 +474,7 @@ Structured run logs should include:
 - `run_id`, `workspace_id`, `user_id`, `source_type`
 - `target_host`, `method`, `status`, `duration_ms`
 - policy deny/allow markers
+- error code and class when failed
 - no plaintext secrets
 
 Future metrics:
@@ -311,28 +487,32 @@ Future metrics:
 
 ## Testing plan
 
-Unit:
+### Unit
 
-- variable interpolation + precedence
-- policy matrix (allow/deny)
-- redaction masking
-- truncation behavior
+- variable interpolation, precedence, and unresolved passthrough behavior
+- policy matrix (allow/deny by scheme, host, and CIDR)
+- redaction masking (headers, query, auth fields)
+- truncation behavior for text and binary responses
+- error mapping from internal exceptions to `RunnerPublicError`
 
-Service:
+### Service
 
-- authz rules
-- source loading behavior
-- error mapping
+- authz rules by workspace role
+- source loading behavior for `adhoc` and `collectionEndpoint`
+- request persistence and terminal state transitions
+- API response projection excludes internal-only details
 
-Integration:
+### Integration
 
 - `POST /runs` and `GET /runs/:runId`
 - blocked-policy scenarios
 - timeout scenarios
+- binary response handling and body capping
 
-E2E:
+### E2E
 
 - auth + workspace + environments + collections + runs full path
+- cancellation flow in async mode
 
 ## Delivery milestones
 
@@ -361,14 +541,33 @@ E2E:
 - status transitions
 - cancel endpoint
 
+## Default decisions for implementation (v1)
+
+- unresolved variables **pass through unchanged** (`{{missing}}`).
+- workspace roles allowed to execute runs: `owner`, `admin`, `member`; `viewer` denied.
+- config file is required at boot, with defaults generated by `engine-config.ts`.
+- initial default response size cap in defaults file: `1MB` (`1048576` bytes).
+- binary response persistence: allowed up to cap, retained with same policy as run rows.
+- retention for run records: `30 days` default, configurable per deployment.
+
 ## Open decisions
 
-- Should unresolved variables fail or pass through by default?
-- Should workspace `member` role be allowed to execute runs?
-- What is the default response size cap for v1?
-- Should binary bodies be persisted, and with what retention?
-- What retention policy should apply to `request_runs`?
+- Should unresolved variables be configurable per workspace (strict vs passthrough)?
+- Should cancellation map to `409` or `499` in API semantics?
+- Should retention be workspace-tier dependent?
+
+## Implementation checklist
+
+- Define `runs.schema.ts` with strict union validation and option bounds.
+- Add `runRequest` facade and enforce import boundary from `runs.service.ts`.
+- Add config schema + loader + env overrides for `request-runner.config.json`.
+- Add module registry and boot-time composition (`build-engine.ts`).
+- Implement planner (`build source -> resolve vars -> resolve auth`) as pure functions.
+- Add policy modules and central error translation.
+- Add persistence adapters and state transition guards.
+- Add tests for config validation and unknown-module startup failure.
+- Add integration tests for policy blocks, timeouts, and redaction.
 
 ## Summary
 
-The design keeps API exposure intentionally small while putting all operational complexity inside an internal runner engine. This supports secure execution, stable frontend contracts, and future scalability without leaking internal mechanics.
+The design keeps API exposure intentionally small while moving operational complexity into an internal runner engine. This version adds implementation-level defaults, state invariants, and execution contracts so teams can ship v1 quickly and migrate to async mode without breaking frontend behavior.
