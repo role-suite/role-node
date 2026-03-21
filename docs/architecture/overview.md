@@ -10,7 +10,7 @@ This project uses a feature-first module layout with clear per-module layers.
 - `repo`: persistence and data access logic.
 - `schema`: Zod schemas for runtime validation and type inference.
 
-Current example modules: `src/modules/auth` and `src/modules/workspaces`.
+Current example modules: `src/modules/auth`, `src/modules/workspaces`, `src/modules/collections`, and `src/modules/environments`.
 
 ## Runtime flow
 
