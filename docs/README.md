@@ -5,6 +5,7 @@ This folder is organized by concern.
 ## Architecture
 
 - `docs/architecture/overview.md`: Application layers, runtime flow, and shared infrastructure.
+- `docs/architecture/request-runner-engine.md`: Internal-first request runner engine design and implementation plan.
 
 ## Guides
 
@@ -17,3 +18,4 @@ This folder is organized by concern.
 - `docs/modules/auth.md`: Full auth module design, API behavior, and testing strategy.
 - `docs/modules/workspaces.md`: Workspace listing and creation flows.
 - `docs/modules/collections.md`: Workspace-scoped API collections CRUD.
+- `docs/modules/environments.md`: Workspace-scoped environments and variables CRUD.

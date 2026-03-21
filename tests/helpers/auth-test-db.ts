@@ -66,6 +66,28 @@ type CollectionEndpointRow = {
   updated_at: Date;
 };
 
+type EnvironmentRow = {
+  id: number;
+  workspace_id: number;
+  name: string;
+  created_by_user_id: number;
+  created_at: Date;
+  updated_at: Date;
+};
+
+type EnvironmentVariableRow = {
+  id: number;
+  environment_id: number;
+  key_name: string;
+  value_text: string;
+  enabled: boolean;
+  is_secret: boolean;
+  position: number;
+  created_by_user_id: number;
+  created_at: Date;
+  updated_at: Date;
+};
+
 const normalizeSql = (sql: string): string => {
   return sql.replace(/\s+/g, " ").trim().toLowerCase();
 };
@@ -96,8 +118,12 @@ export const createAuthTestDb = (): DatabaseClient => {
   let sessions: SessionRow[] = [];
   let collections: CollectionRow[] = [];
   let collectionEndpoints: CollectionEndpointRow[] = [];
+  let environments: EnvironmentRow[] = [];
+  let environmentVariables: EnvironmentVariableRow[] = [];
   let collectionId = 1;
   let collectionEndpointId = 1;
+  let environmentId = 1;
+  let environmentVariableId = 1;
 
   const query = async <TRow extends QueryRow = QueryRow>(
     sql: string,
@@ -116,12 +142,16 @@ export const createAuthTestDb = (): DatabaseClient => {
       sessions = [];
       collections = [];
       collectionEndpoints = [];
+      environments = [];
+      environmentVariables = [];
       userId = 1;
       workspaceId = 1;
       membershipId = 1;
       sessionId = 1;
       collectionId = 1;
       collectionEndpointId = 1;
+      environmentId = 1;
+      environmentVariableId = 1;
       return { rows: [] as TRow[], rowCount: 0 };
     }
 
@@ -434,6 +464,173 @@ export const createAuthTestDb = (): DatabaseClient => {
       return {
         rows: [] as TRow[],
         rowCount: before - collectionEndpoints.length,
+      };
+    }
+
+    if (
+      normalized.startsWith("insert into environments") &&
+      normalized.includes("returning")
+    ) {
+      const now = new Date();
+      const row: EnvironmentRow = {
+        id: environmentId++,
+        workspace_id: expectParam<number>(params, 0),
+        name: expectParam<string>(params, 1),
+        created_by_user_id: expectParam<number>(params, 2),
+        created_at: now,
+        updated_at: now,
+      };
+      environments.push(row);
+      return { rows: castRows<TRow>([row]), rowCount: 1 };
+    }
+
+    if (
+      normalized.startsWith(
+        "select id, workspace_id, name, created_by_user_id, created_at, updated_at from environments where workspace_id =",
+      ) &&
+      normalized.includes("and name =")
+    ) {
+      const workspace = expectParam<number>(params, 0);
+      const name = expectParam<string>(params, 1);
+      const row = environments.find(
+        (item) => item.workspace_id === workspace && item.name === name,
+      );
+      const rows = row ? castRows<TRow>([row]) : [];
+      return { rows, rowCount: rows.length };
+    }
+
+    if (
+      normalized.startsWith(
+        "select id, workspace_id, name, created_by_user_id, created_at, updated_at from environments where workspace_id =",
+      )
+    ) {
+      const workspace = expectParam<number>(params, 0);
+      const rows = environments
+        .filter((item) => item.workspace_id === workspace)
+        .sort((a, b) => a.id - b.id);
+      return { rows: castRows<TRow>(rows), rowCount: rows.length };
+    }
+
+    if (
+      normalized.startsWith(
+        "select id, workspace_id, name, created_by_user_id, created_at, updated_at from environments where id =",
+      )
+    ) {
+      const id = expectParam<number>(params, 0);
+      const row = environments.find((item) => item.id === id);
+      const rows = row ? castRows<TRow>([row]) : [];
+      return { rows, rowCount: rows.length };
+    }
+
+    if (normalized.startsWith("update environments set name =")) {
+      const row = environments.find(
+        (item) => item.id === expectParam<number>(params, 0),
+      );
+
+      if (row) {
+        row.name = expectParam<string>(params, 1);
+        row.updated_at = new Date();
+      }
+
+      return { rows: [] as TRow[], rowCount: row ? 1 : 0 };
+    }
+
+    if (normalized.startsWith("delete from environments where id =")) {
+      const id = expectParam<number>(params, 0);
+      const before = environments.length;
+      environments = environments.filter((item) => item.id !== id);
+      environmentVariables = environmentVariables.filter(
+        (item) => item.environment_id !== id,
+      );
+      return { rows: [] as TRow[], rowCount: before - environments.length };
+    }
+
+    if (
+      normalized.startsWith("insert into environment_variables") &&
+      normalized.includes("returning")
+    ) {
+      const now = new Date();
+      const row: EnvironmentVariableRow = {
+        id: environmentVariableId++,
+        environment_id: expectParam<number>(params, 0),
+        key_name: expectParam<string>(params, 1),
+        value_text: expectParam<string>(params, 2),
+        enabled: expectParam<boolean>(params, 3),
+        is_secret: expectParam<boolean>(params, 4),
+        position: expectParam<number>(params, 5),
+        created_by_user_id: expectParam<number>(params, 6),
+        created_at: now,
+        updated_at: now,
+      };
+      environmentVariables.push(row);
+      return { rows: castRows<TRow>([row]), rowCount: 1 };
+    }
+
+    if (
+      normalized.startsWith(
+        "select id, environment_id, key_name, value_text, enabled, is_secret, position, created_by_user_id, created_at, updated_at from environment_variables where environment_id =",
+      ) &&
+      normalized.includes("and key_name =")
+    ) {
+      const environment = expectParam<number>(params, 0);
+      const keyName = expectParam<string>(params, 1);
+      const row = environmentVariables.find(
+        (item) =>
+          item.environment_id === environment && item.key_name === keyName,
+      );
+      const rows = row ? castRows<TRow>([row]) : [];
+      return { rows, rowCount: rows.length };
+    }
+
+    if (
+      normalized.startsWith(
+        "select id, environment_id, key_name, value_text, enabled, is_secret, position, created_by_user_id, created_at, updated_at from environment_variables where environment_id =",
+      )
+    ) {
+      const environment = expectParam<number>(params, 0);
+      const rows = environmentVariables
+        .filter((item) => item.environment_id === environment)
+        .sort((a, b) => a.position - b.position || a.id - b.id);
+      return { rows: castRows<TRow>(rows), rowCount: rows.length };
+    }
+
+    if (
+      normalized.startsWith(
+        "select id, environment_id, key_name, value_text, enabled, is_secret, position, created_by_user_id, created_at, updated_at from environment_variables where id =",
+      )
+    ) {
+      const id = expectParam<number>(params, 0);
+      const row = environmentVariables.find((item) => item.id === id);
+      const rows = row ? castRows<TRow>([row]) : [];
+      return { rows, rowCount: rows.length };
+    }
+
+    if (normalized.startsWith("update environment_variables set key_name =")) {
+      const row = environmentVariables.find(
+        (item) => item.id === expectParam<number>(params, 0),
+      );
+
+      if (row) {
+        row.key_name = expectParam<string>(params, 1);
+        row.value_text = expectParam<string>(params, 2);
+        row.enabled = expectParam<boolean>(params, 3);
+        row.is_secret = expectParam<boolean>(params, 4);
+        row.position = expectParam<number>(params, 5);
+        row.updated_at = new Date();
+      }
+
+      return { rows: [] as TRow[], rowCount: row ? 1 : 0 };
+    }
+
+    if (normalized.startsWith("delete from environment_variables where id =")) {
+      const id = expectParam<number>(params, 0);
+      const before = environmentVariables.length;
+      environmentVariables = environmentVariables.filter(
+        (item) => item.id !== id,
+      );
+      return {
+        rows: [] as TRow[],
+        rowCount: before - environmentVariables.length,
       };
     }
 
