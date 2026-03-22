@@ -244,6 +244,9 @@ See:
 - `docs/README.md`
 - `docs/architecture/overview.md`
 - `docs/guides/development.md`
+- `docs/guides/user-manual.md`
+- `docs/guides/developer-manual.md`
+- `docs/guides/implementation-manual.md`
 - `docs/guides/module-template.md`
 - `docs/modules/auth.md`
 - `docs/modules/workspaces.md`

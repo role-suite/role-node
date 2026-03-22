@@ -12,6 +12,10 @@ This folder is organized by concern.
 - `docs/guides/development.md`: Day-to-day development workflow.
 - `docs/guides/module-template.md`: Module generator usage and post-generation checklist.
 - `docs/guides/module-readiness.md`: Definition of done and readiness criteria.
+- `docs/guides/user-manual.md`: End-user/API-consumer quickstart.
+- `docs/guides/user-reference-manual.md`: Full API user reference with payload examples.
+- `docs/guides/developer-manual.md`: Contributor-focused architecture and development manual.
+- `docs/guides/implementation-manual.md`: Step-by-step implementation playbooks and checklists.
 
 ## Modules
 
