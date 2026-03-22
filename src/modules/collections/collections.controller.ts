@@ -3,12 +3,18 @@ import type { Request, Response } from "express";
 import { appResponse } from "../../shared/app-response.js";
 
 import {
+  createCollectionEndpointExampleSchema,
   createCollectionEndpointSchema,
+  createCollectionFolderSchema,
   createCollectionSchema,
+  updateCollectionEndpointExampleSchema,
   updateCollectionSchema,
   updateCollectionEndpointSchema,
+  updateCollectionFolderSchema,
   workspaceCollectionByIdParamsSchema,
+  workspaceCollectionEndpointExampleByIdParamsSchema,
   workspaceCollectionEndpointByIdParamsSchema,
+  workspaceCollectionFolderByIdParamsSchema,
   workspaceCollectionParamsSchema,
 } from "./collections.schema.js";
 import { collectionsService } from "./collections.service.js";
@@ -145,6 +151,118 @@ export const collectionsController = {
       workspaceId,
       collectionId,
       endpointId,
+    );
+    appResponse.sendSuccess(res, 200, { deleted: true });
+  },
+
+  async listFolders(req: Request, res: Response): Promise<void> {
+    const auth = requireAuthContext(req);
+    const { workspaceId, collectionId } =
+      workspaceCollectionByIdParamsSchema.parse(req.params);
+    const result = await collectionsService.listFoldersForCollection(
+      auth.userId,
+      workspaceId,
+      collectionId,
+    );
+    appResponse.sendSuccess(res, 200, result);
+  },
+
+  async createFolder(req: Request, res: Response): Promise<void> {
+    const auth = requireAuthContext(req);
+    const { workspaceId, collectionId } =
+      workspaceCollectionByIdParamsSchema.parse(req.params);
+    const payload = createCollectionFolderSchema.parse(req.body);
+    const result = await collectionsService.createFolderForCollection(
+      auth.userId,
+      workspaceId,
+      collectionId,
+      payload,
+    );
+    appResponse.sendSuccess(res, 201, result);
+  },
+
+  async updateFolder(req: Request, res: Response): Promise<void> {
+    const auth = requireAuthContext(req);
+    const { workspaceId, collectionId, folderId } =
+      workspaceCollectionFolderByIdParamsSchema.parse(req.params);
+    const payload = updateCollectionFolderSchema.parse(req.body);
+    const result = await collectionsService.updateFolderForCollection(
+      auth.userId,
+      workspaceId,
+      collectionId,
+      folderId,
+      payload,
+    );
+    appResponse.sendSuccess(res, 200, result);
+  },
+
+  async removeFolder(req: Request, res: Response): Promise<void> {
+    const auth = requireAuthContext(req);
+    const { workspaceId, collectionId, folderId } =
+      workspaceCollectionFolderByIdParamsSchema.parse(req.params);
+    await collectionsService.deleteFolderForCollection(
+      auth.userId,
+      workspaceId,
+      collectionId,
+      folderId,
+    );
+    appResponse.sendSuccess(res, 200, { deleted: true });
+  },
+
+  async listEndpointExamples(req: Request, res: Response): Promise<void> {
+    const auth = requireAuthContext(req);
+    const { workspaceId, collectionId, endpointId } =
+      workspaceCollectionEndpointByIdParamsSchema.parse(req.params);
+    const result = await collectionsService.listExamplesForEndpoint(
+      auth.userId,
+      workspaceId,
+      collectionId,
+      endpointId,
+    );
+    appResponse.sendSuccess(res, 200, result);
+  },
+
+  async createEndpointExample(req: Request, res: Response): Promise<void> {
+    const auth = requireAuthContext(req);
+    const { workspaceId, collectionId, endpointId } =
+      workspaceCollectionEndpointByIdParamsSchema.parse(req.params);
+    const payload = createCollectionEndpointExampleSchema.parse(req.body);
+    const result = await collectionsService.createExampleForEndpoint(
+      auth.userId,
+      workspaceId,
+      collectionId,
+      endpointId,
+      payload,
+    );
+    appResponse.sendSuccess(res, 201, result);
+  },
+
+  async updateEndpointExample(req: Request, res: Response): Promise<void> {
+    const auth = requireAuthContext(req);
+    const { workspaceId, collectionId, endpointId, exampleId } =
+      workspaceCollectionEndpointExampleByIdParamsSchema.parse(req.params);
+    const payload = updateCollectionEndpointExampleSchema.parse(req.body);
+    const result = await collectionsService.updateExampleForEndpoint(
+      auth.userId,
+      workspaceId,
+      collectionId,
+      endpointId,
+      exampleId,
+      payload,
+    );
+    appResponse.sendSuccess(res, 200, result);
+  },
+
+  async removeEndpointExample(req: Request, res: Response): Promise<void> {
+    const auth = requireAuthContext(req);
+    const { workspaceId, collectionId, endpointId, exampleId } =
+      workspaceCollectionEndpointExampleByIdParamsSchema.parse(req.params);
+    await collectionsService.deleteExampleForEndpoint(
+      auth.userId,
+      workspaceId,
+      collectionId,
+      endpointId,
+      exampleId,
     );
     appResponse.sendSuccess(res, 200, { deleted: true });
   },

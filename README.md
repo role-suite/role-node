@@ -195,6 +195,14 @@ Response:
 - `POST /api/workspaces/:workspaceId/collections/:collectionId/endpoints`
 - `PATCH /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
 - `DELETE /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
+- `GET /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples`
+- `POST /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples`
+- `PATCH /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples/:exampleId`
+- `DELETE /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples/:exampleId`
+- `GET /api/workspaces/:workspaceId/collections/:collectionId/folders`
+- `POST /api/workspaces/:workspaceId/collections/:collectionId/folders`
+- `PATCH /api/workspaces/:workspaceId/collections/:collectionId/folders/:folderId`
+- `DELETE /api/workspaces/:workspaceId/collections/:collectionId/folders/:folderId`
 
 ### Environments
 

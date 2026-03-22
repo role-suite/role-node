@@ -5,11 +5,17 @@ import {
   collectionsRepo,
   type Collection,
   type CollectionEndpoint,
+  type CollectionEndpointExample,
+  type CollectionFolder,
 } from "./collections.repo.js";
 import type {
+  CreateCollectionEndpointExampleInput,
   CreateCollectionEndpointInput,
+  CreateCollectionFolderInput,
   CreateCollectionInput,
+  UpdateCollectionEndpointExampleInput,
   UpdateCollectionEndpointInput,
+  UpdateCollectionFolderInput,
   UpdateCollectionInput,
 } from "./collections.schema.js";
 
@@ -31,10 +37,44 @@ type EndpointKeyValue = {
   enabled?: boolean;
 };
 
-type EndpointBody = {
-  contentType?: string;
-  raw?: string;
-};
+type EndpointBody =
+  | {
+      mode: "raw";
+      contentType?: string;
+      raw: string;
+    }
+  | {
+      mode: "urlencoded";
+      entries: EndpointKeyValue[];
+    }
+  | {
+      mode: "formdata";
+      entries: Array<
+        | {
+            type: "text";
+            key: string;
+            value: string;
+            enabled?: boolean;
+          }
+        | {
+            type: "file";
+            key: string;
+            fileName: string;
+            contentType?: string;
+            dataBase64: string;
+            enabled?: boolean;
+          }
+      >;
+    }
+  | {
+      mode: "binary";
+      fileName: string;
+      contentType?: string;
+      dataBase64: string;
+    }
+  | {
+      mode: "none";
+    };
 
 type EndpointAuth =
   | { type: "none" }
@@ -44,6 +84,7 @@ type EndpointAuth =
 type CollectionEndpointResponse = {
   id: number;
   collectionId: number;
+  folderId: number | null;
   name: string;
   method: CollectionEndpoint["method"];
   url: string;
@@ -51,6 +92,30 @@ type CollectionEndpointResponse = {
   queryParams: EndpointKeyValue[];
   body: EndpointBody | null;
   auth: EndpointAuth | null;
+  position: number;
+  createdByUserId: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type CollectionFolderResponse = {
+  id: number;
+  collectionId: number;
+  parentFolderId: number | null;
+  name: string;
+  position: number;
+  createdByUserId: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type CollectionEndpointExampleResponse = {
+  id: number;
+  endpointId: number;
+  name: string;
+  statusCode: number;
+  headers: EndpointKeyValue[];
+  body: string | null;
   position: number;
   createdByUserId: number;
   createdAt: Date;
@@ -85,23 +150,76 @@ const mapCollection = (collection: Collection): CollectionResponse => {
   };
 };
 
+const parseEndpointBodyValue = (value: string | null): EndpointBody | null => {
+  const parsed = parseJson<
+    EndpointBody | { contentType?: string; raw?: string } | null
+  >(value, null);
+
+  if (!parsed) {
+    return null;
+  }
+
+  if (typeof parsed === "object" && "mode" in parsed) {
+    return parsed as EndpointBody;
+  }
+
+  return {
+    mode: "raw",
+    raw: parsed.raw ?? "",
+    ...(parsed.contentType !== undefined
+      ? { contentType: parsed.contentType }
+      : {}),
+  };
+};
+
 const mapEndpoint = (
   endpoint: CollectionEndpoint,
 ): CollectionEndpointResponse => {
   return {
     id: endpoint.id,
     collectionId: endpoint.collectionId,
+    folderId: endpoint.folderId,
     name: endpoint.name,
     method: endpoint.method,
     url: endpoint.url,
     headers: parseJson<EndpointKeyValue[]>(endpoint.headers, []),
     queryParams: parseJson<EndpointKeyValue[]>(endpoint.queryParams, []),
-    body: parseJson<EndpointBody | null>(endpoint.body, null),
+    body: parseEndpointBodyValue(endpoint.body),
     auth: parseJson<EndpointAuth | null>(endpoint.auth, null),
     position: endpoint.position,
     createdByUserId: endpoint.createdByUserId,
     createdAt: endpoint.createdAt,
     updatedAt: endpoint.updatedAt,
+  };
+};
+
+const mapFolder = (folder: CollectionFolder): CollectionFolderResponse => {
+  return {
+    id: folder.id,
+    collectionId: folder.collectionId,
+    parentFolderId: folder.parentFolderId,
+    name: folder.name,
+    position: folder.position,
+    createdByUserId: folder.createdByUserId,
+    createdAt: folder.createdAt,
+    updatedAt: folder.updatedAt,
+  };
+};
+
+const mapExample = (
+  example: CollectionEndpointExample,
+): CollectionEndpointExampleResponse => {
+  return {
+    id: example.id,
+    endpointId: example.endpointId,
+    name: example.name,
+    statusCode: example.statusCode,
+    headers: parseJson<EndpointKeyValue[]>(example.headers, []),
+    body: example.body,
+    position: example.position,
+    createdByUserId: example.createdByUserId,
+    createdAt: example.createdAt,
+    updatedAt: example.updatedAt,
   };
 };
 
@@ -154,6 +272,35 @@ const requireCollectionInWorkspace = async (
   }
 
   return collection;
+};
+
+const requireFolderInCollection = async (
+  collectionId: number,
+  folderId: number,
+): Promise<CollectionFolder> => {
+  const folder = await collectionsRepo.findFolderById(folderId);
+
+  if (!folder || folder.collectionId !== collectionId) {
+    throw appResponse.withStatus(404, "Collection folder not found");
+  }
+
+  return folder;
+};
+
+const validateParentFolderReference = async (
+  collectionId: number,
+  parentFolderId: number | null,
+  currentFolderId?: number,
+): Promise<void> => {
+  if (parentFolderId === null) {
+    return;
+  }
+
+  const parent = await requireFolderInCollection(collectionId, parentFolderId);
+
+  if (currentFolderId !== undefined && parent.id === currentFolderId) {
+    throw appResponse.withStatus(400, "Folder cannot be its own parent");
+  }
 };
 
 export const collectionsService = {
@@ -278,8 +425,13 @@ export const collectionsService = {
     await requireWorkspaceWriterRole(userId, workspaceId);
     await requireCollectionInWorkspace(workspaceId, collectionId);
 
+    if (payload.folderId !== undefined && payload.folderId !== null) {
+      await requireFolderInCollection(collectionId, payload.folderId);
+    }
+
     const endpoint = await collectionsRepo.createEndpoint({
       collectionId,
+      folderId: payload.folderId ?? null,
       name: payload.name,
       method: payload.method,
       url: payload.url,
@@ -320,15 +472,23 @@ export const collectionsService = {
         : payload.queryParams;
     const nextBody =
       payload.body === undefined
-        ? parseJson<EndpointBody | null>(existing.body, null)
+        ? parseEndpointBodyValue(existing.body)
         : payload.body;
     const nextAuth =
       payload.auth === undefined
         ? parseJson<EndpointAuth | null>(existing.auth, null)
         : payload.auth;
 
+    if (payload.folderId !== undefined) {
+      if (payload.folderId !== null) {
+        await requireFolderInCollection(collectionId, payload.folderId);
+      }
+    }
+
     await collectionsRepo.updateEndpoint({
       id: existing.id,
+      folderId:
+        payload.folderId === undefined ? existing.folderId : payload.folderId,
       name: payload.name ?? existing.name,
       method: payload.method ?? existing.method,
       url: payload.url ?? existing.url,
@@ -363,5 +523,212 @@ export const collectionsService = {
     }
 
     await collectionsRepo.deleteEndpointById(endpointId);
+  },
+
+  async listFoldersForCollection(
+    userId: number,
+    workspaceId: number,
+    collectionId: number,
+  ): Promise<CollectionFolderResponse[]> {
+    await requireWorkspaceMembership(userId, workspaceId);
+    await requireCollectionInWorkspace(workspaceId, collectionId);
+    const folders = await collectionsRepo.listFoldersByCollection(collectionId);
+    return folders.map(mapFolder);
+  },
+
+  async createFolderForCollection(
+    userId: number,
+    workspaceId: number,
+    collectionId: number,
+    payload: CreateCollectionFolderInput,
+  ): Promise<CollectionFolderResponse> {
+    await requireWorkspaceWriterRole(userId, workspaceId);
+    await requireCollectionInWorkspace(workspaceId, collectionId);
+    await validateParentFolderReference(
+      collectionId,
+      payload.parentFolderId ?? null,
+    );
+
+    const folder = await collectionsRepo.createFolder({
+      collectionId,
+      parentFolderId: payload.parentFolderId ?? null,
+      name: payload.name,
+      position: payload.position ?? 0,
+      createdByUserId: userId,
+    });
+
+    return mapFolder(folder);
+  },
+
+  async updateFolderForCollection(
+    userId: number,
+    workspaceId: number,
+    collectionId: number,
+    folderId: number,
+    payload: UpdateCollectionFolderInput,
+  ): Promise<CollectionFolderResponse> {
+    await requireWorkspaceWriterRole(userId, workspaceId);
+    await requireCollectionInWorkspace(workspaceId, collectionId);
+    const existing = await requireFolderInCollection(collectionId, folderId);
+
+    const nextParentFolderId =
+      payload.parentFolderId === undefined
+        ? existing.parentFolderId
+        : payload.parentFolderId;
+
+    await validateParentFolderReference(
+      collectionId,
+      nextParentFolderId,
+      existing.id,
+    );
+
+    await collectionsRepo.updateFolder({
+      id: existing.id,
+      parentFolderId: nextParentFolderId,
+      name: payload.name ?? existing.name,
+      position: payload.position ?? existing.position,
+    });
+
+    const updated = await collectionsRepo.findFolderById(existing.id);
+
+    if (!updated) {
+      throw appResponse.withStatus(404, "Collection folder not found");
+    }
+
+    return mapFolder(updated);
+  },
+
+  async deleteFolderForCollection(
+    userId: number,
+    workspaceId: number,
+    collectionId: number,
+    folderId: number,
+  ): Promise<void> {
+    await requireWorkspaceWriterRole(userId, workspaceId);
+    await requireCollectionInWorkspace(workspaceId, collectionId);
+    await requireFolderInCollection(collectionId, folderId);
+    await collectionsRepo.deleteFolderById(folderId);
+  },
+
+  async listExamplesForEndpoint(
+    userId: number,
+    workspaceId: number,
+    collectionId: number,
+    endpointId: number,
+  ): Promise<CollectionEndpointExampleResponse[]> {
+    await requireWorkspaceMembership(userId, workspaceId);
+    await requireCollectionInWorkspace(workspaceId, collectionId);
+    const endpoint = await collectionsRepo.findEndpointById(endpointId);
+
+    if (!endpoint || endpoint.collectionId !== collectionId) {
+      throw appResponse.withStatus(404, "Collection endpoint not found");
+    }
+
+    const examples = await collectionsRepo.listExamplesByEndpoint(endpointId);
+    return examples.map(mapExample);
+  },
+
+  async createExampleForEndpoint(
+    userId: number,
+    workspaceId: number,
+    collectionId: number,
+    endpointId: number,
+    payload: CreateCollectionEndpointExampleInput,
+  ): Promise<CollectionEndpointExampleResponse> {
+    await requireWorkspaceWriterRole(userId, workspaceId);
+    await requireCollectionInWorkspace(workspaceId, collectionId);
+    const endpoint = await collectionsRepo.findEndpointById(endpointId);
+
+    if (!endpoint || endpoint.collectionId !== collectionId) {
+      throw appResponse.withStatus(404, "Collection endpoint not found");
+    }
+
+    const created = await collectionsRepo.createEndpointExample({
+      endpointId,
+      name: payload.name,
+      statusCode: payload.statusCode ?? 200,
+      headers: toJson(payload.headers ?? []),
+      body: payload.body ?? null,
+      position: payload.position ?? 0,
+      createdByUserId: userId,
+    });
+
+    return mapExample(created);
+  },
+
+  async updateExampleForEndpoint(
+    userId: number,
+    workspaceId: number,
+    collectionId: number,
+    endpointId: number,
+    exampleId: number,
+    payload: UpdateCollectionEndpointExampleInput,
+  ): Promise<CollectionEndpointExampleResponse> {
+    await requireWorkspaceWriterRole(userId, workspaceId);
+    await requireCollectionInWorkspace(workspaceId, collectionId);
+    const endpoint = await collectionsRepo.findEndpointById(endpointId);
+
+    if (!endpoint || endpoint.collectionId !== collectionId) {
+      throw appResponse.withStatus(404, "Collection endpoint not found");
+    }
+
+    const existing = await collectionsRepo.findExampleById(exampleId);
+
+    if (!existing || existing.endpointId !== endpointId) {
+      throw appResponse.withStatus(
+        404,
+        "Collection endpoint example not found",
+      );
+    }
+
+    await collectionsRepo.updateExample({
+      id: existing.id,
+      name: payload.name ?? existing.name,
+      statusCode: payload.statusCode ?? existing.statusCode,
+      headers:
+        payload.headers === undefined
+          ? existing.headers
+          : toJson(payload.headers),
+      body: payload.body === undefined ? existing.body : payload.body,
+      position: payload.position ?? existing.position,
+    });
+
+    const updated = await collectionsRepo.findExampleById(exampleId);
+
+    if (!updated) {
+      throw appResponse.withStatus(
+        404,
+        "Collection endpoint example not found",
+      );
+    }
+
+    return mapExample(updated);
+  },
+
+  async deleteExampleForEndpoint(
+    userId: number,
+    workspaceId: number,
+    collectionId: number,
+    endpointId: number,
+    exampleId: number,
+  ): Promise<void> {
+    await requireWorkspaceWriterRole(userId, workspaceId);
+    await requireCollectionInWorkspace(workspaceId, collectionId);
+    const endpoint = await collectionsRepo.findEndpointById(endpointId);
+
+    if (!endpoint || endpoint.collectionId !== collectionId) {
+      throw appResponse.withStatus(404, "Collection endpoint not found");
+    }
+
+    const existing = await collectionsRepo.findExampleById(exampleId);
+
+    if (!existing || existing.endpointId !== endpointId) {
+      throw appResponse.withStatus(
+        404,
+        "Collection endpoint example not found",
+      );
+    }
+
+    await collectionsRepo.deleteExampleById(exampleId);
   },
 };

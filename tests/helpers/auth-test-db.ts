@@ -53,6 +53,7 @@ type CollectionRow = {
 type CollectionEndpointRow = {
   id: number;
   collection_id: number;
+  folder_id: number | null;
   name: string;
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD" | "OPTIONS";
   url: string;
@@ -673,15 +674,16 @@ export const createAuthTestDb = (): DatabaseClient => {
       const row: CollectionEndpointRow = {
         id: collectionEndpointId++,
         collection_id: expectParam<number>(params, 0),
-        name: expectParam<string>(params, 1),
-        method: expectParam<CollectionEndpointRow["method"]>(params, 2),
-        url: expectParam<string>(params, 3),
-        headers_json: expectParam<string>(params, 4),
-        query_params_json: expectParam<string>(params, 5),
-        body_json: expectParam<string | null>(params, 6),
-        auth_json: expectParam<string | null>(params, 7),
-        position: expectParam<number>(params, 8),
-        created_by_user_id: expectParam<number>(params, 9),
+        folder_id: expectParam<number | null>(params, 1),
+        name: expectParam<string>(params, 2),
+        method: expectParam<CollectionEndpointRow["method"]>(params, 3),
+        url: expectParam<string>(params, 4),
+        headers_json: expectParam<string>(params, 5),
+        query_params_json: expectParam<string>(params, 6),
+        body_json: expectParam<string | null>(params, 7),
+        auth_json: expectParam<string | null>(params, 8),
+        position: expectParam<number>(params, 9),
+        created_by_user_id: expectParam<number>(params, 10),
         created_at: now,
         updated_at: now,
       };
@@ -703,7 +705,19 @@ export const createAuthTestDb = (): DatabaseClient => {
 
     if (
       normalized.startsWith(
-        "select id, collection_id, name, method, url, headers_json, query_params_json, body_json, auth_json, position, created_by_user_id, created_at, updated_at from collection_endpoints where id =",
+        "select id, collection_id, folder_id, name, method, url, headers_json, query_params_json, body_json, auth_json, position, created_by_user_id, created_at, updated_at from collection_endpoints where collection_id =",
+      )
+    ) {
+      const collection = expectParam<number>(params, 0);
+      const rows = collectionEndpoints
+        .filter((item) => item.collection_id === collection)
+        .sort((a, b) => a.position - b.position || a.id - b.id);
+      return { rows: castRows<TRow>(rows), rowCount: rows.length };
+    }
+
+    if (
+      normalized.startsWith(
+        "select id, collection_id, folder_id, name, method, url, headers_json, query_params_json, body_json, auth_json, position, created_by_user_id, created_at, updated_at from collection_endpoints where id =",
       )
     ) {
       const id = expectParam<number>(params, 0);
@@ -712,20 +726,21 @@ export const createAuthTestDb = (): DatabaseClient => {
       return { rows, rowCount: rows.length };
     }
 
-    if (normalized.startsWith("update collection_endpoints set name =")) {
+    if (normalized.startsWith("update collection_endpoints set folder_id =")) {
       const row = collectionEndpoints.find(
         (item) => item.id === expectParam<number>(params, 0),
       );
 
       if (row) {
-        row.name = expectParam<string>(params, 1);
-        row.method = expectParam<CollectionEndpointRow["method"]>(params, 2);
-        row.url = expectParam<string>(params, 3);
-        row.headers_json = expectParam<string>(params, 4);
-        row.query_params_json = expectParam<string>(params, 5);
-        row.body_json = expectParam<string | null>(params, 6);
-        row.auth_json = expectParam<string | null>(params, 7);
-        row.position = expectParam<number>(params, 8);
+        row.folder_id = expectParam<number | null>(params, 1);
+        row.name = expectParam<string>(params, 2);
+        row.method = expectParam<CollectionEndpointRow["method"]>(params, 3);
+        row.url = expectParam<string>(params, 4);
+        row.headers_json = expectParam<string>(params, 5);
+        row.query_params_json = expectParam<string>(params, 6);
+        row.body_json = expectParam<string | null>(params, 7);
+        row.auth_json = expectParam<string | null>(params, 8);
+        row.position = expectParam<number>(params, 9);
         row.updated_at = new Date();
       }
 

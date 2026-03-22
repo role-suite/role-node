@@ -6,6 +6,14 @@ This module stores API endpoint collections within a workspace.
 
 Collections also store request endpoint definitions (method, URL, headers, query params, body, auth).
 
+Endpoint request body modes:
+
+- `raw`: string payload with optional `contentType`
+- `urlencoded`: key/value entry list
+- `formdata`: text + file parts (file parts contain base64 payload)
+- `binary`: single file payload (base64)
+- `none`: explicit no-body marker
+
 ## Authorization model
 
 - Workspace `owner` and `admin` can create, update, and delete collections.
@@ -27,6 +35,20 @@ Collections also store request endpoint definitions (method, URL, headers, query
 - `POST /api/workspaces/:workspaceId/collections/:collectionId/endpoints`
 - `PATCH /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
 - `DELETE /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
+
+### Folder routes
+
+- `GET /api/workspaces/:workspaceId/collections/:collectionId/folders`
+- `POST /api/workspaces/:workspaceId/collections/:collectionId/folders`
+- `PATCH /api/workspaces/:workspaceId/collections/:collectionId/folders/:folderId`
+- `DELETE /api/workspaces/:workspaceId/collections/:collectionId/folders/:folderId`
+
+### Endpoint example routes
+
+- `GET /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples`
+- `POST /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples`
+- `PATCH /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples/:exampleId`
+- `DELETE /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples/:exampleId`
 
 ## Request payloads
 
@@ -54,9 +76,10 @@ Create endpoint:
   "name": "Get Orders",
   "method": "GET",
   "url": "https://api.example.com/orders",
+  "folderId": null,
   "headers": [{ "key": "Accept", "value": "application/json" }],
   "queryParams": [{ "key": "limit", "value": "20" }],
-  "body": { "raw": "" },
+  "body": { "mode": "raw", "contentType": "application/json", "raw": "{}" },
   "auth": { "type": "none" },
   "position": 0
 }
@@ -95,3 +118,7 @@ Table: `collection_endpoints`
 - `updated_at`
 
 Migration: `migrations/20260320_003_create_collection_endpoints_table.migration.ts`
+
+`folder_id` support and examples/folder tables are added in:
+
+- `migrations/20260322_008_expand_collections_structure.migration.ts`
