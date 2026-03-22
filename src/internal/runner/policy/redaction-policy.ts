@@ -55,7 +55,25 @@ const redactBody = (
   body: HttpRequestBody,
   _config: RequestRunnerEngineConfig,
 ): HttpRequestBody => {
-  return body ? { ...body } : null;
+  if (!body) {
+    return null;
+  }
+
+  if (body.mode === "formdata") {
+    return {
+      mode: "formdata",
+      entries: body.entries.map((entry) => ({ ...entry })),
+    };
+  }
+
+  if (body.mode === "urlencoded") {
+    return {
+      mode: "urlencoded",
+      entries: body.entries.map((entry) => ({ ...entry })),
+    };
+  }
+
+  return { ...body };
 };
 
 const redactUrlQueryValues = (

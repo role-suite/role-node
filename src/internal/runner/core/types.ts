@@ -13,10 +13,45 @@ export type HttpKeyValue = {
   enabled?: boolean;
 };
 
-export type HttpRequestBody = {
-  contentType?: string;
-  raw?: string;
-} | null;
+export type HttpRequestBody =
+  | {
+      mode: "raw";
+      contentType?: string;
+      raw: string;
+    }
+  | {
+      mode: "urlencoded";
+      entries: HttpKeyValue[];
+    }
+  | {
+      mode: "formdata";
+      entries: Array<
+        | {
+            type: "text";
+            key: string;
+            value: string;
+            enabled?: boolean;
+          }
+        | {
+            type: "file";
+            key: string;
+            fileName: string;
+            contentType?: string;
+            dataBase64: string;
+            enabled?: boolean;
+          }
+      >;
+    }
+  | {
+      mode: "binary";
+      fileName: string;
+      contentType?: string;
+      dataBase64: string;
+    }
+  | {
+      mode: "none";
+    }
+  | null;
 
 export type HttpRequestAuth =
   | { type: "none" }

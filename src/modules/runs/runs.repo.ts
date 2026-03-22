@@ -84,6 +84,32 @@ const parseJson = <T>(value: string | null, fallback: T): T => {
   }
 };
 
+const parseRequestBodySnapshot = (
+  value: string | null,
+): ExecutedRequestSnapshot["body"] => {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(value) as ExecutedRequestSnapshot["body"];
+
+    if (parsed && typeof parsed === "object" && "mode" in parsed) {
+      return parsed;
+    }
+  } catch {
+    return {
+      mode: "raw",
+      raw: value,
+    };
+  }
+
+  return {
+    mode: "raw",
+    raw: value,
+  };
+};
+
 const toStoredRun = (input: {
   run: RequestRunRow;
   request: RequestRunRequestRow;
@@ -105,7 +131,7 @@ const toStoredRun = (input: {
       url: input.request.url,
       headers: parseJson(input.request.headers_json, []),
       queryParams: parseJson(input.request.query_params_json, []),
-      body: input.request.body_text ? { raw: input.request.body_text } : null,
+      body: parseRequestBodySnapshot(input.request.body_text),
       auth: parseJson(input.request.auth_json, { type: "none" }),
       resolvedVariables: parseJson(input.request.resolved_variables_json, {}),
       timeoutMs: input.request.timeout_ms,
@@ -166,7 +192,7 @@ const insertRequestSnapshot = async (
       payload.request.url,
       JSON.stringify(payload.request.headers),
       JSON.stringify(payload.request.queryParams),
-      payload.request.body?.raw ?? null,
+      payload.request.body ? JSON.stringify(payload.request.body) : null,
       JSON.stringify(payload.request.auth),
       JSON.stringify(payload.request.resolvedVariables),
       payload.request.timeoutMs,

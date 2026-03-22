@@ -18,12 +18,94 @@ const keyValueSchema = z
   })
   .strict();
 
-const requestBodySchema = z
+const legacyRequestBodySchema = z
   .object({
     contentType: z.string().trim().min(1).max(120).optional(),
-    raw: z.string().max(100000).optional(),
+    raw: z.string().max(200000).optional(),
+  })
+  .strict()
+  .transform((value) => {
+    return {
+      mode: "raw" as const,
+      ...(value.contentType !== undefined
+        ? { contentType: value.contentType }
+        : {}),
+      raw: value.raw ?? "",
+    };
+  });
+
+const requestBodyRawSchema = z
+  .object({
+    mode: z.literal("raw"),
+    contentType: z.string().trim().min(1).max(120).optional(),
+    raw: z.string().max(200000),
   })
   .strict();
+
+const requestBodyUrlEncodedSchema = z
+  .object({
+    mode: z.literal("urlencoded"),
+    entries: z.array(keyValueSchema).max(500),
+  })
+  .strict();
+
+const requestFormDataTextPartSchema = z
+  .object({
+    type: z.literal("text"),
+    key: z.string().trim().min(1).max(200),
+    value: z.string().max(50000),
+    enabled: z.boolean().optional(),
+  })
+  .strict();
+
+const requestFormDataFilePartSchema = z
+  .object({
+    type: z.literal("file"),
+    key: z.string().trim().min(1).max(200),
+    fileName: z.string().trim().min(1).max(255),
+    contentType: z.string().trim().min(1).max(120).optional(),
+    dataBase64: z.string().min(1).max(2_000_000),
+    enabled: z.boolean().optional(),
+  })
+  .strict();
+
+const requestBodyFormDataSchema = z
+  .object({
+    mode: z.literal("formdata"),
+    entries: z
+      .array(
+        z.discriminatedUnion("type", [
+          requestFormDataTextPartSchema,
+          requestFormDataFilePartSchema,
+        ]),
+      )
+      .max(500),
+  })
+  .strict();
+
+const requestBodyBinarySchema = z
+  .object({
+    mode: z.literal("binary"),
+    fileName: z.string().trim().min(1).max(255),
+    contentType: z.string().trim().min(1).max(120).optional(),
+    dataBase64: z.string().min(1).max(2_000_000),
+  })
+  .strict();
+
+const requestBodyNoneSchema = z
+  .object({
+    mode: z.literal("none"),
+  })
+  .strict();
+
+const requestBodySchema = z.union([
+  requestBodyRawSchema,
+  requestBodyUrlEncodedSchema,
+  requestBodyFormDataSchema,
+  requestBodyBinarySchema,
+  requestBodyNoneSchema,
+  legacyRequestBodySchema,
+]);
 
 const requestAuthSchema = z.discriminatedUnion("type", [
   z

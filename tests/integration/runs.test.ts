@@ -179,6 +179,61 @@ describe("runs integration", () => {
     });
   });
 
+  it("builds urlencoded request bodies for ad-hoc runs", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response('{"ok":true}', {
+        status: 200,
+        headers: {
+          "content-type": "application/json",
+        },
+      }),
+    );
+
+    const register = await request(app).post("/api/auth/register").send({
+      name: "Runner",
+      email: "runner@example.com",
+      password: "password123",
+      accountType: "single",
+    });
+    const token = register.body.data.tokens.accessToken;
+
+    const workspace = await request(app)
+      .post("/api/workspaces")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "Runner Team" });
+    const workspaceId = workspace.body.data.id as number;
+
+    const createRun = await request(app)
+      .post(`/api/workspaces/${workspaceId}/runs`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        source: {
+          type: "adhoc",
+          request: {
+            method: "POST",
+            url: "https://api.example.com/orders",
+            headers: [],
+            body: {
+              mode: "urlencoded",
+              entries: [
+                { key: "limit", value: "10" },
+                { key: "region", value: "eu-west-1" },
+              ],
+            },
+          },
+        },
+      });
+
+    expect(createRun.status).toBe(201);
+
+    const [, calledInit] = fetchSpy.mock.calls[0] ?? [];
+
+    expect(calledInit).toMatchObject({
+      method: "POST",
+      body: "limit=10&region=eu-west-1",
+    });
+  });
+
   it("blocks disallowed network targets", async () => {
     const register = await request(app).post("/api/auth/register").send({
       name: "Runner",

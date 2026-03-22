@@ -3,6 +3,7 @@ import {
   getRunById,
   runRequest,
   type ExecuteRunInput,
+  type HttpRequestBody,
 } from "../../internal/runner/index.js";
 import { appResponse } from "../../shared/app-response.js";
 import { authRepo } from "../auth/auth.repo.js";
@@ -31,6 +32,82 @@ const toExecuteRunInput = (
   workspaceId: number,
   payload: CreateRunInput,
 ): ExecuteRunInput => {
+  const normalizeRequestBody = (
+    bodyValue: Exclude<
+      CreateRunInput["source"],
+      { type: "collectionEndpoint" }
+    >["request"]["body"],
+  ): HttpRequestBody => {
+    if (!bodyValue) {
+      return null;
+    }
+
+    if (bodyValue.mode === "raw") {
+      return {
+        mode: "raw",
+        raw: bodyValue.raw,
+        ...(bodyValue.contentType !== undefined
+          ? { contentType: bodyValue.contentType }
+          : {}),
+      };
+    }
+
+    if (bodyValue.mode === "urlencoded") {
+      return {
+        mode: "urlencoded",
+        entries: bodyValue.entries.map((entry) => {
+          return {
+            key: entry.key,
+            value: entry.value,
+            ...(entry.enabled !== undefined ? { enabled: entry.enabled } : {}),
+          };
+        }),
+      };
+    }
+
+    if (bodyValue.mode === "formdata") {
+      return {
+        mode: "formdata",
+        entries: bodyValue.entries.map((entry) => {
+          if (entry.type === "text") {
+            return {
+              type: "text" as const,
+              key: entry.key,
+              value: entry.value,
+              ...(entry.enabled !== undefined
+                ? { enabled: entry.enabled }
+                : {}),
+            };
+          }
+
+          return {
+            type: "file" as const,
+            key: entry.key,
+            fileName: entry.fileName,
+            dataBase64: entry.dataBase64,
+            ...(entry.contentType !== undefined
+              ? { contentType: entry.contentType }
+              : {}),
+            ...(entry.enabled !== undefined ? { enabled: entry.enabled } : {}),
+          };
+        }),
+      };
+    }
+
+    if (bodyValue.mode === "binary") {
+      return {
+        mode: "binary",
+        fileName: bodyValue.fileName,
+        dataBase64: bodyValue.dataBase64,
+        ...(bodyValue.contentType !== undefined
+          ? { contentType: bodyValue.contentType }
+          : {}),
+      };
+    }
+
+    return { mode: "none" };
+  };
+
   const headers = (
     payload.source.type === "adhoc"
       ? (payload.source.request.headers ?? [])
@@ -57,14 +134,7 @@ const toExecuteRunInput = (
 
   const body =
     payload.source.type === "adhoc" && payload.source.request.body
-      ? {
-          ...(payload.source.request.body.contentType !== undefined
-            ? { contentType: payload.source.request.body.contentType }
-            : {}),
-          ...(payload.source.request.body.raw !== undefined
-            ? { raw: payload.source.request.body.raw }
-            : {}),
-        }
+      ? normalizeRequestBody(payload.source.request.body)
       : null;
 
   const options = payload.options

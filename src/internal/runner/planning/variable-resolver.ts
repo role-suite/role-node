@@ -16,6 +16,59 @@ export const resolveVariables = (
   request: HttpRequestDraft,
   context: Record<string, string>,
 ): HttpRequestDraft => {
+  const body = (() => {
+    if (!request.body) {
+      return null;
+    }
+
+    if (request.body.mode === "raw") {
+      return {
+        ...request.body,
+        raw: resolveString(request.body.raw, context),
+      };
+    }
+
+    if (request.body.mode === "urlencoded") {
+      return {
+        mode: "urlencoded" as const,
+        entries: request.body.entries.map((entry) => ({
+          ...entry,
+          value: resolveString(entry.value, context),
+        })),
+      };
+    }
+
+    if (request.body.mode === "formdata") {
+      return {
+        mode: "formdata" as const,
+        entries: request.body.entries.map((entry) => {
+          if (entry.type === "text") {
+            return {
+              ...entry,
+              value: resolveString(entry.value, context),
+            };
+          }
+
+          return {
+            ...entry,
+            fileName: resolveString(entry.fileName, context),
+          };
+        }),
+      };
+    }
+
+    if (request.body.mode === "binary") {
+      return {
+        ...request.body,
+        fileName: resolveString(request.body.fileName, context),
+      };
+    }
+
+    return {
+      mode: "none" as const,
+    };
+  })();
+
   return {
     method: request.method,
     url: resolveString(request.url, context),
@@ -27,14 +80,7 @@ export const resolveVariables = (
       ...query,
       value: resolveString(query.value, context),
     })),
-    body: request.body
-      ? {
-          ...request.body,
-          ...(request.body.raw
-            ? { raw: resolveString(request.body.raw, context) }
-            : {}),
-        }
-      : null,
+    body,
     auth:
       request.auth.type === "bearer"
         ? {

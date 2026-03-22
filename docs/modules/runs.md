@@ -15,6 +15,14 @@ All routes require authenticated context via workspace auth middleware.
 - `adhoc`: run with full HTTP request payload in request body.
 - `collectionEndpoint`: run using a saved collection endpoint reference.
 
+Supported request body modes in `adhoc` source:
+
+- `raw`
+- `urlencoded`
+- `formdata`
+- `binary`
+- `none`
+
 ## Module boundaries
 
 - Public module files:

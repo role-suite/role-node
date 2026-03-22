@@ -1,3 +1,5 @@
+import { Buffer } from "node:buffer";
+
 import type {
   ExecuteRunInput,
   HttpRequestDraft,
@@ -8,12 +10,40 @@ import { RunnerError } from "../errors/runner-errors.js";
 
 const encoder = new TextEncoder();
 
+const base64Size = (value: string): number => {
+  try {
+    return Buffer.from(value, "base64").byteLength;
+  } catch {
+    return encoder.encode(value).byteLength;
+  }
+};
+
 const bodySize = (request: HttpRequestDraft): number => {
-  if (!request.body?.raw) {
+  if (!request.body || request.body.mode === "none") {
     return 0;
   }
 
-  return encoder.encode(request.body.raw).byteLength;
+  if (request.body.mode === "raw") {
+    return encoder.encode(request.body.raw).byteLength;
+  }
+
+  if (request.body.mode === "urlencoded") {
+    return request.body.entries.reduce((total, entry) => {
+      return total + encoder.encode(`${entry.key}=${entry.value}`).byteLength;
+    }, 0);
+  }
+
+  if (request.body.mode === "formdata") {
+    return request.body.entries.reduce((total, entry) => {
+      if (entry.type === "text") {
+        return total + encoder.encode(`${entry.key}=${entry.value}`).byteLength;
+      }
+
+      return total + base64Size(entry.dataBase64);
+    }, 0);
+  }
+
+  return base64Size(request.body.dataBase64);
 };
 
 export const resolveRunOptions = (

@@ -42,4 +42,8 @@ export const cancelRun = (
   return engine.cancelRun(workspaceId, runId);
 };
 
-export type { ExecuteRunInput, ExecuteRunResult } from "./core/types.js";
+export type {
+  ExecuteRunInput,
+  ExecuteRunResult,
+  HttpRequestBody,
+} from "./core/types.js";

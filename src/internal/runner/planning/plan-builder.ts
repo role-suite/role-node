@@ -11,12 +11,42 @@ import type {
 import { RunnerError } from "../errors/runner-errors.js";
 
 const cloneRequestDraft = (request: HttpRequestDraft): HttpRequestDraft => {
+  const body = (() => {
+    if (!request.body) {
+      return null;
+    }
+
+    if (request.body.mode === "raw") {
+      return { ...request.body };
+    }
+
+    if (request.body.mode === "urlencoded") {
+      return {
+        mode: "urlencoded" as const,
+        entries: request.body.entries.map((entry) => ({ ...entry })),
+      };
+    }
+
+    if (request.body.mode === "formdata") {
+      return {
+        mode: "formdata" as const,
+        entries: request.body.entries.map((entry) => ({ ...entry })),
+      };
+    }
+
+    if (request.body.mode === "binary") {
+      return { ...request.body };
+    }
+
+    return { mode: "none" as const };
+  })();
+
   return {
     method: request.method,
     url: request.url,
     headers: request.headers.map((item) => ({ ...item })),
     queryParams: request.queryParams.map((item) => ({ ...item })),
-    body: request.body ? { ...request.body } : null,
+    body,
     auth: { ...request.auth },
   };
 };
@@ -58,7 +88,7 @@ export const buildSourceRequest = async (
   const queryParams = parseJson<
     Array<{ key: string; value: string; enabled?: boolean }>
   >(endpoint.queryParams, []);
-  const body = parseJson<HttpRequestBody>(endpoint.body, null);
+  const body = parseEndpointBody(endpoint.body);
   const auth = parseJson<HttpRequestAuth>(endpoint.auth, { type: "none" });
 
   return {
@@ -99,6 +129,32 @@ const parseJson = <T>(value: string | null, fallback: T): T => {
   } catch {
     return fallback;
   }
+};
+
+const parseEndpointBody = (value: string | null): HttpRequestBody => {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = parseJson<
+    HttpRequestBody | { contentType?: string; raw?: string }
+  >(value, null);
+
+  if (!parsed) {
+    return null;
+  }
+
+  if (typeof parsed === "object" && "mode" in parsed) {
+    return parsed as HttpRequestBody;
+  }
+
+  return {
+    mode: "raw",
+    raw: parsed.raw ?? "",
+    ...(parsed.contentType !== undefined
+      ? { contentType: parsed.contentType }
+      : {}),
+  };
 };
 
 export const buildVariableContext = async (

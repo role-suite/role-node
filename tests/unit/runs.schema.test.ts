@@ -14,6 +14,16 @@ describe("runs schema", () => {
           method: "GET",
           url: "https://api.example.com/orders",
           headers: [{ key: "accept", value: "application/json" }],
+          body: {
+            mode: "formdata",
+            entries: [
+              {
+                type: "text",
+                key: "name",
+                value: "demo",
+              },
+            ],
+          },
         },
       },
       options: {
@@ -22,6 +32,27 @@ describe("runs schema", () => {
     });
 
     expect(parsed.source.type).toBe("adhoc");
+  });
+
+  it("supports legacy raw body payload", () => {
+    const parsed = createRunSchema.parse({
+      source: {
+        type: "adhoc",
+        request: {
+          method: "POST",
+          url: "https://api.example.com/orders",
+          body: {
+            raw: "{}",
+          },
+        },
+      },
+    });
+
+    if (parsed.source.type !== "adhoc") {
+      throw new Error("Unexpected source type");
+    }
+
+    expect(parsed.source.request.body?.mode).toBe("raw");
   });
 
   it("coerces run id params", () => {
