@@ -2,6 +2,8 @@
 
 This manual is for contributors implementing, reviewing, and maintaining backend features.
 
+For full-system narrative context, start with `docs/guides/system-handbook.md` and then use this manual for contributor-focused details.
+
 ## 1. System architecture
 
 Core app wiring lives in `src/app.ts`.
@@ -186,3 +188,13 @@ When adding a feature:
 1. update module doc in `docs/modules/<module>.md`
 2. update relevant guide in `docs/guides/`
 3. update top-level references in `docs/README.md` and `README.md` when needed
+
+## 12. Documentation quality standard
+
+For each behavior change, documentation should include:
+
+- endpoint path(s) and authorization expectations
+- payload examples for create/update behavior
+- expected status/error behavior for important failures
+- migration/persistence notes when data shape changes
+- impacted tests or test strategy notes when behavior changes

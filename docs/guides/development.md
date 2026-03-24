@@ -81,8 +81,8 @@ pnpm db:migrate:down
 Optional count examples:
 
 ```bash
-pnpm db:migrate up 2
-pnpm db:migrate down 1
+pnpm db:migrate:up 2
+pnpm db:migrate:down 1
 ```
 
 See `migrations/README.md` for migration file template and dialect notes.
@@ -143,3 +143,13 @@ Coverage thresholds are defined in `vitest.config.ts`.
 - Add run retention cleanup job for `request_runs` and related snapshots.
 - Add CI workflow for `pnpm build` + `pnpm test:run` (and optional coverage gate).
 - Add API contract docs (OpenAPI or equivalent).
+
+## Documentation workflow
+
+Treat docs as part of the deliverable for every feature change.
+
+- Start from `docs/guides/system-handbook.md` for overall context.
+- Update affected module docs in `docs/modules/` when behavior changes.
+- Update user-facing contracts in `docs/guides/user-reference-manual.md` when payloads/status codes change.
+- Update implementation playbooks/checklists in `docs/guides/implementation-manual.md` when team workflow changes.
+- Keep `docs/README.md` aligned when new documents are added or renamed.
