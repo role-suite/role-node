@@ -143,7 +143,6 @@ Set `ENABLE_STARTUP_VALIDATION=false` when running locally without a configured 
 
 ## Demo profiles
 
-- PostgreSQL demo env: `cp .env.demo .env`
 - MySQL demo env: `cp .env.demo.mysql .env`
 - Full runbook: `DEMO_SETUP.md`
 

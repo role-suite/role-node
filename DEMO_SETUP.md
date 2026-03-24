@@ -16,20 +16,6 @@ Install dependencies:
 pnpm install
 ```
 
-## PostgreSQL demo profile
-
-Prepare env values:
-
-```bash
-cp .env.demo .env
-```
-
-Start DB:
-
-```bash
-docker compose -f docker-compose.demo.yml up -d
-```
-
 ## MySQL demo profile
 
 Prepare env values:
@@ -44,7 +30,7 @@ Start DB:
 docker compose -f docker-compose.demo.mysql.yml up -d
 ```
 
-## Common flow (both profiles)
+## Common flow
 
 Run migrations:
 
@@ -81,16 +67,8 @@ Expected demo data after login:
 
 ## Teardown
 
-PostgreSQL:
-
-```bash
-docker compose -f docker-compose.demo.yml down --remove-orphans
-```
-
-MySQL:
-
 ```bash
 docker compose -f docker-compose.demo.mysql.yml down --remove-orphans
 ```
 
-Both demo compose files use `tmpfs`, so DB data is not persisted after container removal.
+The demo compose file uses `tmpfs`, so DB data is not persisted after container removal.
