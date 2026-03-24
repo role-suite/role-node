@@ -21,6 +21,8 @@ pnpm-debug.log*
 .env
 .env.*
 !.env.example
+!.env.demo
+!.env.demo.mysql
 
 # TypeScript
 *.tsbuildinfo
