@@ -119,6 +119,7 @@ The server starts on `PORT` (default `3000`).
 - `pnpm db:migrate:up`: apply pending migrations (optionally with count)
 - `pnpm db:migrate:down`: rollback latest migration (optionally with count)
 - `pnpm db:migrate:status`: print applied/pending migration status
+- `pnpm db:seed:demo`: reset and seed deterministic demo data
 - `pnpm test`: run tests in Vitest
 - `pnpm test:watch`: run tests in watch mode
 - `pnpm test:run`: run tests once
@@ -248,6 +249,7 @@ See:
 - `docs/guides/developer-manual.md`
 - `docs/guides/implementation-manual.md`
 - `docs/guides/module-template.md`
+- `DEMO_SETUP.md`
 - `docs/modules/auth.md`
 - `docs/modules/workspaces.md`
 - `docs/modules/collections.md`

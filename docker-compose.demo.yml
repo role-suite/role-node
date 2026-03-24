@@ -1,0 +1,18 @@
+services:
+  demo-db:
+    image: postgres:16-alpine
+    container_name: role-demo-db
+    environment:
+      POSTGRES_USER: role
+      POSTGRES_PASSWORD: role
+      POSTGRES_DB: role_demo
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U role -d role_demo"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    tmpfs:
+      - /var/lib/postgresql/data
