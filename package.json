@@ -12,6 +12,7 @@
     "db:migrate:up": "tsx scripts/migrate.ts up",
     "db:migrate:down": "tsx scripts/migrate.ts down",
     "db:migrate:status": "tsx scripts/migrate.ts status",
+    "db:seed:demo": "tsx scripts/seed-demo.ts",
     "test": "vitest",
     "test:watch": "vitest --watch",
     "test:run": "vitest --run",
