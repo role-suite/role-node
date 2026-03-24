@@ -119,6 +119,7 @@ The server starts on `PORT` (default `3000`).
 - `pnpm db:migrate:up`: apply pending migrations (optionally with count)
 - `pnpm db:migrate:down`: rollback latest migration (optionally with count)
 - `pnpm db:migrate:status`: print applied/pending migration status
+- `pnpm db:seed:demo`: reset and seed deterministic demo data
 - `pnpm test`: run tests in Vitest
 - `pnpm test:watch`: run tests in watch mode
 - `pnpm test:run`: run tests once
@@ -139,6 +140,12 @@ Validated in `src/config/env.ts` using Zod.
 
 On startup, the app validates environment values and checks database connectivity with `SELECT 1` before listening for requests.
 Set `ENABLE_STARTUP_VALIDATION=false` when running locally without a configured database.
+
+## Demo profiles
+
+- PostgreSQL demo env: `cp .env.demo .env`
+- MySQL demo env: `cp .env.demo.mysql .env`
+- Full runbook: `DEMO_SETUP.md`
 
 ## Testing layers
 
