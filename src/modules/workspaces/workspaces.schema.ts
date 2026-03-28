@@ -21,6 +21,11 @@ export const workspaceMemberParamsSchema = workspaceIdSchema.extend({
   memberUserId: z.coerce.number().int().positive(),
 });
 
+export const workspaceUpdatesQuerySchema = z.object({
+  since: z.coerce.number().int().min(0).default(0),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+});
+
 export const updateWorkspaceMemberRoleSchema =
   workspaceMemberParamsSchema.extend({
     role: workspaceRoleSchema.exclude(["owner"]),

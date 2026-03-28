@@ -43,6 +43,7 @@ describe("collections service", () => {
     );
 
     expect(created.name).toBe("Orders");
+    expect(created._id).toBe(created.id);
 
     const updated = await collectionsService.updateForWorkspace(
       owner.user.id,
@@ -52,6 +53,7 @@ describe("collections service", () => {
     );
 
     expect(updated.name).toBe("Orders v2");
+    expect(updated._id).toBe(updated.id);
 
     await collectionsService.deleteForWorkspace(
       owner.user.id,
@@ -122,6 +124,7 @@ describe("collections service", () => {
       created.id,
     );
     expect(readOne.id).toBe(created.id);
+    expect(readOne._id).toBe(created.id);
   });
 
   it("allows owner to manage collection endpoints", async () => {
@@ -168,7 +171,7 @@ describe("collections service", () => {
       workspace.id,
       collection.id,
       endpoint.id,
-      { method: "POST", body: { raw: "{}" } },
+      { method: "POST", body: { mode: "raw", raw: "{}" } },
     );
 
     expect(updated.method).toBe("POST");

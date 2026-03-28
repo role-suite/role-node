@@ -1,5 +1,6 @@
 import { appResponse } from "../../shared/app-response.js";
 import { authRepo } from "../auth/auth.repo.js";
+import { workspaceEventsService } from "../workspaces/workspace-events.service.js";
 import {
   environmentsRepo,
   type Environment,
@@ -201,6 +202,17 @@ export const environmentsService = {
       createdByUserId: userId,
     });
 
+    await workspaceEventsService.publish({
+      workspaceId,
+      actorUserId: userId,
+      entity: "environment",
+      action: "created",
+      entityId: created.id,
+      payload: {
+        name: created.name,
+      },
+    });
+
     return mapEnvironment(created);
   },
 
@@ -230,6 +242,17 @@ export const environmentsService = {
       throw appResponse.withStatus(404, "Environment not found");
     }
 
+    await workspaceEventsService.publish({
+      workspaceId,
+      actorUserId: userId,
+      entity: "environment",
+      action: "updated",
+      entityId: updated.id,
+      payload: {
+        name: updated.name,
+      },
+    });
+
     return mapEnvironment(updated);
   },
 
@@ -241,6 +264,14 @@ export const environmentsService = {
     await requireWorkspaceWriterRole(userId, workspaceId);
     await requireEnvironmentInWorkspace(workspaceId, environmentId);
     await environmentsRepo.deleteEnvironmentById(environmentId);
+
+    await workspaceEventsService.publish({
+      workspaceId,
+      actorUserId: userId,
+      entity: "environment",
+      action: "deleted",
+      entityId: environmentId,
+    });
   },
 
   async listVariablesForEnvironment(
@@ -290,6 +321,18 @@ export const environmentsService = {
       createdByUserId: userId,
     });
 
+    await workspaceEventsService.publish({
+      workspaceId,
+      actorUserId: userId,
+      entity: "environment_variable",
+      action: "created",
+      entityId: created.id,
+      payload: {
+        environmentId,
+        key: created.key,
+      },
+    });
+
     return mapEnvironmentVariable(created);
   },
 
@@ -325,6 +368,18 @@ export const environmentsService = {
       throw appResponse.withStatus(404, "Environment variable not found");
     }
 
+    await workspaceEventsService.publish({
+      workspaceId,
+      actorUserId: userId,
+      entity: "environment_variable",
+      action: "updated",
+      entityId: updated.id,
+      payload: {
+        environmentId,
+        key: updated.key,
+      },
+    });
+
     return mapEnvironmentVariable(updated);
   },
 
@@ -338,5 +393,16 @@ export const environmentsService = {
     await requireEnvironmentInWorkspace(workspaceId, environmentId);
     await requireVariableInEnvironment(environmentId, variableId);
     await environmentsRepo.deleteVariableById(variableId);
+
+    await workspaceEventsService.publish({
+      workspaceId,
+      actorUserId: userId,
+      entity: "environment_variable",
+      action: "deleted",
+      entityId: variableId,
+      payload: {
+        environmentId,
+      },
+    });
   },
 };

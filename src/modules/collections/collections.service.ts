@@ -1,5 +1,6 @@
 import { authRepo } from "../auth/auth.repo.js";
 import { appResponse } from "../../shared/app-response.js";
+import { workspaceEventsService } from "../workspaces/workspace-events.service.js";
 
 import {
   collectionsRepo,
@@ -345,6 +346,17 @@ export const collectionsService = {
       createdByUserId: userId,
     });
 
+    await workspaceEventsService.publish({
+      workspaceId,
+      actorUserId: userId,
+      entity: "collection",
+      action: "created",
+      entityId: created.id,
+      payload: {
+        name: created.name,
+      },
+    });
+
     return mapCollection(created);
   },
 
@@ -376,6 +388,17 @@ export const collectionsService = {
       throw appResponse.withStatus(404, "Collection not found");
     }
 
+    await workspaceEventsService.publish({
+      workspaceId,
+      actorUserId: userId,
+      entity: "collection",
+      action: "updated",
+      entityId: updated.id,
+      payload: {
+        name: updated.name,
+      },
+    });
+
     return mapCollection(updated);
   },
 
@@ -387,6 +410,14 @@ export const collectionsService = {
     await requireWorkspaceWriterRole(userId, workspaceId);
     await requireCollectionInWorkspace(workspaceId, collectionId);
     await collectionsRepo.deleteById(collectionId);
+
+    await workspaceEventsService.publish({
+      workspaceId,
+      actorUserId: userId,
+      entity: "collection",
+      action: "deleted",
+      entityId: collectionId,
+    });
   },
 
   async listEndpointsForCollection(
@@ -443,6 +474,19 @@ export const collectionsService = {
       auth: payload.auth ? toJson(payload.auth) : null,
       position: payload.position ?? 0,
       createdByUserId: userId,
+    });
+
+    await workspaceEventsService.publish({
+      workspaceId,
+      actorUserId: userId,
+      entity: "collection_endpoint",
+      action: "created",
+      entityId: endpoint.id,
+      payload: {
+        collectionId,
+        method: endpoint.method,
+        name: endpoint.name,
+      },
     });
 
     return mapEndpoint(endpoint);
@@ -507,6 +551,19 @@ export const collectionsService = {
       throw appResponse.withStatus(404, "Collection endpoint not found");
     }
 
+    await workspaceEventsService.publish({
+      workspaceId,
+      actorUserId: userId,
+      entity: "collection_endpoint",
+      action: "updated",
+      entityId: updated.id,
+      payload: {
+        collectionId,
+        method: updated.method,
+        name: updated.name,
+      },
+    });
+
     return mapEndpoint(updated);
   },
 
@@ -525,6 +582,17 @@ export const collectionsService = {
     }
 
     await collectionsRepo.deleteEndpointById(endpointId);
+
+    await workspaceEventsService.publish({
+      workspaceId,
+      actorUserId: userId,
+      entity: "collection_endpoint",
+      action: "deleted",
+      entityId: endpointId,
+      payload: {
+        collectionId,
+      },
+    });
   },
 
   async listFoldersForCollection(
@@ -557,6 +625,18 @@ export const collectionsService = {
       name: payload.name,
       position: payload.position ?? 0,
       createdByUserId: userId,
+    });
+
+    await workspaceEventsService.publish({
+      workspaceId,
+      actorUserId: userId,
+      entity: "collection_folder",
+      action: "created",
+      entityId: folder.id,
+      payload: {
+        collectionId,
+        name: folder.name,
+      },
     });
 
     return mapFolder(folder);
@@ -597,6 +677,18 @@ export const collectionsService = {
       throw appResponse.withStatus(404, "Collection folder not found");
     }
 
+    await workspaceEventsService.publish({
+      workspaceId,
+      actorUserId: userId,
+      entity: "collection_folder",
+      action: "updated",
+      entityId: updated.id,
+      payload: {
+        collectionId,
+        name: updated.name,
+      },
+    });
+
     return mapFolder(updated);
   },
 
@@ -610,6 +702,17 @@ export const collectionsService = {
     await requireCollectionInWorkspace(workspaceId, collectionId);
     await requireFolderInCollection(collectionId, folderId);
     await collectionsRepo.deleteFolderById(folderId);
+
+    await workspaceEventsService.publish({
+      workspaceId,
+      actorUserId: userId,
+      entity: "collection_folder",
+      action: "deleted",
+      entityId: folderId,
+      payload: {
+        collectionId,
+      },
+    });
   },
 
   async listExamplesForEndpoint(
@@ -653,6 +756,19 @@ export const collectionsService = {
       body: payload.body ?? null,
       position: payload.position ?? 0,
       createdByUserId: userId,
+    });
+
+    await workspaceEventsService.publish({
+      workspaceId,
+      actorUserId: userId,
+      entity: "collection_example",
+      action: "created",
+      entityId: created.id,
+      payload: {
+        collectionId,
+        endpointId,
+        name: created.name,
+      },
     });
 
     return mapExample(created);
@@ -704,6 +820,19 @@ export const collectionsService = {
       );
     }
 
+    await workspaceEventsService.publish({
+      workspaceId,
+      actorUserId: userId,
+      entity: "collection_example",
+      action: "updated",
+      entityId: updated.id,
+      payload: {
+        collectionId,
+        endpointId,
+        name: updated.name,
+      },
+    });
+
     return mapExample(updated);
   },
 
@@ -732,5 +861,17 @@ export const collectionsService = {
     }
 
     await collectionsRepo.deleteExampleById(exampleId);
+
+    await workspaceEventsService.publish({
+      workspaceId,
+      actorUserId: userId,
+      entity: "collection_example",
+      action: "deleted",
+      entityId: exampleId,
+      payload: {
+        collectionId,
+        endpointId,
+      },
+    });
   },
 };

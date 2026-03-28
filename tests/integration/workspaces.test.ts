@@ -144,4 +144,59 @@ describe("workspaces integration", () => {
 
     expect(removeMemberResponse.status).toBe(200);
   });
+
+  it("streams workspace updates by cursor polling", async () => {
+    const owner = await request(app).post("/api/auth/register").send({
+      name: "Owner",
+      email: "owner@example.com",
+      password: "password123",
+      accountType: "single",
+    });
+    const member = await request(app).post("/api/auth/register").send({
+      name: "Member",
+      email: "member@example.com",
+      password: "password123",
+      accountType: "single",
+    });
+
+    const ownerToken = owner.body.data.tokens.accessToken;
+    const memberId = member.body.data.user.id as number;
+
+    const created = await request(app)
+      .post("/api/workspaces")
+      .set("Authorization", `Bearer ${ownerToken}`)
+      .send({ name: "Realtime Team" });
+
+    const workspaceId = created.body.data.id as number;
+
+    await request(app)
+      .post(`/api/workspaces/${workspaceId}/members`)
+      .set("Authorization", `Bearer ${ownerToken}`)
+      .send({ email: "member@example.com", role: "member" });
+
+    const firstPoll = await request(app)
+      .get(`/api/workspaces/${workspaceId}/updates?since=0&limit=50`)
+      .set("Authorization", `Bearer ${ownerToken}`);
+
+    expect(firstPoll.status).toBe(200);
+    expect(Array.isArray(firstPoll.body.data.events)).toBe(true);
+    expect(firstPoll.body.data.events.length).toBeGreaterThan(0);
+
+    const nextCursor = firstPoll.body.data.cursor.next as number;
+
+    await request(app)
+      .patch(`/api/workspaces/${workspaceId}/members/${memberId}`)
+      .set("Authorization", `Bearer ${ownerToken}`)
+      .send({ role: "admin" });
+
+    const secondPoll = await request(app)
+      .get(
+        `/api/workspaces/${workspaceId}/updates?since=${nextCursor}&limit=50`,
+      )
+      .set("Authorization", `Bearer ${ownerToken}`);
+
+    expect(secondPoll.status).toBe(200);
+    expect(secondPoll.body.data.events.length).toBeGreaterThan(0);
+    expect(secondPoll.body.data.events[0].entity).toBe("workspace_member");
+  });
 });

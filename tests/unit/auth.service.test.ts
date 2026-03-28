@@ -30,6 +30,8 @@ describe("auth service", () => {
     expect(result.user.email).toBe("altay@example.com");
     expect(result.workspace.type).toBe("personal");
     expect(result.workspace.role).toBe("owner");
+    expect(result.workspace._id).toBe(result.workspace.id);
+    expect(result.memberships[0]?._id).toBe(result.workspace.id);
     expect(result.tokens.accessToken).toBeTypeOf("string");
   });
 
@@ -60,6 +62,10 @@ describe("auth service", () => {
 
     expect(result.tokens.accessToken).toBeTypeOf("string");
     expect(result.memberships).toHaveLength(2);
+    expect(result.workspace._id).toBe(result.workspace.id);
+    expect(
+      result.memberships.every((item) => item._id === item.workspaceId),
+    ).toBe(true);
   });
 
   it("rotates refresh token", async () => {

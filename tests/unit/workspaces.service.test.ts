@@ -34,6 +34,7 @@ describe("workspaces service", () => {
 
     const listed = await workspacesService.listForUser(account.user.id);
     expect(listed).toHaveLength(2);
+    expect(listed.every((item) => item._id === item.id)).toBe(true);
   });
 
   it("creates team workspace with owner role", async () => {
@@ -51,6 +52,7 @@ describe("workspaces service", () => {
     expect(created.type).toBe("team");
     expect(created.role).toBe("owner");
     expect(created.slug).toBe("core-team");
+    expect(created._id).toBe(created.id);
   });
 
   it("rejects access when user is not a member", async () => {

@@ -5,6 +5,7 @@ import {
   createWorkspaceSchema,
   updateWorkspaceMemberRoleSchema,
   workspaceIdSchema,
+  workspaceUpdatesQuerySchema,
 } from "../../src/modules/workspaces/workspaces.schema.js";
 
 describe("workspaces schema", () => {
@@ -41,5 +42,18 @@ describe("workspaces schema", () => {
     });
 
     expect(result.success).toBe(false);
+  });
+
+  it("parses updates query defaults and limit", () => {
+    const defaults = workspaceUpdatesQuerySchema.parse({});
+    expect(defaults.since).toBe(0);
+    expect(defaults.limit).toBe(50);
+
+    const parsed = workspaceUpdatesQuerySchema.parse({
+      since: "10",
+      limit: "5",
+    });
+    expect(parsed.since).toBe(10);
+    expect(parsed.limit).toBe(5);
   });
 });

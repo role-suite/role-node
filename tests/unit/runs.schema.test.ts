@@ -55,6 +55,84 @@ describe("runs schema", () => {
     expect(parsed.source.request.body?.mode).toBe("raw");
   });
 
+  it("parses binary and none run body modes", () => {
+    const binary = createRunSchema.parse({
+      source: {
+        type: "adhoc",
+        request: {
+          method: "POST",
+          url: "https://api.example.com/upload",
+          body: {
+            mode: "binary",
+            fileName: "payload.bin",
+            contentType: "application/octet-stream",
+            dataBase64: "aGVsbG8=",
+          },
+        },
+      },
+    });
+
+    if (binary.source.type !== "adhoc") {
+      throw new Error("Unexpected source type");
+    }
+
+    expect(binary.source.request.body?.mode).toBe("binary");
+
+    const none = createRunSchema.parse({
+      source: {
+        type: "adhoc",
+        request: {
+          method: "POST",
+          url: "https://api.example.com/upload",
+          body: {
+            mode: "none",
+          },
+        },
+      },
+    });
+
+    if (none.source.type !== "adhoc") {
+      throw new Error("Unexpected source type");
+    }
+
+    expect(none.source.request.body?.mode).toBe("none");
+  });
+
+  it("parses formdata body with file parts", () => {
+    const parsed = createRunSchema.parse({
+      source: {
+        type: "adhoc",
+        request: {
+          method: "POST",
+          url: "https://api.example.com/upload",
+          body: {
+            mode: "formdata",
+            entries: [
+              {
+                type: "text",
+                key: "folder",
+                value: "docs",
+              },
+              {
+                type: "file",
+                key: "file",
+                fileName: "hello.txt",
+                contentType: "text/plain",
+                dataBase64: "aGVsbG8=",
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    if (parsed.source.type !== "adhoc") {
+      throw new Error("Unexpected source type");
+    }
+
+    expect(parsed.source.request.body?.mode).toBe("formdata");
+  });
+
   it("coerces run id params", () => {
     const parsed = workspaceRunByIdParamsSchema.parse({
       workspaceId: "2",

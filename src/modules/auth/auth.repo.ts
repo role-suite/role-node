@@ -38,6 +38,17 @@ export type Session = {
   createdAt: Date;
 };
 
+export type WorkspaceEvent = {
+  id: number;
+  workspaceId: number;
+  actorUserId: number;
+  entity: string;
+  action: string;
+  entityId: number | null;
+  payloadJson: string | null;
+  createdAt: Date;
+};
+
 type UserRow = {
   id: number;
   name: string;
@@ -73,10 +84,22 @@ type SessionRow = {
   created_at: Date | string;
 };
 
+type WorkspaceEventRow = {
+  id: number;
+  workspace_id: number;
+  actor_user_id: number;
+  entity: string;
+  action: string;
+  entity_id: number | null;
+  payload_json: string | null;
+  created_at: Date | string;
+};
+
 const USERS_TABLE = "auth_users";
 const WORKSPACES_TABLE = "workspaces";
 const MEMBERSHIPS_TABLE = "workspace_memberships";
 const SESSIONS_TABLE = "auth_sessions";
+const WORKSPACE_EVENTS_TABLE = "workspace_events";
 
 let dbOverride: DatabaseClient | null = null;
 
@@ -135,6 +158,19 @@ const mapSessionRow = (row: SessionRow): Session => {
     refreshTokenHash: row.refresh_token_hash,
     expiresAt: toDate(row.expires_at),
     revokedAt: row.revoked_at ? toDate(row.revoked_at) : null,
+    createdAt: toDate(row.created_at),
+  };
+};
+
+const mapWorkspaceEventRow = (row: WorkspaceEventRow): WorkspaceEvent => {
+  return {
+    id: row.id,
+    workspaceId: row.workspace_id,
+    actorUserId: row.actor_user_id,
+    entity: row.entity,
+    action: row.action,
+    entityId: row.entity_id,
+    payloadJson: row.payload_json,
     createdAt: toDate(row.created_at),
   };
 };
@@ -506,20 +542,102 @@ export const authRepo = {
     );
   },
 
+  async createWorkspaceEvent(payload: {
+    workspaceId: number;
+    actorUserId: number;
+    entity: string;
+    action: string;
+    entityId: number | null;
+    payloadJson: string | null;
+  }): Promise<WorkspaceEvent> {
+    const workspaceToken = resolveToken(1);
+    const actorToken = resolveToken(2);
+    const entityToken = resolveToken(3);
+    const actionToken = resolveToken(4);
+    const entityIdToken = resolveToken(5);
+    const payloadToken = resolveToken(6);
+    const db = resolveDb();
+
+    if (db.dialect === "postgres") {
+      const result = await db.query<WorkspaceEventRow>(
+        `INSERT INTO ${WORKSPACE_EVENTS_TABLE} (workspace_id, actor_user_id, entity, action, entity_id, payload_json) VALUES (${workspaceToken}, ${actorToken}, ${entityToken}, ${actionToken}, ${entityIdToken}, ${payloadToken}) RETURNING id, workspace_id, actor_user_id, entity, action, entity_id, payload_json, created_at`,
+        [
+          payload.workspaceId,
+          payload.actorUserId,
+          payload.entity,
+          payload.action,
+          payload.entityId,
+          payload.payloadJson,
+        ],
+      );
+
+      const row = result.rows[0];
+
+      if (!row) {
+        throw new Error("Failed to create workspace event");
+      }
+
+      return mapWorkspaceEventRow(row);
+    }
+
+    await db.query(
+      `INSERT INTO ${WORKSPACE_EVENTS_TABLE} (workspace_id, actor_user_id, entity, action, entity_id, payload_json) VALUES (${workspaceToken}, ${actorToken}, ${entityToken}, ${actionToken}, ${entityIdToken}, ${payloadToken})`,
+      [
+        payload.workspaceId,
+        payload.actorUserId,
+        payload.entity,
+        payload.action,
+        payload.entityId,
+        payload.payloadJson,
+      ],
+    );
+
+    const result = await db.query<WorkspaceEventRow>(
+      `SELECT id, workspace_id, actor_user_id, entity, action, entity_id, payload_json, created_at FROM ${WORKSPACE_EVENTS_TABLE} WHERE workspace_id = ${workspaceToken} ORDER BY id DESC LIMIT 1`,
+      [payload.workspaceId],
+    );
+
+    const row = result.rows[0];
+
+    if (!row) {
+      throw new Error("Failed to create workspace event");
+    }
+
+    return mapWorkspaceEventRow(row);
+  },
+
+  async listWorkspaceEventsByCursor(
+    workspaceId: number,
+    sinceEventId: number,
+    limit: number,
+  ): Promise<WorkspaceEvent[]> {
+    const workspaceToken = resolveToken(1);
+    const sinceToken = resolveToken(2);
+    const limitToken = resolveToken(3);
+    const result = await resolveDb().query<WorkspaceEventRow>(
+      `SELECT id, workspace_id, actor_user_id, entity, action, entity_id, payload_json, created_at FROM ${WORKSPACE_EVENTS_TABLE} WHERE workspace_id = ${workspaceToken} AND id > ${sinceToken} ORDER BY id ASC LIMIT ${limitToken}`,
+      [workspaceId, sinceEventId, limit],
+    );
+
+    return result.rows.map(mapWorkspaceEventRow);
+  },
+
   async clear(): Promise<void> {
     const db = resolveDb();
 
     if (db.dialect === "postgres") {
       await db.query(
-        `TRUNCATE TABLE ${SESSIONS_TABLE}, ${MEMBERSHIPS_TABLE}, ${WORKSPACES_TABLE}, ${USERS_TABLE} RESTART IDENTITY CASCADE`,
+        `TRUNCATE TABLE ${WORKSPACE_EVENTS_TABLE}, ${SESSIONS_TABLE}, ${MEMBERSHIPS_TABLE}, ${WORKSPACES_TABLE}, ${USERS_TABLE} RESTART IDENTITY CASCADE`,
       );
       return;
     }
 
+    await db.query(`DELETE FROM ${WORKSPACE_EVENTS_TABLE}`);
     await db.query(`DELETE FROM ${SESSIONS_TABLE}`);
     await db.query(`DELETE FROM ${MEMBERSHIPS_TABLE}`);
     await db.query(`DELETE FROM ${WORKSPACES_TABLE}`);
     await db.query(`DELETE FROM ${USERS_TABLE}`);
+    await db.query(`ALTER TABLE ${WORKSPACE_EVENTS_TABLE} AUTO_INCREMENT = 1`);
     await db.query(`ALTER TABLE ${SESSIONS_TABLE} AUTO_INCREMENT = 1`);
     await db.query(`ALTER TABLE ${MEMBERSHIPS_TABLE} AUTO_INCREMENT = 1`);
     await db.query(`ALTER TABLE ${WORKSPACES_TABLE} AUTO_INCREMENT = 1`);

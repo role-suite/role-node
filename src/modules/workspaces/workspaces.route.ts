@@ -25,6 +25,7 @@ workspacesRouter.delete(
   workspacesController.removeMember,
 );
 workspacesRouter.post("/:workspaceId/leave", workspacesController.leave);
+workspacesRouter.get("/:workspaceId/updates", workspacesController.listUpdates);
 workspacesRouter.use("/:workspaceId/environments", environmentsRouter);
 workspacesRouter.use("/:workspaceId/collections", collectionsRouter);
 workspacesRouter.use("/:workspaceId/import-export", importExportRouter);

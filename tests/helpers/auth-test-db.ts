@@ -144,6 +144,17 @@ type ImportExportJobRow = {
   completed_at: Date;
 };
 
+type WorkspaceEventRow = {
+  id: number;
+  workspace_id: number;
+  actor_user_id: number;
+  entity: string;
+  action: string;
+  entity_id: number | null;
+  payload_json: string | null;
+  created_at: Date;
+};
+
 const normalizeSql = (sql: string): string => {
   return sql.replace(/\s+/g, " ").trim().toLowerCase();
 };
@@ -180,6 +191,7 @@ export const createAuthTestDb = (): DatabaseClient => {
   let requestRunRequests: RequestRunRequestRow[] = [];
   let requestRunResponses: RequestRunResponseRow[] = [];
   let importExportJobs: ImportExportJobRow[] = [];
+  let workspaceEvents: WorkspaceEventRow[] = [];
   let collectionId = 1;
   let collectionEndpointId = 1;
   let environmentId = 1;
@@ -188,6 +200,7 @@ export const createAuthTestDb = (): DatabaseClient => {
   let requestRunRequestId = 1;
   let requestRunResponseId = 1;
   let importExportJobId = 1;
+  let workspaceEventId = 1;
 
   const query = async <TRow extends QueryRow = QueryRow>(
     sql: string,
@@ -197,7 +210,7 @@ export const createAuthTestDb = (): DatabaseClient => {
 
     if (
       normalized.startsWith(
-        "truncate table auth_sessions, workspace_memberships, workspaces, auth_users",
+        "truncate table workspace_events, auth_sessions, workspace_memberships, workspaces, auth_users",
       )
     ) {
       users = [];
@@ -212,6 +225,7 @@ export const createAuthTestDb = (): DatabaseClient => {
       requestRunRequests = [];
       requestRunResponses = [];
       importExportJobs = [];
+      workspaceEvents = [];
       userId = 1;
       workspaceId = 1;
       membershipId = 1;
@@ -224,7 +238,43 @@ export const createAuthTestDb = (): DatabaseClient => {
       requestRunRequestId = 1;
       requestRunResponseId = 1;
       importExportJobId = 1;
+      workspaceEventId = 1;
       return { rows: [] as TRow[], rowCount: 0 };
+    }
+
+    if (
+      normalized.startsWith("insert into workspace_events") &&
+      normalized.includes("returning")
+    ) {
+      const now = new Date();
+      const row: WorkspaceEventRow = {
+        id: workspaceEventId++,
+        workspace_id: expectParam<number>(params, 0),
+        actor_user_id: expectParam<number>(params, 1),
+        entity: expectParam<string>(params, 2),
+        action: expectParam<string>(params, 3),
+        entity_id: expectParam<number | null>(params, 4),
+        payload_json: expectParam<string | null>(params, 5),
+        created_at: now,
+      };
+      workspaceEvents.push(row);
+      return { rows: castRows<TRow>([row]), rowCount: 1 };
+    }
+
+    if (
+      normalized.startsWith(
+        "select id, workspace_id, actor_user_id, entity, action, entity_id, payload_json, created_at from workspace_events where workspace_id =",
+      ) &&
+      normalized.includes("and id >")
+    ) {
+      const workspace = expectParam<number>(params, 0);
+      const since = expectParam<number>(params, 1);
+      const limit = expectParam<number>(params, 2);
+      const rows = workspaceEvents
+        .filter((item) => item.workspace_id === workspace && item.id > since)
+        .sort((a, b) => a.id - b.id)
+        .slice(0, limit);
+      return { rows: castRows<TRow>(rows), rowCount: rows.length };
     }
 
     if (

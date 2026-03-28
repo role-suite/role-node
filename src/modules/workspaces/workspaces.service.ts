@@ -1,11 +1,16 @@
 import { appResponse } from "../../shared/app-response.js";
+import type { z } from "zod";
 
 import { workspacesRepo, type WorkspaceRole } from "./workspaces.repo.js";
+import { workspaceUpdatesQuerySchema } from "./workspaces.schema.js";
 import type {
   AddWorkspaceMemberInput,
   CreateWorkspaceInput,
   UpdateWorkspaceMemberRoleInput,
 } from "./workspaces.schema.js";
+import { workspaceEventsService } from "./workspace-events.service.js";
+
+type WorkspaceUpdatesQuery = z.infer<typeof workspaceUpdatesQuerySchema>;
 
 type WorkspaceSummary = {
   id: number;
@@ -152,6 +157,18 @@ export const workspacesService = {
       role: "owner",
     });
 
+    await workspaceEventsService.publish({
+      workspaceId: workspace.id,
+      actorUserId: userId,
+      entity: "workspace",
+      action: "created",
+      entityId: workspace.id,
+      payload: {
+        type: workspace.type,
+        name: workspace.name,
+      },
+    });
+
     return {
       id: workspace.id,
       _id: workspace.id,
@@ -213,6 +230,18 @@ export const workspacesService = {
       role: payload.role,
     });
 
+    await workspaceEventsService.publish({
+      workspaceId: payload.workspaceId,
+      actorUserId: userId,
+      entity: "workspace_member",
+      action: "added",
+      entityId: invitedUser.id,
+      payload: {
+        userId: invitedUser.id,
+        role: membership.role,
+      },
+    });
+
     return {
       userId: invitedUser.id,
       name: invitedUser.name,
@@ -246,6 +275,18 @@ export const workspacesService = {
       payload.workspaceId,
       payload.role,
     );
+
+    await workspaceEventsService.publish({
+      workspaceId: payload.workspaceId,
+      actorUserId: userId,
+      entity: "workspace_member",
+      action: "role_updated",
+      entityId: payload.memberUserId,
+      payload: {
+        userId: payload.memberUserId,
+        role: payload.role,
+      },
+    });
 
     const user = await workspacesRepo.findUserById(payload.memberUserId);
 
@@ -303,6 +344,17 @@ export const workspacesService = {
       memberUserId,
       workspaceId,
     );
+
+    await workspaceEventsService.publish({
+      workspaceId,
+      actorUserId: userId,
+      entity: "workspace_member",
+      action: "removed",
+      entityId: memberUserId,
+      payload: {
+        userId: memberUserId,
+      },
+    });
   },
 
   async leaveForUser(userId: number, workspaceId: number): Promise<void> {
@@ -325,6 +377,30 @@ export const workspacesService = {
     await workspacesRepo.deleteMembershipByUserAndWorkspace(
       userId,
       workspaceId,
+    );
+
+    await workspaceEventsService.publish({
+      workspaceId,
+      actorUserId: userId,
+      entity: "workspace_member",
+      action: "left",
+      entityId: userId,
+      payload: {
+        userId,
+      },
+    });
+  },
+
+  async listUpdatesForUser(
+    userId: number,
+    workspaceId: number,
+    query: WorkspaceUpdatesQuery,
+  ) {
+    await requireWorkspaceMembership(userId, workspaceId);
+    return workspaceEventsService.listByCursor(
+      workspaceId,
+      query.since,
+      query.limit,
     );
   },
 };

@@ -5,6 +5,7 @@ import {
   addWorkspaceMemberSchema,
   createWorkspaceSchema,
   listWorkspaceMembersSchema,
+  workspaceUpdatesQuerySchema,
   updateWorkspaceMemberRoleSchema,
   workspaceMemberParamsSchema,
   workspaceIdSchema,
@@ -105,5 +106,17 @@ export const workspacesController = {
     const { workspaceId } = workspaceIdSchema.parse(req.params);
     await workspacesService.leaveForUser(auth.userId, workspaceId);
     appResponse.sendSuccess(res, 200, { left: true });
+  },
+
+  async listUpdates(req: Request, res: Response): Promise<void> {
+    const auth = requireAuthContext(req);
+    const { workspaceId } = workspaceIdSchema.parse(req.params);
+    const query = workspaceUpdatesQuerySchema.parse(req.query);
+    const result = await workspacesService.listUpdatesForUser(
+      auth.userId,
+      workspaceId,
+      query,
+    );
+    appResponse.sendSuccess(res, 200, result);
   },
 };
