@@ -9,6 +9,7 @@ import type {
 
 type WorkspaceSummary = {
   id: number;
+  _id: number;
   name: string;
   slug: string;
   type: "personal" | "team";
@@ -94,6 +95,7 @@ const listWorkspaceSummaries = async (
 
       return {
         id: workspace.id,
+        _id: workspace.id,
         name: workspace.name,
         slug: workspace.slug,
         type: workspace.type,
@@ -126,6 +128,7 @@ export const workspacesService = {
 
     return {
       id: workspace.id,
+      _id: workspace.id,
       name: workspace.name,
       slug: workspace.slug,
       type: workspace.type,
@@ -151,6 +154,7 @@ export const workspacesService = {
 
     return {
       id: workspace.id,
+      _id: workspace.id,
       name: workspace.name,
       slug: workspace.slug,
       type: workspace.type,

@@ -27,6 +27,7 @@ type AuthResponse = {
   };
   workspace: {
     id: number;
+    _id: number;
     name: string;
     slug: string;
     type: "personal" | "team";
@@ -34,6 +35,7 @@ type AuthResponse = {
   };
   memberships: Array<{
     workspaceId: number;
+    _id: number;
     name: string;
     slug: string;
     type: "personal" | "team";
@@ -75,6 +77,7 @@ const buildMemberships = async (
 
       return {
         workspaceId: workspace.id,
+        _id: workspace.id,
         name: workspace.name,
         slug: workspace.slug,
         type: workspace.type,
@@ -166,6 +169,7 @@ const toAuthResponse = async (
     },
     workspace: {
       id: workspace.id,
+      _id: workspace.id,
       name: workspace.name,
       slug: workspace.slug,
       type: workspace.type,
@@ -302,6 +306,7 @@ export const authService = {
       },
       workspace: {
         id: workspace.id,
+        _id: workspace.id,
         name: workspace.name,
         slug: workspace.slug,
         type: workspace.type,

@@ -23,6 +23,7 @@ type WorkspaceRole = "owner" | "admin" | "member";
 
 type CollectionResponse = {
   id: number;
+  _id: number;
   workspaceId: number;
   name: string;
   description: string | null;
@@ -141,6 +142,7 @@ const toJson = (value: unknown): string => {
 const mapCollection = (collection: Collection): CollectionResponse => {
   return {
     id: collection.id,
+    _id: collection.id,
     workspaceId: collection.workspaceId,
     name: collection.name,
     description: collection.description,

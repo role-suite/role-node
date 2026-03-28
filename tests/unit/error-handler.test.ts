@@ -36,6 +36,72 @@ describe("error handler", () => {
     );
   });
 
+  it("returns targeted message for placeholder route params", () => {
+    const response = makeResponse();
+    const schema = z.object({
+      workspaceId: z.coerce.number().int().positive(),
+    });
+    const result = schema.safeParse({ workspaceId: "unknown" });
+
+    if (result.success) {
+      throw new Error("Expected schema parse to fail");
+    }
+
+    errorHandler(
+      result.error,
+      {
+        method: "GET",
+        originalUrl: "/api/workspaces/unknown/collections",
+        params: { workspaceId: "unknown" },
+        query: {},
+      } as never,
+      response as never,
+      vi.fn(),
+    );
+
+    expect(response.status).toHaveBeenCalledWith(400);
+    expect(response.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: false,
+        message:
+          "Invalid URL parameters: workspaceId/collectionId must be numeric IDs from `id` (or `_id`) in API responses",
+      }),
+    );
+  });
+
+  it("returns targeted message when params are only in URL", () => {
+    const response = makeResponse();
+    const schema = z.object({
+      collectionId: z.coerce.number().int().positive(),
+    });
+    const result = schema.safeParse({ collectionId: "1774693508741-f8c1701d" });
+
+    if (result.success) {
+      throw new Error("Expected schema parse to fail");
+    }
+
+    errorHandler(
+      result.error,
+      {
+        method: "GET",
+        originalUrl: "/api/workspaces/1/collections/1774693508741-f8c1701d",
+        params: {},
+        query: {},
+      } as never,
+      response as never,
+      vi.fn(),
+    );
+
+    expect(response.status).toHaveBeenCalledWith(400);
+    expect(response.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: false,
+        message:
+          "Invalid URL parameters: workspaceId/collectionId must be numeric IDs from `id` (or `_id`) in API responses",
+      }),
+    );
+  });
+
   it("handles centralized app-response errors", () => {
     const response = makeResponse();
 
