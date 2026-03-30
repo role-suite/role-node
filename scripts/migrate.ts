@@ -108,17 +108,17 @@ const run = async (): Promise<void> => {
   const command = (process.argv[2] ?? "up") as CliCommand;
   const count = parseCount(process.argv[3]);
 
-  if (!env.DATABASE_URL) {
-    throw new Error("DATABASE_URL is required for running migrations");
-  }
-
   if (!["up", "down", "status"].includes(command)) {
     printUsage();
     throw new Error(`Unsupported migration command: ${command}`);
   }
 
   const db = createDatabaseClient(env.DB_DIALECT, {
-    connectionString: env.DATABASE_URL,
+    host: env.DB_HOST,
+    port: env.DB_PORT,
+    user: env.DB_USER,
+    password: env.DB_PASSWORD,
+    database: env.DB_NAME,
     poolMin: env.DB_POOL_MIN,
     poolMax: env.DB_POOL_MAX,
     ssl: env.DB_SSL,

@@ -12,7 +12,11 @@ export type QueryResult<TRow extends QueryRow = QueryRow> = {
 };
 
 export type DatabaseConfig = {
-  connectionString: string;
+  host: string;
+  port: number;
+  user: string;
+  password: string;
+  database: string;
   poolMin: number;
   poolMax: number;
   ssl: boolean;

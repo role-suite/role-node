@@ -6,12 +6,12 @@ import { env } from "./env.js";
 let dbClient: DatabaseClient | null = null;
 
 const resolveDatabaseConfig = (): DatabaseConfig => {
-  if (!env.DATABASE_URL) {
-    throw new Error("DATABASE_URL is required to initialize a database client");
-  }
-
   return {
-    connectionString: env.DATABASE_URL,
+    host: env.DB_HOST,
+    port: env.DB_PORT,
+    user: env.DB_USER,
+    password: env.DB_PASSWORD,
+    database: env.DB_NAME,
     poolMin: env.DB_POOL_MIN,
     poolMax: env.DB_POOL_MAX,
     ssl: env.DB_SSL,

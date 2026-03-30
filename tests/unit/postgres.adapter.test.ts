@@ -31,7 +31,11 @@ vi.mock("pg", () => ({
 
 describe("postgres adapter", () => {
   const config: DatabaseConfig = {
-    connectionString: "postgres://db-user:db-pass@localhost:5432/app",
+    host: "localhost",
+    port: 5432,
+    user: "db-user",
+    password: "db-pass",
+    database: "app",
     poolMin: 1,
     poolMax: 5,
     ssl: false,
@@ -46,7 +50,11 @@ describe("postgres adapter", () => {
     createPostgresClient(config);
 
     expect(poolState.poolConfig).toEqual({
-      connectionString: config.connectionString,
+      host: config.host,
+      port: config.port,
+      user: config.user,
+      password: config.password,
+      database: config.database,
       min: 1,
       max: 5,
     });
@@ -56,7 +64,11 @@ describe("postgres adapter", () => {
     createPostgresClient({ ...config, ssl: true });
 
     expect(poolState.poolConfig).toEqual({
-      connectionString: config.connectionString,
+      host: config.host,
+      port: config.port,
+      user: config.user,
+      password: config.password,
+      database: config.database,
       min: 1,
       max: 5,
       ssl: { rejectUnauthorized: false },

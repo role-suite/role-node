@@ -30,7 +30,11 @@ describe("config db", () => {
     vi.doMock("../../src/config/env.js", () => ({
       env: {
         DB_DIALECT: "postgres",
-        DATABASE_URL: "postgres://localhost:5432/app",
+        DB_HOST: "localhost",
+        DB_PORT: 5432,
+        DB_USER: "db-user",
+        DB_PASSWORD: "db-pass",
+        DB_NAME: "app",
         DB_POOL_MIN: 0,
         DB_POOL_MAX: 10,
         DB_SSL: false,
@@ -45,30 +49,46 @@ describe("config db", () => {
     expect(second).toBe(client);
     expect(createDatabaseClientMock).toHaveBeenCalledOnce();
     expect(createDatabaseClientMock).toHaveBeenCalledWith("postgres", {
-      connectionString: "postgres://localhost:5432/app",
+      host: "localhost",
+      port: 5432,
+      user: "db-user",
+      password: "db-pass",
+      database: "app",
       poolMin: 0,
       poolMax: 10,
       ssl: false,
     });
   });
 
-  it("throws when DATABASE_URL is missing", async () => {
+  it("creates config for mysql dialect", async () => {
     vi.doMock("../../src/config/env.js", () => ({
       env: {
-        DB_DIALECT: "postgres",
-        DATABASE_URL: undefined,
+        DB_DIALECT: "mysql",
+        DB_HOST: "mysql.internal",
+        DB_PORT: 3306,
+        DB_USER: "mysql-user",
+        DB_PASSWORD: "mysql-pass",
+        DB_NAME: "role_node",
         DB_POOL_MIN: 0,
-        DB_POOL_MAX: 10,
-        DB_SSL: false,
+        DB_POOL_MAX: 4,
+        DB_SSL: true,
       },
     }));
 
     const { getDb } = await import("../../src/config/db.js");
 
-    expect(() => getDb()).toThrowError(
-      "DATABASE_URL is required to initialize a database client",
-    );
-    expect(createDatabaseClientMock).not.toHaveBeenCalled();
+    getDb();
+
+    expect(createDatabaseClientMock).toHaveBeenCalledWith("mysql", {
+      host: "mysql.internal",
+      port: 3306,
+      user: "mysql-user",
+      password: "mysql-pass",
+      database: "role_node",
+      poolMin: 0,
+      poolMax: 4,
+      ssl: true,
+    });
   });
 
   it("closes existing client and allows recreation", async () => {
@@ -81,7 +101,11 @@ describe("config db", () => {
     vi.doMock("../../src/config/env.js", () => ({
       env: {
         DB_DIALECT: "mysql",
-        DATABASE_URL: "mysql://localhost:3306/app",
+        DB_HOST: "localhost",
+        DB_PORT: 3306,
+        DB_USER: "db-user",
+        DB_PASSWORD: "db-pass",
+        DB_NAME: "app",
         DB_POOL_MIN: 0,
         DB_POOL_MAX: 4,
         DB_SSL: true,

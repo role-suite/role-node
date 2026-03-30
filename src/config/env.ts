@@ -10,7 +10,11 @@ const envSchema = z
       .default("development"),
     PORT: z.coerce.number().int().positive().default(3000),
     DB_DIALECT: z.enum(["postgres", "mysql", "mariadb"]).default("postgres"),
-    DATABASE_URL: z.string().min(1).optional(),
+    DB_HOST: z.string().min(1),
+    DB_PORT: z.coerce.number().int().positive(),
+    DB_USER: z.string().min(1),
+    DB_PASSWORD: z.string().min(1),
+    DB_NAME: z.string().min(1),
     DB_POOL_MIN: z.coerce.number().int().min(0).default(0),
     DB_POOL_MAX: z.coerce.number().int().positive().default(10),
     DB_SSL: z

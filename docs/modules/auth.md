@@ -235,7 +235,7 @@ Dialect support details in repo implementation:
 - `AUTH_REFRESH_TOKEN_SECRET`
 - `AUTH_ACCESS_TOKEN_TTL_SECONDS`
 - `AUTH_REFRESH_TOKEN_TTL_SECONDS`
-- Plus DB variables used by shared DB config (`DB_DIALECT`, `DATABASE_URL`, pool/SSL settings)
+- Plus DB variables used by shared DB config (`DB_DIALECT`, `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, pool/SSL settings)
 
 Defined in `src/config/env.ts`.
 

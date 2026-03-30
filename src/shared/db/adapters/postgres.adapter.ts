@@ -100,7 +100,11 @@ export const createPostgresClient = (
   config: DatabaseConfig,
 ): DatabaseClient => {
   const poolConfig: PoolConfig = {
-    connectionString: config.connectionString,
+    host: config.host,
+    port: config.port,
+    user: config.user,
+    password: config.password,
+    database: config.database,
     min: config.poolMin,
     max: config.poolMax,
   };

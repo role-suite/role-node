@@ -18,7 +18,11 @@ vi.mock("../../src/shared/db/adapters/postgres.adapter.js", () => ({
 import { createDatabaseClient } from "../../src/shared/db/client-factory.js";
 
 const baseConfig: DatabaseConfig = {
-  connectionString: "postgres://localhost:5432/app",
+  host: "localhost",
+  port: 5432,
+  user: "db-user",
+  password: "db-pass",
+  database: "app",
   poolMin: 0,
   poolMax: 10,
   ssl: false,

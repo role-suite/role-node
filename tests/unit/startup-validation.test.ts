@@ -17,7 +17,11 @@ describe("startup validation", () => {
         NODE_ENV: "development",
         PORT: 3000,
         DB_DIALECT: "postgres",
-        DATABASE_URL: "postgres://db-user:db-pass@localhost:5432/app",
+        DB_HOST: "localhost",
+        DB_PORT: 5432,
+        DB_USER: "db-user",
+        DB_PASSWORD: "db-pass",
+        DB_NAME: "app",
         DB_POOL_MIN: 0,
         DB_POOL_MAX: 10,
         DB_SSL: false,
@@ -47,13 +51,17 @@ describe("startup validation", () => {
     );
   });
 
-  it("fails when DATABASE_URL is missing", async () => {
+  it("fails when app port is out of range", async () => {
     vi.doMock("../../src/config/env.js", () => ({
       env: {
         NODE_ENV: "development",
-        PORT: 3000,
+        PORT: 70000,
         DB_DIALECT: "postgres",
-        DATABASE_URL: undefined,
+        DB_HOST: "localhost",
+        DB_PORT: 5432,
+        DB_USER: "db-user",
+        DB_PASSWORD: "db-pass",
+        DB_NAME: "app",
         DB_POOL_MIN: 0,
         DB_POOL_MAX: 10,
         DB_SSL: false,
@@ -76,40 +84,7 @@ describe("startup validation", () => {
       await import("../../src/config/startup-validation.js");
 
     await expect(validateStartupOrThrow()).rejects.toThrowError(
-      "DATABASE_URL is required for startup validation",
-    );
-  });
-
-  it("fails when DATABASE_URL protocol does not match dialect", async () => {
-    vi.doMock("../../src/config/env.js", () => ({
-      env: {
-        NODE_ENV: "development",
-        PORT: 3000,
-        DB_DIALECT: "mysql",
-        DATABASE_URL: "postgres://db-user:db-pass@localhost:5432/app",
-        DB_POOL_MIN: 0,
-        DB_POOL_MAX: 10,
-        DB_SSL: false,
-      },
-    }));
-
-    vi.doMock("../../src/config/db.js", () => ({
-      getDb: () => ({
-        query: vi.fn(),
-      }),
-    }));
-
-    vi.doMock("../../src/shared/logger.js", () => ({
-      logger: {
-        info: vi.fn(),
-      },
-    }));
-
-    const { validateStartupOrThrow } =
-      await import("../../src/config/startup-validation.js");
-
-    await expect(validateStartupOrThrow()).rejects.toThrowError(
-      'DATABASE_URL protocol "postgres:" does not match DB_DIALECT "mysql"',
+      "PORT must be between 1 and 65535",
     );
   });
 
@@ -121,7 +96,11 @@ describe("startup validation", () => {
         NODE_ENV: "production",
         PORT: 3000,
         DB_DIALECT: "postgres",
-        DATABASE_URL: "postgres://db-user:db-pass@localhost:5432/app",
+        DB_HOST: "localhost",
+        DB_PORT: 5432,
+        DB_USER: "db-user",
+        DB_PASSWORD: "db-pass",
+        DB_NAME: "app",
         DB_POOL_MIN: 0,
         DB_POOL_MAX: 10,
         DB_SSL: true,

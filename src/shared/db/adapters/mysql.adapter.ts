@@ -125,7 +125,11 @@ export const createMysqlClient = (
   dialect: DbDialect,
 ): DatabaseClient => {
   const poolOptions: PoolOptions = {
-    uri: config.connectionString,
+    host: config.host,
+    port: config.port,
+    user: config.user,
+    password: config.password,
+    database: config.database,
     connectionLimit: config.poolMax,
   };
 

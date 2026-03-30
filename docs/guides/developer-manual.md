@@ -27,14 +27,14 @@ Environment validation: `src/config/env.ts`
 
 Important values:
 
-- `DB_DIALECT`, `DATABASE_URL`, `DB_POOL_MIN`, `DB_POOL_MAX`, `DB_SSL`
+- `DB_DIALECT`, `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_POOL_MIN`, `DB_POOL_MAX`, `DB_SSL`
 - `ENABLE_STARTUP_VALIDATION`
 - `AUTH_ACCESS_TOKEN_SECRET`, `AUTH_REFRESH_TOKEN_SECRET`
 - `AUTH_ACCESS_TOKEN_TTL_SECONDS`, `AUTH_REFRESH_TOKEN_TTL_SECONDS`
 
 Startup checks: `src/config/startup-validation.ts`
 
-- validates DB URL and dialect compatibility
+- validates app `PORT` range
 - validates DB connectivity with `SELECT 1`
 
 ## 3. Database and migrations

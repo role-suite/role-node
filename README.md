@@ -131,7 +131,11 @@ Validated in `src/config/env.ts` using Zod.
 - `NODE_ENV`: `development` | `test` | `production` (default: `development`)
 - `PORT`: positive integer (default: `3000`)
 - `DB_DIALECT`: `postgres` | `mysql` | `mariadb` (default: `postgres`)
-- `DATABASE_URL`: database connection URL
+- `DB_HOST`: database host
+- `DB_PORT`: database port
+- `DB_USER`: database user
+- `DB_PASSWORD`: database password
+- `DB_NAME`: database name
 - `DB_POOL_MIN`: minimum pool size (default: `0`)
 - `DB_POOL_MAX`: maximum pool size (default: `10`)
 - `DB_SSL`: `true` | `false` (default: `false`)

@@ -29,7 +29,11 @@ vi.mock("mysql2/promise", () => ({
 
 describe("mysql adapter", () => {
   const config: DatabaseConfig = {
-    connectionString: "mysql://db-user:db-pass@localhost:3306/app",
+    host: "localhost",
+    port: 3306,
+    user: "db-user",
+    password: "db-pass",
+    database: "app",
     poolMin: 0,
     poolMax: 10,
     ssl: false,
@@ -44,7 +48,11 @@ describe("mysql adapter", () => {
     createMysqlClient(config, "mysql");
 
     expect(mysqlState.options).toEqual({
-      uri: config.connectionString,
+      host: config.host,
+      port: config.port,
+      user: config.user,
+      password: config.password,
+      database: config.database,
       connectionLimit: 10,
     });
   });
@@ -53,7 +61,11 @@ describe("mysql adapter", () => {
     createMysqlClient({ ...config, ssl: true }, "mysql");
 
     expect(mysqlState.options).toEqual({
-      uri: config.connectionString,
+      host: config.host,
+      port: config.port,
+      user: config.user,
+      password: config.password,
+      database: config.database,
       connectionLimit: 10,
       ssl: {},
     });

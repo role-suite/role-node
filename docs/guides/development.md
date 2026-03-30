@@ -17,7 +17,11 @@ Environment values are validated in `src/config/env.ts`.
 Database-related environment variables:
 
 - `DB_DIALECT`: `postgres` | `mysql` | `mariadb`
-- `DATABASE_URL`: required when startup validation is enabled and for migration commands
+- `DB_HOST`: required database host
+- `DB_PORT`: required database port
+- `DB_USER`: required database user
+- `DB_PASSWORD`: required database password
+- `DB_NAME`: required database name
 - `DB_POOL_MIN`: minimum connection pool size
 - `DB_POOL_MAX`: maximum connection pool size
 - `DB_SSL`: `true` | `false`
@@ -25,8 +29,7 @@ Database-related environment variables:
 
 Startup checks in `src/config/startup-validation.ts` verify:
 
-- `DATABASE_URL` is present and a valid URL
-- URL protocol matches `DB_DIALECT`
+- app `PORT` is within valid range
 - Database is reachable (`SELECT 1`)
 
 When local DB is not available yet, set `ENABLE_STARTUP_VALIDATION=false`.
