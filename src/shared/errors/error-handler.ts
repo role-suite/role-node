@@ -52,16 +52,14 @@ const hasPlaceholderRouteParam = (req: Request): boolean => {
   });
 };
 
-const hasNonNumericIdParam = (req: Request): boolean => {
+const hasNonNumericCollectionIdParam = (req: Request): boolean => {
   const urlParams = parsePathParamsFromUrl(req.originalUrl);
   const mergedParams = { ...(req.params ?? {}), ...urlParams };
 
-  const idCandidates = [
-    mergedParams.workspaceId,
-    mergedParams.collectionId,
-  ].filter((value): value is string => typeof value === "string");
-
-  return idCandidates.some((value) => !isPositiveIntegerString(value));
+  return (
+    typeof mergedParams.collectionId === "string" &&
+    !isPositiveIntegerString(mergedParams.collectionId)
+  );
 };
 
 export const errorHandler = (
@@ -82,7 +80,7 @@ export const errorHandler = (
       issues: error.issues,
     });
 
-    if (hasPlaceholderRouteParam(req) || hasNonNumericIdParam(req)) {
+    if (hasPlaceholderRouteParam(req) || hasNonNumericCollectionIdParam(req)) {
       appResponse.sendError(
         res,
         400,
