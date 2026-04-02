@@ -26,6 +26,23 @@ export type RunStore = {
 };
 
 export class DbRunStore implements RunStore {
+  public constructor(
+    private readonly options: {
+      retentionDays: number;
+      persistBinaryBodies: boolean;
+    },
+  ) {}
+
+  private isExpired(run: StoredRun): boolean {
+    if (!run.completedAt) {
+      return false;
+    }
+
+    const retentionMs = this.options.retentionDays * 24 * 60 * 60 * 1000;
+    const ageMs = Date.now() - run.completedAt.getTime();
+    return ageMs > retentionMs;
+  }
+
   async createRunning(input: {
     workspaceId: number;
     initiatedByUserId: number;
@@ -42,7 +59,14 @@ export class DbRunStore implements RunStore {
     runId: number,
     response: ExecutedResponseSnapshot,
   ): Promise<StoredRun> {
-    return runsRepo.completeSuccess(runId, response);
+    const prepared: ExecutedResponseSnapshot = this.options.persistBinaryBodies
+      ? response
+      : {
+          ...response,
+          bodyBase64: null,
+        };
+
+    return runsRepo.completeSuccess(runId, prepared);
   }
 
   async completeFailure(
@@ -53,14 +77,29 @@ export class DbRunStore implements RunStore {
   }
 
   async findById(runId: number): Promise<StoredRun | undefined> {
-    return runsRepo.findById(runId);
+    const run = await runsRepo.findById(runId);
+
+    if (!run || this.isExpired(run)) {
+      return undefined;
+    }
+
+    return run;
   }
 
   async cancel(runId: number): Promise<StoredRun | undefined> {
+    const existing = await runsRepo.findById(runId);
+
+    if (!existing || this.isExpired(existing)) {
+      return undefined;
+    }
+
     return runsRepo.cancel(runId);
   }
 }
 
-export const createDbRunStore = (): RunStore => {
-  return new DbRunStore();
+export const createDbRunStore = (options: {
+  retentionDays: number;
+  persistBinaryBodies: boolean;
+}): RunStore => {
+  return new DbRunStore(options);
 };
