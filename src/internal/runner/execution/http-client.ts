@@ -7,6 +7,11 @@ import type {
   ResolvedRunOptions,
 } from "../core/types.js";
 
+export type FetchLike = (
+  input: URL | RequestInfo,
+  init?: RequestInit,
+) => Promise<Response>;
+
 const toHeadersInit = (headers: HttpKeyValue[]): HeadersInit => {
   return headers
     .filter((header) => header.enabled ?? true)
@@ -148,6 +153,7 @@ const appendQueryParams = (
 export const executeHttpRequest = async (
   request: HttpRequestDraft,
   options: ResolvedRunOptions,
+  fetchImpl: FetchLike = globalThis.fetch.bind(globalThis),
 ): Promise<HttpExecutionResponse> => {
   const controller = new AbortController();
   const timeout = setTimeout(() => {
@@ -164,7 +170,7 @@ export const executeHttpRequest = async (
       signal: controller.signal,
       ...(resolved.body !== undefined ? { body: resolved.body } : {}),
     };
-    const response = await fetch(finalUrl, {
+    const response = await fetchImpl(finalUrl, {
       ...requestInit,
     });
 

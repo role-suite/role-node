@@ -20,7 +20,11 @@ import {
 } from "../policy/redaction-policy.js";
 import type { RunStore } from "../persistence/run-store.js";
 import { logger } from "../../../shared/logger.js";
-import type { ExecuteRunInput, ExecuteRunResult } from "./types.js";
+import type {
+  ExecutedRequestSnapshot,
+  ExecuteRunInput,
+  ExecuteRunResult,
+} from "./types.js";
 
 export type RunnerEngine = {
   runRequest(input: ExecuteRunInput): Promise<ExecuteRunResult>;
@@ -37,8 +41,23 @@ export type RunnerEngine = {
 export const createRunnerEngine = (deps: {
   config: RequestRunnerEngineConfig;
   runStore: RunStore;
+  executeHttpRequest?: typeof executeHttpRequest;
+  resolveRunOptions?: typeof resolveRunOptions;
+  assertRequestLimits?: typeof assertRequestLimits;
+  assertNetworkPolicy?: typeof assertNetworkPolicy;
+  redactRequestSnapshot?: typeof redactRequestSnapshot;
+  redactResponseSnapshot?: typeof redactResponseSnapshot;
 }): RunnerEngine => {
-  const { config, runStore } = deps;
+  const {
+    config,
+    runStore,
+    executeHttpRequest: executeHttpRequestImpl = executeHttpRequest,
+    resolveRunOptions: resolveRunOptionsImpl = resolveRunOptions,
+    assertRequestLimits: assertRequestLimitsImpl = assertRequestLimits,
+    assertNetworkPolicy: assertNetworkPolicyImpl = assertNetworkPolicy,
+    redactRequestSnapshot: redactRequestSnapshotImpl = redactRequestSnapshot,
+    redactResponseSnapshot: redactResponseSnapshotImpl = redactResponseSnapshot,
+  } = deps;
 
   const resolveTargetHost = (url: string | undefined): string | null => {
     if (!url) {
@@ -74,15 +93,15 @@ export const createRunnerEngine = (deps: {
           variableContext.values,
         );
         const authResolvedDraft = resolveAuth(resolvedDraft);
-        const options = resolveRunOptions(input.options, config);
+        const options = resolveRunOptionsImpl(input.options, config);
 
         targetHost = resolveTargetHost(authResolvedDraft.url);
         methodForLog = authResolvedDraft.method;
 
-        assertRequestLimits(authResolvedDraft, config);
-        assertNetworkPolicy(authResolvedDraft.url, config);
+        assertRequestLimitsImpl(authResolvedDraft, config);
+        assertNetworkPolicyImpl(authResolvedDraft.url, config);
 
-        const requestSnapshot = redactRequestSnapshot(
+        const requestSnapshot = redactRequestSnapshotImpl(
           authResolvedDraft,
           variableContext.values,
           variableContext.secretKeys,
@@ -99,33 +118,108 @@ export const createRunnerEngine = (deps: {
           request: requestSnapshot,
           startedAt,
         });
+        const executeAndPersist = async (): Promise<ExecuteRunResult> => {
+          try {
+            const rawResponse = await executeHttpRequestImpl(
+              authResolvedDraft,
+              options,
+            );
+            const normalized = normalizeResponse(rawResponse, options);
+            const redacted = redactResponseSnapshotImpl(normalized, config);
+            const completed = await runStore.completeSuccess(
+              run.runId,
+              redacted,
+            );
 
-        const rawResponse = await executeHttpRequest(
-          authResolvedDraft,
-          options,
-        );
-        const normalized = normalizeResponse(rawResponse, options);
-        const redacted = redactResponseSnapshot(normalized, config);
-        const completed = await runStore.completeSuccess(run.runId, redacted);
+            logger.info("Runner execution completed", {
+              runId: completed.runId,
+              workspaceId: input.workspaceId,
+              userId: input.initiatedByUserId,
+              sourceType,
+              targetHost,
+              method: methodForLog,
+              status: completed.response?.status ?? null,
+              runStatus: completed.status,
+              durationMs: completed.durationMs,
+              policyDecision: "allow",
+            });
 
-        logger.info("Runner execution completed", {
-          runId: completed.runId,
-          workspaceId: input.workspaceId,
-          userId: input.initiatedByUserId,
-          sourceType,
-          targetHost,
-          method: methodForLog,
-          status: completed.response?.status ?? null,
-          runStatus: completed.status,
-          durationMs: completed.durationMs,
-          policyDecision: "allow",
-        });
+            return completed;
+          } catch (error) {
+            const mappedError = toRunnerPublicError(error);
+            const completedFailure = await runStore.completeFailure(
+              run.runId,
+              mappedError,
+            );
 
-        return completed;
+            logger.warn("Runner execution failed", {
+              runId: completedFailure.runId,
+              workspaceId: input.workspaceId,
+              userId: input.initiatedByUserId,
+              sourceType,
+              targetHost,
+              method: methodForLog,
+              runStatus: completedFailure.status,
+              durationMs: completedFailure.durationMs,
+              errorCode: mappedError.code,
+              policyDecision:
+                mappedError.code === "RUN_POLICY_BLOCKED" ? "deny" : "allow",
+            });
+
+            return completedFailure;
+          }
+        };
+
+        if (config.mode === "async") {
+          void executeAndPersist().catch((error) => {
+            logger.warn("Runner async execution unexpectedly failed", {
+              workspaceId: input.workspaceId,
+              userId: input.initiatedByUserId,
+              sourceType,
+              targetHost,
+              method: methodForLog,
+              errorMessage:
+                error instanceof Error ? error.message : "Unknown async error",
+            });
+          });
+
+          return run;
+        }
+
+        return executeAndPersist();
       } catch (error) {
         const sourcePersistence = resolveRunSourcePersistence(input);
         sourceType = sourcePersistence.sourceType;
         const mappedError = toRunnerPublicError(error);
+        let fallbackTimeoutMs = config.limits.timeoutMsDefault;
+        try {
+          fallbackTimeoutMs = resolveRunOptionsImpl(
+            input.options,
+            config,
+          ).timeoutMs;
+        } catch {
+          fallbackTimeoutMs = config.limits.timeoutMsDefault;
+        }
+
+        const fallbackRequest: ExecutedRequestSnapshot = {
+          method:
+            input.source.type === "adhoc" ? input.source.request.method : "GET",
+          url: input.source.type === "adhoc" ? input.source.request.url : "",
+          headers:
+            input.source.type === "adhoc" ? input.source.request.headers : [],
+          queryParams:
+            input.source.type === "adhoc"
+              ? input.source.request.queryParams
+              : [],
+          body:
+            input.source.type === "adhoc" ? input.source.request.body : null,
+          auth:
+            input.source.type === "adhoc"
+              ? input.source.request.auth
+              : { type: "none" },
+          resolvedVariables: {},
+          timeoutMs: fallbackTimeoutMs,
+        };
 
         const failedRun = await runStore.createRunning({
           workspaceId: input.workspaceId,
@@ -133,27 +227,7 @@ export const createRunnerEngine = (deps: {
           sourceType: sourcePersistence.sourceType,
           sourceCollectionId: sourcePersistence.sourceCollectionId,
           sourceEndpointId: sourcePersistence.sourceEndpointId,
-          request: {
-            method:
-              input.source.type === "adhoc"
-                ? input.source.request.method
-                : "GET",
-            url: input.source.type === "adhoc" ? input.source.request.url : "",
-            headers:
-              input.source.type === "adhoc" ? input.source.request.headers : [],
-            queryParams:
-              input.source.type === "adhoc"
-                ? input.source.request.queryParams
-                : [],
-            body:
-              input.source.type === "adhoc" ? input.source.request.body : null,
-            auth:
-              input.source.type === "adhoc"
-                ? input.source.request.auth
-                : { type: "none" },
-            resolvedVariables: {},
-            timeoutMs: config.limits.timeoutMsDefault,
-          },
+          request: fallbackRequest,
           startedAt,
         });
 
