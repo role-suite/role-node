@@ -110,6 +110,18 @@ export const errorHandler = (
     return;
   }
 
+  if (env.NODE_ENV === "development") {
+    if (error instanceof Error) {
+      logger.error("Unhandled error", {
+        name: error.name,
+        message: error.message,
+        cause: (error as Error & { cause?: unknown }).cause,
+      });
+    } else {
+      logger.error("Unhandled error", { error });
+    }
+  }
+
   appResponse.sendError(
     res,
     500,

@@ -241,7 +241,7 @@ export const authRepo = {
     );
 
     const result = await db.query<UserRow>(
-      `SELECT id, name, email, password_hash, created_at FROM ${USERS_TABLE} WHERE email = ${nameToken}`,
+      `SELECT id, name, email, password_hash, created_at FROM ${USERS_TABLE} WHERE email = ${emailToken}`,
       [payload.email],
     );
 
@@ -308,7 +308,7 @@ export const authRepo = {
     );
 
     const result = await db.query<WorkspaceRow>(
-      `SELECT id, name, slug, type, created_by_user_id, created_at FROM ${WORKSPACES_TABLE} WHERE slug = ${nameToken}`,
+      `SELECT id, name, slug, type, created_by_user_id, created_at FROM ${WORKSPACES_TABLE} WHERE slug = ${slugToken}`,
       [slug],
     );
 
@@ -528,9 +528,12 @@ export const authRepo = {
   ): Promise<void> {
     const sessionToken = resolveToken(1);
     const hashToken = resolveToken(2);
-    await resolveDb().query(
+    const db = resolveDb();
+    await db.query(
       `UPDATE ${SESSIONS_TABLE} SET refresh_token_hash = ${hashToken} WHERE id = ${sessionToken}`,
-      [sessionId, refreshTokenHash],
+      db.dialect === "postgres"
+        ? [sessionId, refreshTokenHash]
+        : [refreshTokenHash, sessionId],
     );
   },
 
@@ -613,10 +616,9 @@ export const authRepo = {
   ): Promise<WorkspaceEvent[]> {
     const workspaceToken = resolveToken(1);
     const sinceToken = resolveToken(2);
-    const limitToken = resolveToken(3);
     const result = await resolveDb().query<WorkspaceEventRow>(
-      `SELECT id, workspace_id, actor_user_id, entity, action, entity_id, payload_json, created_at FROM ${WORKSPACE_EVENTS_TABLE} WHERE workspace_id = ${workspaceToken} AND id > ${sinceToken} ORDER BY id ASC LIMIT ${limitToken}`,
-      [workspaceId, sinceEventId, limit],
+      `SELECT id, workspace_id, actor_user_id, entity, action, entity_id, payload_json, created_at FROM ${WORKSPACE_EVENTS_TABLE} WHERE workspace_id = ${workspaceToken} AND id > ${sinceToken} ORDER BY id ASC LIMIT ${limit}`,
+      [workspaceId, sinceEventId],
     );
 
     return result.rows.map(mapWorkspaceEventRow);
