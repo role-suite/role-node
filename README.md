@@ -205,7 +205,7 @@ Set `ENABLE_STARTUP_VALIDATION=false` when running locally without a configured 
 
 Please report security vulnerabilities privately.
 
-- Email: `security@role-suite.local`
+- Email: `taneri862@gmail.com`
 - Do not open public issues for security concerns
 
 ## 🤝 Contributing
