@@ -8,6 +8,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "create:module": "node scripts/create-module.mjs",
+    "db:reset:docker": "docker compose down -v && docker compose up -d",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:migrate:up": "tsx scripts/migrate.ts up",
     "db:migrate:down": "tsx scripts/migrate.ts down",
