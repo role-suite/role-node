@@ -14,7 +14,9 @@
   <a href="#local-database-docker">🐳 Local Database</a> •
   <a href="#api-overview">🧭 API Overview</a> •
   <a href="#documentation">📚 Documentation</a> •
-  <a href="#contributing">🤝 Contributing</a>
+  <a href="#security">🔒 Security</a> •
+  <a href="#contributing">🤝 Contributing</a> •
+  <a href="#license">📄 License</a>
 </p>
 
 ---
@@ -199,6 +201,13 @@ Set `ENABLE_STARTUP_VALIDATION=false` when running locally without a configured 
 - `docs/modules/*`: module-specific behavior
 - `migrations/README.md`: migration workflow
 
+## 🔒 Security
+
+Please report security vulnerabilities privately.
+
+- Email: `security@role-suite.local`
+- Do not open public issues for security concerns
+
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -206,3 +215,7 @@ Set `ENABLE_STARTUP_VALIDATION=false` when running locally without a configured 
 3. Commit your changes (`git commit -m "Add feature"`)
 4. Push to the branch (`git push origin feature/your-feature`)
 5. Open a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License. See `LICENSE` for details.
