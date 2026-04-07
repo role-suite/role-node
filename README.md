@@ -1,93 +1,50 @@
-# role-node
+<p align="center">
+  <img src="assets/app_logo.png" alt="Röle Logo" width="120" height="120">
+</p>
 
-TypeScript + Express backend starter focused on clean module boundaries, request validation, centralized error handling, and test coverage.
+<h1 align="center">Röle Node</h1>
 
-## Tech stack
+<p align="center">
+  <strong>TypeScript + Express backend for workspaces, collections, environments, and request runs</strong>
+</p>
 
-- Node.js + TypeScript (ESM)
-- Express 5
-- Zod for runtime validation
-- `pg` + `mysql2` for SQL connectivity
-- Vitest + Supertest for multi-layer backend testing
+<p align="center">
+  <a href="#features">✨ Features</a> •
+  <a href="#quick-start">⚡ Quick Start</a> •
+  <a href="#local-database-docker">🐳 Local Database</a> •
+  <a href="#api-overview">🧭 API Overview</a> •
+  <a href="#documentation">📚 Documentation</a> •
+  <a href="#contributing">🤝 Contributing</a>
+</p>
 
-## Project structure
+---
 
-```txt
-src/
-  app.ts                      # Express app wiring
-  server.ts                   # Runtime bootstrap (listen)
-  config/
-    env.ts                    # Environment schema + parsing
-    db.ts                     # DB client singleton + lifecycle
-    startup-validation.ts     # Startup integrity and DB checks
-  internal/
-    runner/                   # Request runner engine internals (config + composition + execution)
-  modules/
-    auth/
-      auth.route.ts
-      auth.controller.ts
-      auth.service.ts
-      auth.repo.ts
-      auth.schema.ts
-    workspaces/
-      workspaces.route.ts
-      workspaces.controller.ts
-      workspaces.service.ts
-      workspaces.repo.ts
-      workspaces.schema.ts
-    collections/
-      collections.route.ts
-      collections.controller.ts
-      collections.service.ts
-      collections.repo.ts
-      collections.schema.ts
-    environments/
-      environments.route.ts
-      environments.controller.ts
-      environments.service.ts
-      environments.repo.ts
-      environments.schema.ts
-    import-export/
-      import-export.route.ts
-      import-export.controller.ts
-      import-export.service.ts
-      import-export.repo.ts
-      import-export.schema.ts
-    runs/
-      runs.route.ts
-      runs.controller.ts
-      runs.service.ts
-      runs.repo.ts
-      runs.schema.ts
-  shared/
-    app-response.ts
-    logger.ts
-    db/
-      client-factory.ts
-      adapters/
-        postgres.adapter.ts
-        mysql.adapter.ts
-    errors/
-      db-error.ts
-      error-handler.ts
-    middleware/
-      not-found.ts
-  types/
-    db.ts
-tests/
-  contract/
-  e2e/
-  integration/
-  security/
-  smoke/
-  unit/
-migrations/
-  *.migration.ts
-config/
-  request-runner.config.json  # Runner engine base config
-```
+## 🌟 Overview
 
-## Quick start
+<p align="center">
+  role-node is a modular backend starter built with Express 5 and TypeScript. It provides a workspace-based API for collections, environments, and runnable HTTP requests, with strict schema validation and consistent error handling. It targets Postgres or MySQL with migration support and a tested module structure.
+</p>
+
+## ✨ Features
+
+### ⚙️ Core
+
+- Strict Zod validation and centralized error responses
+- Workspace model with teams, invitations, roles, and activity updates
+- Collections, environments, variables, and request runs
+- Import/export job support
+
+### ✅ Quality
+
+- Multi-layer tests: unit, integration, contract, security, smoke, e2e
+- Clean module boundaries and repo/service/controller separation
+
+### 🧩 Platform
+
+- Postgres + MySQL support
+- Migrations with a repeatable Docker reset workflow
+
+## ⚡ Quick Start
 
 1. Install dependencies
 
@@ -109,7 +66,21 @@ pnpm dev
 
 The server starts on `PORT` (default `3000`).
 
-## Scripts
+## 🐳 Local Database (Docker)
+
+Start fresh Postgres + MySQL containers from `docker-compose.yml`:
+
+```bash
+pnpm db:reset:docker
+```
+
+Apply migrations:
+
+```bash
+pnpm db:migrate
+```
+
+## 🧰 Scripts
 
 - `pnpm dev`: run server with file watch
 - `pnpm build`: compile TypeScript to `dist/`
@@ -125,7 +96,7 @@ The server starts on `PORT` (default `3000`).
 - `pnpm test:run`: run tests once
 - `pnpm test:coverage`: run tests with coverage report
 
-## Environment variables
+## 🔧 Environment Variables
 
 Validated in `src/config/env.ts` using Zod.
 
@@ -145,29 +116,11 @@ Validated in `src/config/env.ts` using Zod.
 On startup, the app validates environment values and checks database connectivity with `SELECT 1` before listening for requests.
 Set `ENABLE_STARTUP_VALIDATION=false` when running locally without a configured database.
 
-## Testing layers
-
-- `tests/unit`: isolated logic checks (service/repo/schema/middleware/logger/errors/db adapters)
-- `tests/integration`: module HTTP behavior against Express app wiring
-- `tests/contract`: API response shape and envelope contract checks
-- `tests/security`: input hardening and defensive HTTP behavior checks
-- `tests/smoke`: quick liveness and baseline runtime checks
-- `tests/e2e`: end-to-end feature flows across multiple endpoints
-
-## API overview
+## 🧭 API Overview
 
 ### Health
 
 - `GET /health`
-
-Response:
-
-```json
-{
-  "success": true,
-  "data": { "status": "ok" }
-}
-```
 
 ### Auth
 
@@ -239,28 +192,17 @@ Response:
 - `POST /api/workspaces/:workspaceId/import-export/exports`
 - `POST /api/workspaces/:workspaceId/import-export/imports`
 
-## Error handling
+## 📚 Documentation
 
-- Validation errors return `400` with `message: "Validation failed"`.
-- Domain errors use centralized `appResponse.withStatus(...)` payloads with explicit status codes.
-- Unknown errors return `500` with generic message.
-- Unknown routes return `404` from `notFoundHandler`.
+- `docs/guides/client-integration.md`: full client integration and payload reference
+- `docs/README.md`: documentation index
+- `docs/modules/*`: module-specific behavior
+- `migrations/README.md`: migration workflow
 
-## Development guide
+## 🤝 Contributing
 
-See:
-
-- `docs/README.md`
-- `docs/architecture/overview.md`
-- `docs/guides/development.md`
-- `docs/guides/user-manual.md`
-- `docs/guides/developer-manual.md`
-- `docs/guides/implementation-manual.md`
-- `docs/guides/module-template.md`
-- `docs/modules/auth.md`
-- `docs/modules/workspaces.md`
-- `docs/modules/collections.md`
-- `docs/modules/environments.md`
-- `docs/modules/runs.md`
-- `docs/modules/import-export.md`
-- `migrations/README.md`
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Commit your changes (`git commit -m "Add feature"`)
+4. Push to the branch (`git push origin feature/your-feature`)
+5. Open a pull request
