@@ -10,6 +10,7 @@ This folder is organized by concern.
 ## Guides
 
 - `docs/guides/development.md`: Day-to-day development workflow.
+- `docs/guides/client-integration.md`: Client integration flow, API usage, and error handling.
 - `docs/guides/module-template.md`: Module generator usage and post-generation checklist.
 - `docs/guides/module-readiness.md`: Definition of done and readiness criteria.
 - `docs/guides/user-manual.md`: End-user/API-consumer quickstart.

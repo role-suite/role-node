@@ -44,6 +44,7 @@ When local DB is not available yet, set `ENABLE_STARTUP_VALIDATION=false`.
 - `pnpm db:migrate:up [count]`: apply pending migrations (optionally limited)
 - `pnpm db:migrate:down [count]`: rollback last applied migrations
 - `pnpm db:migrate:status`: show applied/pending migration IDs
+- `pnpm db:reset:docker`: reset dockerized DBs (down -v, up -d)
 
 ## Build and run
 

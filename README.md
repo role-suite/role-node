@@ -119,6 +119,7 @@ The server starts on `PORT` (default `3000`).
 - `pnpm db:migrate:up`: apply pending migrations (optionally with count)
 - `pnpm db:migrate:down`: rollback latest migration (optionally with count)
 - `pnpm db:migrate:status`: print applied/pending migration status
+- `pnpm db:reset:docker`: reset dockerized DBs (down -v, up -d)
 - `pnpm test`: run tests in Vitest
 - `pnpm test:watch`: run tests in watch mode
 - `pnpm test:run`: run tests once
@@ -185,7 +186,11 @@ Response:
 - `POST /api/workspaces/:workspaceId/members`
 - `PATCH /api/workspaces/:workspaceId/members/:memberUserId`
 - `DELETE /api/workspaces/:workspaceId/members/:memberUserId`
+- `POST /api/workspaces/:workspaceId/invitations`
+- `POST /api/workspaces/join`
 - `POST /api/workspaces/:workspaceId/leave`
+- `POST /api/workspaces/:workspaceId/convert-to-team`
+- `GET /api/workspaces/:workspaceId/updates`
 
 ### Collections
 
