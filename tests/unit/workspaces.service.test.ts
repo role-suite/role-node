@@ -157,6 +157,67 @@ describe("workspaces service", () => {
     expect(members).toHaveLength(1);
   });
 
+  it("creates invitation and allows member to join", async () => {
+    const owner = await authService.register({
+      name: "Owner",
+      email: "owner@example.com",
+      password: "password123",
+      accountType: "single",
+    });
+    const invitee = await authService.register({
+      name: "Invitee",
+      email: "invitee@example.com",
+      password: "password123",
+      accountType: "single",
+    });
+
+    const created = await workspacesService.createForUser(owner.user.id, {
+      name: "Invite Team",
+    });
+
+    const invitation = await workspacesService.createInvitationForUser(
+      owner.user.id,
+      {
+        workspaceId: created.id,
+        email: invitee.user.email,
+        role: "member",
+      },
+    );
+
+    const joined = await workspacesService.joinForUser(invitee.user.id, {
+      token: invitation.token,
+    });
+
+    expect(joined.id).toBe(created.id);
+    expect(joined.role).toBe("member");
+
+    const members = await workspacesService.listMembersForUser(
+      owner.user.id,
+      created.id,
+    );
+    expect(members).toHaveLength(2);
+  });
+
+  it("converts personal workspace to team", async () => {
+    const owner = await authService.register({
+      name: "Owner",
+      email: "owner@example.com",
+      password: "password123",
+      accountType: "single",
+    });
+
+    const converted = await workspacesService.convertToTeamForUser(
+      owner.user.id,
+      {
+        workspaceId: owner.workspace.id,
+        name: "Owner Team",
+      },
+    );
+
+    expect(converted.type).toBe("team");
+    expect(converted.name).toBe("Owner Team");
+  });
+
   it("prevents last owner from leaving workspace", async () => {
     const owner = await authService.register({
       name: "Owner",

@@ -13,6 +13,13 @@ export const workspacesRepo = {
   deleteMembershipByUserAndWorkspace:
     authRepo.deleteMembershipByUserAndWorkspace,
   countMembershipsByRole: authRepo.countMembershipsByRole,
+  createWorkspaceInvitation: authRepo.createWorkspaceInvitation,
+  findWorkspaceInvitationByTokenHash:
+    authRepo.findWorkspaceInvitationByTokenHash,
+  findPendingWorkspaceInvitationByEmail:
+    authRepo.findPendingWorkspaceInvitationByEmail,
+  markWorkspaceInvitationAccepted: authRepo.markWorkspaceInvitationAccepted,
+  updateWorkspaceTypeAndName: authRepo.updateWorkspaceTypeAndName,
 };
 
 export type WorkspaceRole = MembershipRole;

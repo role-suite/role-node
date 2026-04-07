@@ -21,6 +21,23 @@ export const workspaceMemberParamsSchema = workspaceIdSchema.extend({
   memberUserId: z.coerce.number().int().positive(),
 });
 
+export const workspaceInvitationRoleSchema = workspaceRoleSchema.exclude([
+  "owner",
+]);
+
+export const createWorkspaceInvitationSchema = workspaceIdSchema.extend({
+  email: z.email(),
+  role: workspaceInvitationRoleSchema.default("member"),
+});
+
+export const acceptWorkspaceInvitationSchema = z.object({
+  token: z.string().min(10).max(512),
+});
+
+export const convertWorkspaceToTeamSchema = workspaceIdSchema.extend({
+  name: z.string().trim().min(2).max(120).optional(),
+});
+
 export const workspaceUpdatesQuerySchema = z.object({
   since: z.coerce.number().int().min(0).default(0),
   limit: z.coerce.number().int().min(1).max(200).default(50),
@@ -37,4 +54,13 @@ export type CreateWorkspaceInput = z.infer<typeof createWorkspaceSchema>;
 export type AddWorkspaceMemberInput = z.infer<typeof addWorkspaceMemberSchema>;
 export type UpdateWorkspaceMemberRoleInput = z.infer<
   typeof updateWorkspaceMemberRoleSchema
+>;
+export type CreateWorkspaceInvitationInput = z.infer<
+  typeof createWorkspaceInvitationSchema
+>;
+export type AcceptWorkspaceInvitationInput = z.infer<
+  typeof acceptWorkspaceInvitationSchema
+>;
+export type ConvertWorkspaceToTeamInput = z.infer<
+  typeof convertWorkspaceToTeamSchema
 >;

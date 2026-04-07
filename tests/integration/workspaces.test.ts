@@ -145,6 +145,70 @@ describe("workspaces integration", () => {
     expect(removeMemberResponse.status).toBe(200);
   });
 
+  it("invites and joins workspace via token", async () => {
+    const owner = await request(app).post("/api/auth/register").send({
+      name: "Owner",
+      email: "owner@example.com",
+      password: "password123",
+      accountType: "single",
+    });
+    const invitee = await request(app).post("/api/auth/register").send({
+      name: "Invitee",
+      email: "invitee@example.com",
+      password: "password123",
+      accountType: "single",
+    });
+
+    const ownerToken = owner.body.data.tokens.accessToken;
+    const inviteeToken = invitee.body.data.tokens.accessToken;
+
+    const created = await request(app)
+      .post("/api/workspaces")
+      .set("Authorization", `Bearer ${ownerToken}`)
+      .send({ name: "Invite Team" });
+
+    const workspaceId = created.body.data.id as number;
+
+    const inviteResponse = await request(app)
+      .post(`/api/workspaces/${workspaceId}/invitations`)
+      .set("Authorization", `Bearer ${ownerToken}`)
+      .send({ email: "invitee@example.com", role: "member" });
+
+    expect(inviteResponse.status).toBe(201);
+    expect(inviteResponse.body.data.token).toBeTruthy();
+
+    const joinResponse = await request(app)
+      .post("/api/workspaces/join")
+      .set("Authorization", `Bearer ${inviteeToken}`)
+      .send({ token: inviteResponse.body.data.token });
+
+    expect(joinResponse.status).toBe(200);
+    expect(joinResponse.body.data.id).toBe(workspaceId);
+  });
+
+  it("converts personal workspace to team", async () => {
+    const registerResponse = await request(app)
+      .post("/api/auth/register")
+      .send({
+        name: "Altay",
+        email: "altay@example.com",
+        password: "password123",
+        accountType: "single",
+      });
+
+    const accessToken = registerResponse.body.data.tokens.accessToken;
+    const workspaceId = registerResponse.body.data.workspace.id;
+
+    const convertResponse = await request(app)
+      .post(`/api/workspaces/${workspaceId}/convert-to-team`)
+      .set("Authorization", `Bearer ${accessToken}`)
+      .send({ name: "Altay Team" });
+
+    expect(convertResponse.status).toBe(200);
+    expect(convertResponse.body.data.type).toBe("team");
+    expect(convertResponse.body.data.name).toBe("Altay Team");
+  });
+
   it("streams workspace updates by cursor polling", async () => {
     const owner = await request(app).post("/api/auth/register").send({
       name: "Owner",

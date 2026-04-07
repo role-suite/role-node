@@ -16,6 +16,10 @@ workspacesRouter.get("/:workspaceId", workspacesController.getById);
 workspacesRouter.post("/", workspacesController.create);
 workspacesRouter.get("/:workspaceId/members", workspacesController.listMembers);
 workspacesRouter.post("/:workspaceId/members", workspacesController.addMember);
+workspacesRouter.post(
+  "/:workspaceId/invitations",
+  workspacesController.createInvitation,
+);
 workspacesRouter.patch(
   "/:workspaceId/members/:memberUserId",
   workspacesController.updateMemberRole,
@@ -24,7 +28,12 @@ workspacesRouter.delete(
   "/:workspaceId/members/:memberUserId",
   workspacesController.removeMember,
 );
+workspacesRouter.post("/join", workspacesController.join);
 workspacesRouter.post("/:workspaceId/leave", workspacesController.leave);
+workspacesRouter.post(
+  "/:workspaceId/convert-to-team",
+  workspacesController.convertToTeam,
+);
 workspacesRouter.get("/:workspaceId/updates", workspacesController.listUpdates);
 workspacesRouter.use("/:workspaceId/environments", environmentsRouter);
 workspacesRouter.use("/:workspaceId/collections", collectionsRouter);

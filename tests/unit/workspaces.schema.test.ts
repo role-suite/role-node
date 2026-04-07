@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   addWorkspaceMemberSchema,
+  acceptWorkspaceInvitationSchema,
+  convertWorkspaceToTeamSchema,
   createWorkspaceSchema,
+  createWorkspaceInvitationSchema,
   updateWorkspaceMemberRoleSchema,
   workspaceIdSchema,
   workspaceUpdatesQuerySchema,
@@ -32,6 +35,34 @@ describe("workspaces schema", () => {
     });
 
     expect(parsed.email).toBe("member@example.com");
+  });
+
+  it("parses invitation create payload", () => {
+    const parsed = createWorkspaceInvitationSchema.parse({
+      workspaceId: 1,
+      email: "invitee@example.com",
+      role: "admin",
+    });
+
+    expect(parsed.role).toBe("admin");
+  });
+
+  it("parses invitation accept payload", () => {
+    const parsed = acceptWorkspaceInvitationSchema.parse({
+      token: "a".repeat(32),
+    });
+
+    expect(parsed.token).toHaveLength(32);
+  });
+
+  it("parses convert to team payload", () => {
+    const parsed = convertWorkspaceToTeamSchema.parse({
+      workspaceId: 9,
+      name: "Team Alpha",
+    });
+
+    expect(parsed.workspaceId).toBe(9);
+    expect(parsed.name).toBe("Team Alpha");
   });
 
   it("rejects owner role for update member payload", () => {

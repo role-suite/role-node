@@ -49,6 +49,18 @@ export type WorkspaceEvent = {
   createdAt: Date;
 };
 
+export type WorkspaceInvitation = {
+  id: number;
+  workspaceId: number;
+  invitedByUserId: number;
+  email: string;
+  role: MembershipRole;
+  tokenHash: string;
+  expiresAt: Date;
+  acceptedAt: Date | null;
+  createdAt: Date;
+};
+
 type UserRow = {
   id: number;
   name: string;
@@ -95,11 +107,24 @@ type WorkspaceEventRow = {
   created_at: Date | string;
 };
 
+type WorkspaceInvitationRow = {
+  id: number;
+  workspace_id: number;
+  invited_by_user_id: number;
+  email: string;
+  role: MembershipRole;
+  token_hash: string;
+  expires_at: Date | string;
+  accepted_at: Date | string | null;
+  created_at: Date | string;
+};
+
 const USERS_TABLE = "auth_users";
 const WORKSPACES_TABLE = "workspaces";
 const MEMBERSHIPS_TABLE = "workspace_memberships";
 const SESSIONS_TABLE = "auth_sessions";
 const WORKSPACE_EVENTS_TABLE = "workspace_events";
+const INVITATIONS_TABLE = "workspace_invitations";
 
 let dbOverride: DatabaseClient | null = null;
 
@@ -171,6 +196,22 @@ const mapWorkspaceEventRow = (row: WorkspaceEventRow): WorkspaceEvent => {
     action: row.action,
     entityId: row.entity_id,
     payloadJson: row.payload_json,
+    createdAt: toDate(row.created_at),
+  };
+};
+
+const mapWorkspaceInvitationRow = (
+  row: WorkspaceInvitationRow,
+): WorkspaceInvitation => {
+  return {
+    id: row.id,
+    workspaceId: row.workspace_id,
+    invitedByUserId: row.invited_by_user_id,
+    email: row.email,
+    role: row.role,
+    tokenHash: row.token_hash,
+    expiresAt: toDate(row.expires_at),
+    acceptedAt: row.accepted_at ? toDate(row.accepted_at) : null,
     createdAt: toDate(row.created_at),
   };
 };
@@ -616,12 +657,125 @@ export const authRepo = {
   ): Promise<WorkspaceEvent[]> {
     const workspaceToken = resolveToken(1);
     const sinceToken = resolveToken(2);
+    const limitToken = resolveToken(3);
     const result = await resolveDb().query<WorkspaceEventRow>(
-      `SELECT id, workspace_id, actor_user_id, entity, action, entity_id, payload_json, created_at FROM ${WORKSPACE_EVENTS_TABLE} WHERE workspace_id = ${workspaceToken} AND id > ${sinceToken} ORDER BY id ASC LIMIT ${limit}`,
-      [workspaceId, sinceEventId],
+      `SELECT id, workspace_id, actor_user_id, entity, action, entity_id, payload_json, created_at FROM ${WORKSPACE_EVENTS_TABLE} WHERE workspace_id = ${workspaceToken} AND id > ${sinceToken} ORDER BY id ASC LIMIT ${limitToken}`,
+      [workspaceId, sinceEventId, limit],
     );
 
     return result.rows.map(mapWorkspaceEventRow);
+  },
+
+  async createWorkspaceInvitation(payload: {
+    workspaceId: number;
+    invitedByUserId: number;
+    email: string;
+    role: MembershipRole;
+    tokenHash: string;
+    expiresAt: Date;
+  }): Promise<WorkspaceInvitation> {
+    const workspaceToken = resolveToken(1);
+    const invitedByToken = resolveToken(2);
+    const emailToken = resolveToken(3);
+    const roleToken = resolveToken(4);
+    const tokenHashToken = resolveToken(5);
+    const expiresToken = resolveToken(6);
+    const db = resolveDb();
+
+    if (db.dialect === "postgres") {
+      const result = await db.query<WorkspaceInvitationRow>(
+        `INSERT INTO ${INVITATIONS_TABLE} (workspace_id, invited_by_user_id, email, role, token_hash, expires_at) VALUES (${workspaceToken}, ${invitedByToken}, ${emailToken}, ${roleToken}, ${tokenHashToken}, ${expiresToken}) RETURNING id, workspace_id, invited_by_user_id, email, role, token_hash, expires_at, accepted_at, created_at`,
+        [
+          payload.workspaceId,
+          payload.invitedByUserId,
+          payload.email,
+          payload.role,
+          payload.tokenHash,
+          payload.expiresAt,
+        ],
+      );
+      const row = result.rows[0];
+
+      if (!row) {
+        throw new Error("Failed to create workspace invitation");
+      }
+
+      return mapWorkspaceInvitationRow(row);
+    }
+
+    await db.query(
+      `INSERT INTO ${INVITATIONS_TABLE} (workspace_id, invited_by_user_id, email, role, token_hash, expires_at) VALUES (${workspaceToken}, ${invitedByToken}, ${emailToken}, ${roleToken}, ${tokenHashToken}, ${expiresToken})`,
+      [
+        payload.workspaceId,
+        payload.invitedByUserId,
+        payload.email,
+        payload.role,
+        payload.tokenHash,
+        payload.expiresAt,
+      ],
+    );
+
+    const result = await db.query<WorkspaceInvitationRow>(
+      `SELECT id, workspace_id, invited_by_user_id, email, role, token_hash, expires_at, accepted_at, created_at FROM ${INVITATIONS_TABLE} WHERE token_hash = ${tokenHashToken}`,
+      [payload.tokenHash],
+    );
+    const row = result.rows[0];
+
+    if (!row) {
+      throw new Error("Failed to create workspace invitation");
+    }
+
+    return mapWorkspaceInvitationRow(row);
+  },
+
+  async findWorkspaceInvitationByTokenHash(
+    tokenHash: string,
+  ): Promise<WorkspaceInvitation | undefined> {
+    const token = resolveToken(1);
+    const result = await resolveDb().query<WorkspaceInvitationRow>(
+      `SELECT id, workspace_id, invited_by_user_id, email, role, token_hash, expires_at, accepted_at, created_at FROM ${INVITATIONS_TABLE} WHERE token_hash = ${token}`,
+      [tokenHash],
+    );
+
+    const row = result.rows[0];
+    return row ? mapWorkspaceInvitationRow(row) : undefined;
+  },
+
+  async findPendingWorkspaceInvitationByEmail(
+    workspaceId: number,
+    email: string,
+  ): Promise<WorkspaceInvitation | undefined> {
+    const workspaceToken = resolveToken(1);
+    const emailToken = resolveToken(2);
+    const result = await resolveDb().query<WorkspaceInvitationRow>(
+      `SELECT id, workspace_id, invited_by_user_id, email, role, token_hash, expires_at, accepted_at, created_at FROM ${INVITATIONS_TABLE} WHERE workspace_id = ${workspaceToken} AND email = ${emailToken} AND accepted_at IS NULL ORDER BY id DESC LIMIT 1`,
+      [workspaceId, email],
+    );
+
+    const row = result.rows[0];
+    return row ? mapWorkspaceInvitationRow(row) : undefined;
+  },
+
+  async markWorkspaceInvitationAccepted(invitationId: number): Promise<void> {
+    const token = resolveToken(1);
+    await resolveDb().query(
+      `UPDATE ${INVITATIONS_TABLE} SET accepted_at = CURRENT_TIMESTAMP WHERE id = ${token} AND accepted_at IS NULL`,
+      [invitationId],
+    );
+  },
+
+  async updateWorkspaceTypeAndName(payload: {
+    workspaceId: number;
+    name: string;
+    type: "personal" | "team";
+  }): Promise<void> {
+    const idToken = resolveToken(1);
+    const nameToken = resolveToken(2);
+    const typeToken = resolveToken(3);
+    await resolveDb().query(
+      `UPDATE ${WORKSPACES_TABLE} SET name = ${nameToken}, type = ${typeToken} WHERE id = ${idToken}`,
+      [payload.workspaceId, payload.name, payload.type],
+    );
   },
 
   async clear(): Promise<void> {
@@ -629,17 +783,19 @@ export const authRepo = {
 
     if (db.dialect === "postgres") {
       await db.query(
-        `TRUNCATE TABLE ${WORKSPACE_EVENTS_TABLE}, ${SESSIONS_TABLE}, ${MEMBERSHIPS_TABLE}, ${WORKSPACES_TABLE}, ${USERS_TABLE} RESTART IDENTITY CASCADE`,
+        `TRUNCATE TABLE ${WORKSPACE_EVENTS_TABLE}, ${INVITATIONS_TABLE}, ${SESSIONS_TABLE}, ${MEMBERSHIPS_TABLE}, ${WORKSPACES_TABLE}, ${USERS_TABLE} RESTART IDENTITY CASCADE`,
       );
       return;
     }
 
     await db.query(`DELETE FROM ${WORKSPACE_EVENTS_TABLE}`);
+    await db.query(`DELETE FROM ${INVITATIONS_TABLE}`);
     await db.query(`DELETE FROM ${SESSIONS_TABLE}`);
     await db.query(`DELETE FROM ${MEMBERSHIPS_TABLE}`);
     await db.query(`DELETE FROM ${WORKSPACES_TABLE}`);
     await db.query(`DELETE FROM ${USERS_TABLE}`);
     await db.query(`ALTER TABLE ${WORKSPACE_EVENTS_TABLE} AUTO_INCREMENT = 1`);
+    await db.query(`ALTER TABLE ${INVITATIONS_TABLE} AUTO_INCREMENT = 1`);
     await db.query(`ALTER TABLE ${SESSIONS_TABLE} AUTO_INCREMENT = 1`);
     await db.query(`ALTER TABLE ${MEMBERSHIPS_TABLE} AUTO_INCREMENT = 1`);
     await db.query(`ALTER TABLE ${WORKSPACES_TABLE} AUTO_INCREMENT = 1`);

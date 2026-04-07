@@ -1,10 +1,16 @@
+import { randomBytes } from "node:crypto";
+
 import { appResponse } from "../../shared/app-response.js";
+import { hashToken } from "../../shared/auth/password.js";
 import type { z } from "zod";
 
 import { workspacesRepo, type WorkspaceRole } from "./workspaces.repo.js";
 import { workspaceUpdatesQuerySchema } from "./workspaces.schema.js";
 import type {
   AddWorkspaceMemberInput,
+  AcceptWorkspaceInvitationInput,
+  ConvertWorkspaceToTeamInput,
+  CreateWorkspaceInvitationInput,
   CreateWorkspaceInput,
   UpdateWorkspaceMemberRoleInput,
 } from "./workspaces.schema.js";
@@ -26,6 +32,21 @@ type WorkspaceMember = {
   name: string;
   email: string;
   role: WorkspaceRole;
+};
+
+type WorkspaceInvitation = {
+  id: number;
+  workspaceId: number;
+  email: string;
+  role: WorkspaceRole;
+  token: string;
+  expiresAt: Date;
+};
+
+const INVITATION_TTL_DAYS = 7;
+
+const normalizeEmail = (email: string): string => {
+  return email.trim().toLowerCase();
 };
 
 const requireWorkspaceMembership = async (
@@ -250,6 +271,183 @@ export const workspacesService = {
     };
   },
 
+  async createInvitationForUser(
+    userId: number,
+    payload: CreateWorkspaceInvitationInput,
+  ): Promise<WorkspaceInvitation> {
+    await requireWorkspaceOwner(userId, payload.workspaceId);
+
+    const workspace = await workspacesRepo.findWorkspaceById(
+      payload.workspaceId,
+    );
+
+    if (!workspace) {
+      throw appResponse.withStatus(404, "Workspace not found");
+    }
+
+    if (workspace.type === "personal") {
+      throw appResponse.withStatus(
+        400,
+        "Personal workspaces do not support invitations",
+      );
+    }
+
+    const email = normalizeEmail(payload.email);
+    const existingInvitation =
+      await workspacesRepo.findPendingWorkspaceInvitationByEmail(
+        payload.workspaceId,
+        email,
+      );
+
+    if (existingInvitation && existingInvitation.expiresAt > new Date()) {
+      throw appResponse.withStatus(409, "Invitation already pending");
+    }
+
+    const existingUser = await workspacesRepo.findUserByEmail(email);
+
+    if (existingUser) {
+      const existingMembership =
+        await workspacesRepo.findMembershipByUserAndWorkspace(
+          existingUser.id,
+          payload.workspaceId,
+        );
+
+      if (existingMembership) {
+        throw appResponse.withStatus(409, "User is already a workspace member");
+      }
+    }
+
+    const token = randomBytes(32).toString("hex");
+    const tokenHash = hashToken(token);
+    const expiresAt = new Date(
+      Date.now() + INVITATION_TTL_DAYS * 24 * 60 * 60 * 1000,
+    );
+
+    const invitation = await workspacesRepo.createWorkspaceInvitation({
+      workspaceId: payload.workspaceId,
+      invitedByUserId: userId,
+      email,
+      role: payload.role,
+      tokenHash,
+      expiresAt,
+    });
+
+    await workspaceEventsService.publish({
+      workspaceId: payload.workspaceId,
+      actorUserId: userId,
+      entity: "workspace_invitation",
+      action: "created",
+      entityId: invitation.id,
+      payload: {
+        email,
+        role: invitation.role,
+      },
+    });
+
+    return {
+      id: invitation.id,
+      workspaceId: invitation.workspaceId,
+      email: invitation.email,
+      role: invitation.role,
+      token,
+      expiresAt: invitation.expiresAt,
+    };
+  },
+
+  async joinForUser(
+    userId: number,
+    payload: AcceptWorkspaceInvitationInput,
+  ): Promise<WorkspaceSummary> {
+    const tokenHash = hashToken(payload.token);
+    const invitation =
+      await workspacesRepo.findWorkspaceInvitationByTokenHash(tokenHash);
+
+    if (!invitation) {
+      throw appResponse.withStatus(404, "Invitation not found");
+    }
+
+    if (invitation.acceptedAt) {
+      throw appResponse.withStatus(409, "Invitation already used");
+    }
+
+    if (invitation.expiresAt <= new Date()) {
+      throw appResponse.withStatus(410, "Invitation expired");
+    }
+
+    const user = await workspacesRepo.findUserById(userId);
+
+    if (!user) {
+      throw appResponse.withStatus(404, "User not found");
+    }
+
+    if (normalizeEmail(user.email) !== invitation.email) {
+      throw appResponse.withStatus(403, "Invitation email does not match user");
+    }
+
+    const workspace = await workspacesRepo.findWorkspaceById(
+      invitation.workspaceId,
+    );
+
+    if (!workspace) {
+      throw appResponse.withStatus(404, "Workspace not found");
+    }
+
+    if (workspace.type === "personal") {
+      throw appResponse.withStatus(400, "Workspace does not accept members");
+    }
+
+    const existingMembership =
+      await workspacesRepo.findMembershipByUserAndWorkspace(
+        userId,
+        invitation.workspaceId,
+      );
+
+    if (existingMembership) {
+      throw appResponse.withStatus(409, "User is already a workspace member");
+    }
+
+    const membership = await workspacesRepo.createMembership({
+      userId,
+      workspaceId: invitation.workspaceId,
+      role: invitation.role,
+    });
+
+    await workspacesRepo.markWorkspaceInvitationAccepted(invitation.id);
+
+    await workspaceEventsService.publish({
+      workspaceId: invitation.workspaceId,
+      actorUserId: userId,
+      entity: "workspace_invitation",
+      action: "accepted",
+      entityId: invitation.id,
+      payload: {
+        email: invitation.email,
+        role: invitation.role,
+      },
+    });
+
+    await workspaceEventsService.publish({
+      workspaceId: invitation.workspaceId,
+      actorUserId: userId,
+      entity: "workspace_member",
+      action: "joined",
+      entityId: userId,
+      payload: {
+        userId,
+        role: membership.role,
+      },
+    });
+
+    return {
+      id: workspace.id,
+      _id: workspace.id,
+      name: workspace.name,
+      slug: workspace.slug,
+      type: workspace.type,
+      role: membership.role,
+    };
+  },
+
   async updateMemberRoleForUser(
     userId: number,
     payload: UpdateWorkspaceMemberRoleInput,
@@ -389,6 +587,54 @@ export const workspacesService = {
         userId,
       },
     });
+  },
+
+  async convertToTeamForUser(
+    userId: number,
+    payload: ConvertWorkspaceToTeamInput,
+  ): Promise<WorkspaceSummary> {
+    await requireWorkspaceOwner(userId, payload.workspaceId);
+
+    const workspace = await workspacesRepo.findWorkspaceById(
+      payload.workspaceId,
+    );
+
+    if (!workspace) {
+      throw appResponse.withStatus(404, "Workspace not found");
+    }
+
+    if (workspace.type === "team") {
+      throw appResponse.withStatus(400, "Workspace is already a team");
+    }
+
+    const name = payload.name ?? workspace.name;
+
+    await workspacesRepo.updateWorkspaceTypeAndName({
+      workspaceId: workspace.id,
+      name,
+      type: "team",
+    });
+
+    await workspaceEventsService.publish({
+      workspaceId: workspace.id,
+      actorUserId: userId,
+      entity: "workspace",
+      action: "converted_to_team",
+      entityId: workspace.id,
+      payload: {
+        previousType: workspace.type,
+        name,
+      },
+    });
+
+    return {
+      id: workspace.id,
+      _id: workspace.id,
+      name,
+      slug: workspace.slug,
+      type: "team",
+      role: "owner",
+    };
   },
 
   async listUpdatesForUser(

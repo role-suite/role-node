@@ -4,6 +4,9 @@ import { appResponse } from "../../shared/app-response.js";
 import {
   addWorkspaceMemberSchema,
   createWorkspaceSchema,
+  createWorkspaceInvitationSchema,
+  acceptWorkspaceInvitationSchema,
+  convertWorkspaceToTeamSchema,
   listWorkspaceMembersSchema,
   workspaceUpdatesQuerySchema,
   updateWorkspaceMemberRoleSchema,
@@ -68,6 +71,30 @@ export const workspacesController = {
     appResponse.sendSuccess(res, 201, result);
   },
 
+  async createInvitation(req: Request, res: Response): Promise<void> {
+    const auth = requireAuthContext(req);
+    const params = workspaceIdSchema.parse(req.params);
+    const body = createWorkspaceInvitationSchema
+      .omit({ workspaceId: true })
+      .parse(req.body);
+    const result = await workspacesService.createInvitationForUser(
+      auth.userId,
+      {
+        workspaceId: params.workspaceId,
+        email: body.email,
+        role: body.role,
+      },
+    );
+    appResponse.sendSuccess(res, 201, result);
+  },
+
+  async join(req: Request, res: Response): Promise<void> {
+    const auth = requireAuthContext(req);
+    const payload = acceptWorkspaceInvitationSchema.parse(req.body);
+    const result = await workspacesService.joinForUser(auth.userId, payload);
+    appResponse.sendSuccess(res, 200, result);
+  },
+
   async updateMemberRole(req: Request, res: Response): Promise<void> {
     const auth = requireAuthContext(req);
     const params = workspaceMemberParamsSchema.parse(req.params);
@@ -106,6 +133,19 @@ export const workspacesController = {
     const { workspaceId } = workspaceIdSchema.parse(req.params);
     await workspacesService.leaveForUser(auth.userId, workspaceId);
     appResponse.sendSuccess(res, 200, { left: true });
+  },
+
+  async convertToTeam(req: Request, res: Response): Promise<void> {
+    const auth = requireAuthContext(req);
+    const params = workspaceIdSchema.parse(req.params);
+    const body = convertWorkspaceToTeamSchema
+      .omit({ workspaceId: true })
+      .parse(req.body ?? {});
+    const result = await workspacesService.convertToTeamForUser(auth.userId, {
+      workspaceId: params.workspaceId,
+      name: body.name,
+    });
+    appResponse.sendSuccess(res, 200, result);
   },
 
   async listUpdates(req: Request, res: Response): Promise<void> {

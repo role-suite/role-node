@@ -155,6 +155,18 @@ type WorkspaceEventRow = {
   created_at: Date;
 };
 
+type WorkspaceInvitationRow = {
+  id: number;
+  workspace_id: number;
+  invited_by_user_id: number;
+  email: string;
+  role: "owner" | "admin" | "member";
+  token_hash: string;
+  expires_at: Date;
+  accepted_at: Date | null;
+  created_at: Date;
+};
+
 const normalizeSql = (sql: string): string => {
   return sql.replace(/\s+/g, " ").trim().toLowerCase();
 };
@@ -192,6 +204,7 @@ export const createAuthTestDb = (): DatabaseClient => {
   let requestRunResponses: RequestRunResponseRow[] = [];
   let importExportJobs: ImportExportJobRow[] = [];
   let workspaceEvents: WorkspaceEventRow[] = [];
+  let workspaceInvitations: WorkspaceInvitationRow[] = [];
   let collectionId = 1;
   let collectionEndpointId = 1;
   let environmentId = 1;
@@ -201,6 +214,7 @@ export const createAuthTestDb = (): DatabaseClient => {
   let requestRunResponseId = 1;
   let importExportJobId = 1;
   let workspaceEventId = 1;
+  let workspaceInvitationId = 1;
 
   const query = async <TRow extends QueryRow = QueryRow>(
     sql: string,
@@ -210,7 +224,7 @@ export const createAuthTestDb = (): DatabaseClient => {
 
     if (
       normalized.startsWith(
-        "truncate table workspace_events, auth_sessions, workspace_memberships, workspaces, auth_users",
+        "truncate table workspace_events, workspace_invitations, auth_sessions, workspace_memberships, workspaces, auth_users",
       )
     ) {
       users = [];
@@ -226,6 +240,7 @@ export const createAuthTestDb = (): DatabaseClient => {
       requestRunResponses = [];
       importExportJobs = [];
       workspaceEvents = [];
+      workspaceInvitations = [];
       userId = 1;
       workspaceId = 1;
       membershipId = 1;
@@ -239,6 +254,7 @@ export const createAuthTestDb = (): DatabaseClient => {
       requestRunResponseId = 1;
       importExportJobId = 1;
       workspaceEventId = 1;
+      workspaceInvitationId = 1;
       return { rows: [] as TRow[], rowCount: 0 };
     }
 
@@ -556,6 +572,86 @@ export const createAuthTestDb = (): DatabaseClient => {
       const row = workspaces.find((item) => item.id === id);
       const rows = row ? castRows<TRow>([row]) : [];
       return { rows, rowCount: rows.length };
+    }
+
+    if (normalized.startsWith("update workspaces set name =")) {
+      const id = expectParam<number>(params, 0);
+      const row = workspaces.find((item) => item.id === id);
+
+      if (row) {
+        row.name = expectParam<string>(params, 1);
+        row.type = expectParam<"personal" | "team">(params, 2);
+      }
+
+      return { rows: [] as TRow[], rowCount: row ? 1 : 0 };
+    }
+
+    if (
+      normalized.startsWith("insert into workspace_invitations") &&
+      normalized.includes("returning")
+    ) {
+      const now = new Date();
+      const row: WorkspaceInvitationRow = {
+        id: workspaceInvitationId++,
+        workspace_id: expectParam<number>(params, 0),
+        invited_by_user_id: expectParam<number>(params, 1),
+        email: expectParam<string>(params, 2),
+        role: expectParam<"owner" | "admin" | "member">(params, 3),
+        token_hash: expectParam<string>(params, 4),
+        expires_at: expectParam<Date>(params, 5),
+        accepted_at: null,
+        created_at: now,
+      };
+      workspaceInvitations.push(row);
+      return { rows: castRows<TRow>([row]), rowCount: 1 };
+    }
+
+    if (
+      normalized.startsWith(
+        "select id, workspace_id, invited_by_user_id, email, role, token_hash, expires_at, accepted_at, created_at from workspace_invitations where token_hash =",
+      )
+    ) {
+      const tokenHash = expectParam<string>(params, 0);
+      const row = workspaceInvitations.find(
+        (item) => item.token_hash === tokenHash,
+      );
+      const rows = row ? castRows<TRow>([row]) : [];
+      return { rows, rowCount: rows.length };
+    }
+
+    if (
+      normalized.startsWith(
+        "select id, workspace_id, invited_by_user_id, email, role, token_hash, expires_at, accepted_at, created_at from workspace_invitations where workspace_id =",
+      )
+    ) {
+      const workspace = expectParam<number>(params, 0);
+      const email = expectParam<string>(params, 1);
+      const row = workspaceInvitations
+        .filter(
+          (item) =>
+            item.workspace_id === workspace &&
+            item.email === email &&
+            item.accepted_at === null,
+        )
+        .sort((a, b) => b.id - a.id)[0];
+      const rows = row ? castRows<TRow>([row]) : [];
+      return { rows, rowCount: rows.length };
+    }
+
+    if (
+      normalized.startsWith(
+        "update workspace_invitations set accepted_at = current_timestamp",
+      )
+    ) {
+      const id = expectParam<number>(params, 0);
+      const row = workspaceInvitations.find((item) => item.id === id);
+
+      if (row && row.accepted_at === null) {
+        row.accepted_at = new Date();
+        return { rows: [] as TRow[], rowCount: 1 };
+      }
+
+      return { rows: [] as TRow[], rowCount: 0 };
     }
 
     if (
