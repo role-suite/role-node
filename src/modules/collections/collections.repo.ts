@@ -192,6 +192,14 @@ const mapCollectionEndpointExampleRow = (
 };
 
 export const collectionsRepo = {
+  async clear(): Promise<void> {
+    const db = resolveDb();
+    await db.query(`DELETE FROM ${COLLECTION_ENDPOINT_EXAMPLES_TABLE}`);
+    await db.query(`DELETE FROM ${COLLECTION_ENDPOINTS_TABLE}`);
+    await db.query(`DELETE FROM ${COLLECTION_FOLDERS_TABLE}`);
+    await db.query(`DELETE FROM ${COLLECTIONS_TABLE}`);
+  },
+
   async create(payload: {
     workspaceId: number;
     name: string;
