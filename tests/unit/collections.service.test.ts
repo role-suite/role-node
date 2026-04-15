@@ -261,4 +261,186 @@ describe("collections service", () => {
       message: "Only workspace owners and admins can modify collections",
     });
   });
+
+  it("allows owner to manage endpoint examples", async () => {
+    const owner = await authService.register({
+      name: "Owner",
+      email: "owner@example.com",
+      password: "password123",
+      accountType: "single",
+    });
+
+    const workspace = await workspacesService.createForUser(owner.user.id, {
+      name: "Examples Team",
+    });
+
+    const collection = await collectionsService.createForWorkspace(
+      owner.user.id,
+      workspace.id,
+      { name: "Test API" },
+    );
+
+    const endpoint = await collectionsService.createEndpointForCollection(
+      owner.user.id,
+      workspace.id,
+      collection.id,
+      { name: "Get Test", method: "GET", url: "https://api.example.com/test" },
+    );
+
+    const example = await collectionsService.createExampleForEndpoint(
+      owner.user.id,
+      workspace.id,
+      collection.id,
+      endpoint.id,
+      { name: "Success", statusCode: 200, headers: {}, body: '{"ok": true}' },
+    );
+
+    expect(example.name).toBe("Success");
+    expect(example.statusCode).toBe(200);
+
+    const examples = await collectionsService.listExamplesForEndpoint(
+      owner.user.id,
+      workspace.id,
+      collection.id,
+      endpoint.id,
+    );
+    expect(examples).toHaveLength(1);
+
+    const updated = await collectionsService.updateExampleForEndpoint(
+      owner.user.id,
+      workspace.id,
+      collection.id,
+      endpoint.id,
+      example.id,
+      { name: "Updated" },
+    );
+    expect(updated.name).toBe("Updated");
+
+    await collectionsService.deleteExampleForEndpoint(
+      owner.user.id,
+      workspace.id,
+      collection.id,
+      endpoint.id,
+      example.id,
+    );
+
+    const remainingExamples = await collectionsService.listExamplesForEndpoint(
+      owner.user.id,
+      workspace.id,
+      collection.id,
+      endpoint.id,
+    );
+    expect(remainingExamples).toHaveLength(0);
+  });
+
+  it("blocks non-writers from managing examples", async () => {
+    const owner = await authService.register({
+      name: "Owner",
+      email: "owner@example.com",
+      password: "password123",
+      accountType: "single",
+    });
+    const member = await authService.register({
+      name: "Member",
+      email: "member@example.com",
+      password: "password123",
+      accountType: "single",
+    });
+
+    const workspace = await workspacesService.createForUser(owner.user.id, {
+      name: "Members Team",
+    });
+
+    await workspacesService.addMemberForUser(owner.user.id, {
+      workspaceId: workspace.id,
+      email: member.user.email,
+      role: "member",
+    });
+
+    const collection = await collectionsService.createForWorkspace(
+      owner.user.id,
+      workspace.id,
+      { name: "API" },
+    );
+
+    const endpoint = await collectionsService.createEndpointForCollection(
+      owner.user.id,
+      workspace.id,
+      collection.id,
+      { name: "Get", method: "GET", url: "https://api.example.com" },
+    );
+
+    await expect(
+      collectionsService.createExampleForEndpoint(
+        member.user.id,
+        workspace.id,
+        collection.id,
+        endpoint.id,
+        { name: "Fail", statusCode: 200, headers: {} },
+      ),
+    ).rejects.toMatchObject({ statusCode: 403 });
+  });
+
+  it("allows owner to manage folders", async () => {
+    const owner = await authService.register({
+      name: "Owner",
+      email: "owner@example.com",
+      password: "password123",
+      accountType: "single",
+    });
+
+    const workspace = await workspacesService.createForUser(owner.user.id, {
+      name: "Folders Team",
+    });
+
+    const collection = await collectionsService.createForWorkspace(
+      owner.user.id,
+      workspace.id,
+      { name: "API" },
+    );
+
+    const folder = await collectionsService.createFolderForCollection(
+      owner.user.id,
+      workspace.id,
+      collection.id,
+      { name: "Users", position: 1 },
+    );
+
+    expect(folder.name).toBe("Users");
+    expect(folder.collectionId).toBe(collection.id);
+
+    const folders = await collectionsService.listFoldersForCollection(
+      owner.user.id,
+      workspace.id,
+      collection.id,
+    );
+    expect(folders).toHaveLength(1);
+
+    const endpoint = await collectionsService.createEndpointForCollection(
+      owner.user.id,
+      workspace.id,
+      collection.id,
+      {
+        name: "In Folder",
+        method: "GET",
+        url: "https://api.example.com",
+        folderId: folder.id,
+      },
+    );
+    expect(endpoint.folderId).toBe(folder.id);
+
+    await collectionsService.deleteFolderForCollection(
+      owner.user.id,
+      workspace.id,
+      collection.id,
+      folder.id,
+    );
+
+    const remainingFolders = await collectionsService.listFoldersForCollection(
+      owner.user.id,
+      workspace.id,
+      collection.id,
+    );
+    expect(remainingFolders).toHaveLength(0);
+  });
 });
