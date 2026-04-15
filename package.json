@@ -26,29 +26,30 @@
   "author": "",
   "license": "ISC",
   "type": "module",
-  "packageManager": "pnpm@10.32.1",
+  "packageManager": "pnpm@10.33.0",
   "bugs": {
     "url": "https://github.com/role-suite/role-node/issues"
   },
   "homepage": "https://github.com/role-suite/role-node#readme",
   "dependencies": {
-    "dotenv": "^17.3.1",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "mysql2": "^3.15.1",
-    "pg": "^8.16.3",
+    "mysql2": "^3.22.0",
+    "pg": "^8.20.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
-    "@types/node": "^25.5.0",
-    "@types/pg": "^8.15.5",
-    "@vitest/coverage-v8": "^4.1.0",
-    "eslint": "^10.0.3",
+    "@types/node": "^25.6.0",
+    "@types/pg": "^8.20.0",
+    "@vitest/coverage-v8": "^4.1.4",
+    "eslint": "^10.2.0",
     "nodemon": "^3.1.14",
-    "prettier": "^3.8.1",
+    "prettier": "^3.8.3",
     "supertest": "^7.2.2",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3",
-    "vitest": "^4.1.0"
+    "typescript": "^6.0.2",
+    "vite": "^8.0.8",
+    "vitest": "^4.1.4"
   }
 }
