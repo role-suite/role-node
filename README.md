@@ -98,6 +98,18 @@ pnpm db:migrate
 - `pnpm test:run`: run tests once
 - `pnpm test:coverage`: run tests with coverage report
 
+## 🚀 CI/CD
+
+- `CI` workflow (`.github/workflows/ci.yml`) runs on pull requests and pushes to `main`.
+- It installs dependencies, builds the project, runs tests, and uploads coverage artifacts.
+- `CD` workflow (`.github/workflows/cd.yml`) builds and publishes Docker images to GHCR.
+- Pushes to `main` can deploy to staging, and `v*` tags can deploy to production.
+
+Required repository/environment secrets for deployment webhooks:
+
+- `STAGING_DEPLOY_WEBHOOK_URL`
+- `PRODUCTION_DEPLOY_WEBHOOK_URL`
+
 ## 🔧 Environment Variables
 
 Validated in `src/config/env.ts` using Zod.
