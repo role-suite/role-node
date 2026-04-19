@@ -24,6 +24,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
   IMAGE_TAG: sha-${{ github.sha }}
+  ENABLE_STAGING_DEPLOY: "false"
 
 jobs:
   publish-image:
@@ -74,6 +75,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: publish-image
     if: >-
+      env.ENABLE_STAGING_DEPLOY == 'true' &&
       (github.ref == 'refs/heads/main' ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.target_environment == 'staging'))
     environment: staging
