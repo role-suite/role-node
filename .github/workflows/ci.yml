@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NODE_ENV: test
+      PORT: 3000
+      DB_DIALECT: postgres
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USER: role_user
+      DB_PASSWORD: role_pass
+      DB_NAME: role_node
+      DB_POOL_MIN: 0
+      DB_POOL_MAX: 10
+      DB_SSL: "false"
+      ENABLE_STARTUP_VALIDATION: "false"
+      AUTH_ACCESS_TOKEN_SECRET: test-access-secret-123456
+      AUTH_REFRESH_TOKEN_SECRET: test-refresh-secret-123456
+      AUTH_ACCESS_TOKEN_TTL_SECONDS: 900
+      AUTH_REFRESH_TOKEN_TTL_SECONDS: 604800
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Run test suite
+        run: pnpm test:run
+
+      - name: Run coverage
+        run: pnpm test:coverage
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          if-no-files-found: ignore
