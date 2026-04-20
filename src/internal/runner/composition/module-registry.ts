@@ -28,12 +28,6 @@ type HttpExecutor = (
   bodyBytes: Uint8Array;
 }>;
 
-const createFetchExecutor = (fetchImpl: FetchLike): HttpExecutor => {
-  return (request, options) => {
-    return executeHttpRequest(request, options, fetchImpl);
-  };
-};
-
 const resolveGlobalFetch = (): FetchLike => {
   if (typeof globalThis.fetch !== "function") {
     throw new Error("Global fetch is not available in this runtime");

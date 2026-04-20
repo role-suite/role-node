@@ -24,9 +24,63 @@ env:
   IMAGE_TAG: sha-${{ github.sha }}
 
 jobs:
+  verify-ci:
+    name: Verify CI for ref
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      checks: read
+      contents: read
+    steps:
+      - name: Wait for CI status check to pass
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const expectedName = 'CI / CI Status';
+            const ref = context.sha;
+            const timeoutMs = 15 * 60 * 1000;
+            const intervalMs = 20 * 1000;
+            const started = Date.now();
+
+            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+            while (Date.now() - started < timeoutMs) {
+              const checks = await github.rest.checks.listForRef({
+                owner,
+                repo,
+                ref,
+                per_page: 100,
+              });
+
+              const ciRun = checks.data.check_runs.find((run) => run.name === expectedName);
+
+              if (!ciRun) {
+                core.info(`Waiting for '${expectedName}' check run on ${ref}...`);
+                await sleep(intervalMs);
+                continue;
+              }
+
+              core.info(`Found '${expectedName}' with status='${ciRun.status}' conclusion='${ciRun.conclusion}'`);
+
+              if (ciRun.status !== 'completed') {
+                await sleep(intervalMs);
+                continue;
+              }
+
+              if (ciRun.conclusion !== 'success') {
+                core.setFailed(`CI gate failed: '${expectedName}' concluded with '${ciRun.conclusion}' for ${ref}`);
+              }
+
+              return;
+            }
+
+            core.setFailed(`Timed out waiting for '${expectedName}' to complete on ${ref}`);
+
   publish-image:
     name: Build and publish image
     runs-on: ubuntu-latest
+    needs: verify-ci
     permissions:
       contents: read
       packages: write

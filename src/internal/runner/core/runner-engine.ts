@@ -191,7 +191,7 @@ export const createRunnerEngine = (deps: {
         const sourcePersistence = resolveRunSourcePersistence(input);
         sourceType = sourcePersistence.sourceType;
         const mappedError = toRunnerPublicError(error);
-        let fallbackTimeoutMs = config.limits.timeoutMsDefault;
+        let fallbackTimeoutMs: number;
         try {
           fallbackTimeoutMs = resolveRunOptionsImpl(
             input.options,

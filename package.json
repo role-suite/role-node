@@ -6,6 +6,11 @@
   "scripts": {
     "dev": "nodemon --watch src --exec tsx src/server.ts",
     "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "audit": "pnpm audit --audit-level high",
     "start": "node dist/server.js",
     "create:module": "node scripts/create-module.mjs",
     "db:reset:docker": "docker compose down -v && docker compose up -d",
@@ -43,12 +48,15 @@
     "@types/node": "^25.6.0",
     "@types/pg": "^8.20.0",
     "@vitest/coverage-v8": "^4.1.4",
-    "eslint": "^10.2.0",
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.0.1",
+    "globals": "^16.4.0",
     "nodemon": "^3.1.14",
     "prettier": "^3.8.3",
     "supertest": "^7.2.2",
     "tsx": "^4.21.0",
     "typescript": "^6.0.2",
+    "typescript-eslint": "^8.46.1",
     "vite": "^8.0.8",
     "vitest": "^4.1.4"
   }

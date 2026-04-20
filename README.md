@@ -5,6 +5,13 @@
 <h1 align="center">Röle Node</h1>
 
 <p align="center">
+  <a href="https://github.com/role-suite/role-node/actions/workflows/ci.yml"><img src="https://github.com/role-suite/role-node/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/role-suite/role-node/actions/workflows/codeql.yml"><img src="https://github.com/role-suite/role-node/actions/workflows/codeql.yml/badge.svg" alt="CodeQL"></a>
+  <a href="https://github.com/role-suite/role-node/blob/main/badges/coverage.svg"><img src="https://raw.githubusercontent.com/role-suite/role-node/main/badges/coverage.svg" alt="Coverage"></a>
+  <a href="https://github.com/role-suite/role-node/releases"><img src="https://img.shields.io/github/v/release/role-suite/role-node" alt="Release"></a>
+</p>
+
+<p align="center">
   <strong>TypeScript + Express backend for workspaces, collections, environments, and request runs</strong>
 </p>
 
@@ -100,10 +107,13 @@ pnpm db:migrate
 
 ## 🚀 CI/CD
 
-- `CI` workflow (`.github/workflows/ci.yml`) runs on pull requests and pushes to `main`.
-- It installs dependencies, builds the project, runs tests, and uploads coverage artifacts.
-- `CD` workflow (`.github/workflows/cd.yml`) builds and publishes Docker images to GHCR.
-- Pushes to `main` can deploy to staging, and `v*` tags can deploy to production.
+- `CI` workflow (`.github/workflows/ci.yml`) runs on pull requests and pushes to `main` and `v*` tags.
+- It runs ordered quality gates as separate checks: `1. Format`, `2. Lint`, `3. Test`, `4. Build`, then a required `CI Status` gate.
+- `Security` workflow (`.github/workflows/security.yml`) runs dependency audit and gitleaks secret scanning.
+- `CodeQL` workflow (`.github/workflows/codeql.yml`) runs static analysis for Actions and JavaScript/TypeScript.
+- `Coverage Badge` workflow (`.github/workflows/coverage-badge.yml`) updates `badges/coverage.svg` on pushes to `main`.
+- `CD` workflow (`.github/workflows/cd.yml`) builds and publishes Docker images to GHCR and deploys production from `v*` tags or manual dispatch.
+- CD is gated by `CI / CI Status` on the exact same commit SHA before publishing/deploying.
 - `Release Tag` workflow (`.github/workflows/release-tag.yml`) creates the next semantic version tag (`vMAJOR.MINOR.PATCH`) from manual dispatch.
 
 Release flow:
@@ -114,7 +124,6 @@ Release flow:
 
 Required repository/environment secrets for deployment webhooks:
 
-- `STAGING_DEPLOY_WEBHOOK_URL`
 - `PRODUCTION_DEPLOY_WEBHOOK_URL`
 
 ## 🔧 Environment Variables

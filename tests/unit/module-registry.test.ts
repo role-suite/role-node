@@ -1,4 +1,4 @@
-import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { moduleRegistry } from "../../src/internal/runner/composition/module-registry.js";
 import type { RequestRunnerEngineConfig } from "../../src/internal/runner/config/engine-config.js";
