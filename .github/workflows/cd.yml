@@ -33,7 +33,7 @@ jobs:
       contents: read
     steps:
       - name: Wait for CI status check to pass
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const { owner, repo } = context.repo;
