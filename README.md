@@ -8,7 +8,6 @@
   <a href="https://github.com/role-suite/role-node/actions/workflows/ci.yml"><img src="https://github.com/role-suite/role-node/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/role-suite/role-node/actions/workflows/codeql.yml"><img src="https://github.com/role-suite/role-node/actions/workflows/codeql.yml/badge.svg" alt="CodeQL"></a>
   <a href="https://github.com/role-suite/role-node/blob/main/badges/coverage.svg"><img src="https://raw.githubusercontent.com/role-suite/role-node/main/badges/coverage.svg" alt="Coverage"></a>
-  <a href="https://github.com/role-suite/role-node/releases"><img src="https://img.shields.io/github/v/release/role-suite/role-node" alt="Release"></a>
 </p>
 
 <p align="center">
