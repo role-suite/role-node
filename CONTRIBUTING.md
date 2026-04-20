@@ -45,6 +45,12 @@ git checkout -b feature/workspace-invitations
 - Include test coverage for behavior changes.
 - Link related issues when applicable.
 
+## Releases
+
+- Production releases are versioned with semantic tags: `vMAJOR.MINOR.PATCH`.
+- Use the GitHub Actions workflow `Release Tag` and choose bump type (`patch`, `minor`, `major`).
+- The tag triggers the CD workflow to build and release the tagged version.
+
 ## Code style
 
 - Use existing patterns in modules (schema -> service -> controller -> route).

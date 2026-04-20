@@ -104,6 +104,13 @@ pnpm db:migrate
 - It installs dependencies, builds the project, runs tests, and uploads coverage artifacts.
 - `CD` workflow (`.github/workflows/cd.yml`) builds and publishes Docker images to GHCR.
 - Pushes to `main` can deploy to staging, and `v*` tags can deploy to production.
+- `Release Tag` workflow (`.github/workflows/release-tag.yml`) creates the next semantic version tag (`vMAJOR.MINOR.PATCH`) from manual dispatch.
+
+Release flow:
+
+1. Run `Release Tag` from GitHub Actions and choose `patch`, `minor`, or `major`.
+2. The workflow creates a new `v*` tag on the selected commit.
+3. The existing CD workflow runs automatically for that tag and can deploy to production.
 
 Required repository/environment secrets for deployment webhooks:
 
