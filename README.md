@@ -114,13 +114,13 @@ pnpm db:migrate
 - `Coverage Badge` workflow (`.github/workflows/coverage-badge.yml`) updates `badges/coverage.svg` on pushes to `main`.
 - `CD` workflow (`.github/workflows/cd.yml`) builds and publishes Docker images to GHCR and deploys production from `v*` tags or manual dispatch.
 - CD is gated by `CI / CI Status` on the exact same commit SHA before publishing/deploying.
-- `Release Tag` workflow (`.github/workflows/release-tag.yml`) creates the next semantic version tag (`vMAJOR.MINOR.PATCH`) from manual dispatch.
+- `Release` workflow (`.github/workflows/release-tag.yml`) performs semantic versioning from manual dispatch (`patch`, `minor`, `major`): it runs quality gates, bumps `package.json`, updates `CHANGELOG.md`, creates a `v*` tag, and creates the GitHub Release.
 
 Release flow:
 
-1. Run `Release Tag` from GitHub Actions and choose `patch`, `minor`, or `major`.
-2. The workflow creates a new `v*` tag on the selected commit.
-3. The existing CD workflow runs automatically for that tag and can deploy to production.
+1. Run `Release` from GitHub Actions on `main` and choose `patch`, `minor`, or `major`.
+2. The workflow validates quality gates, writes the next semantic version to `package.json`, updates `CHANGELOG.md`, pushes a release commit, and creates a new `v*` tag.
+3. It then creates the GitHub Release, and the CD workflow runs automatically for that tag.
 
 Required repository/environment secrets for deployment webhooks:
 

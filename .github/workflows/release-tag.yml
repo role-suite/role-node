@@ -1,4 +1,4 @@
-name: Release Tag
+name: Release
 
 on:
   workflow_dispatch:
@@ -17,93 +17,92 @@ permissions:
   contents: write
 
 jobs:
-  create-tag:
-    name: Create semantic version tag
+  version-and-release:
+    name: Bump version, tag, and release
     runs-on: ubuntu-latest
+    concurrency:
+      group: release-main
+      cancel-in-progress: false
     steps:
       - name: Ensure workflow runs from main
         if: github.ref != 'refs/heads/main'
         run: |
-          echo "Release tags can only be created from main."
+          echo "Releases can only be created from main."
           exit 1
 
-      - name: Calculate next semantic tag
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run quality gates
+        run: pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:run && pnpm build
+
+      - name: Calculate next version
         id: version
-        uses: actions/github-script@v7
+        run: |
+          node -e "const fs=require('node:fs'); const pkg=JSON.parse(fs.readFileSync('package.json','utf8')); const type='${{ github.event.inputs.release_type }}'; const [maj,min,pat]=pkg.version.split('.').map(Number); const next= type==='major' ? [maj+1,0,0] : type==='minor' ? [maj,min+1,0] : [maj,min,pat+1]; const v=next.join('.'); fs.appendFileSync(process.env.GITHUB_OUTPUT, `next_version=${v}\nnext_tag=v${v}\n`);"
+
+      - name: Update package version
+        run: pnpm version ${{ steps.version.outputs.next_version }} --no-git-tag-version
+
+      - name: Update changelog
+        run: |
+          RELEASE_DATE="$(date -u +%Y-%m-%d)"
+          RELEASE_TAG="${{ steps.version.outputs.next_tag }}"
+          RELEASE_VERSION="${{ steps.version.outputs.next_version }}"
+          TMP_FILE="$(mktemp)"
+          {
+            echo "# Changelog"
+            echo
+            echo "All notable changes to this project will be documented in this file."
+            echo
+            echo "The format is based on Keep a Changelog, and this project adheres to Semantic Versioning."
+            echo
+            echo "## Unreleased"
+            echo
+            echo "- No changes documented yet."
+            echo
+            echo "## [${RELEASE_VERSION}] - ${RELEASE_DATE}"
+            echo
+            echo "- See GitHub release notes for ${RELEASE_TAG}."
+            echo
+            awk 'BEGIN{copy=0} /^## \[/{copy=1} {if(copy) print}' CHANGELOG.md
+          } > "$TMP_FILE"
+          mv "$TMP_FILE" CHANGELOG.md
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit versioning changes
+        run: |
+          git add package.json CHANGELOG.md
+          git commit -m "chore(release): ${{ steps.version.outputs.next_tag }}"
+
+      - name: Push release commit and tag
+        run: |
+          git tag -a "${{ steps.version.outputs.next_tag }}" -m "Release ${{ steps.version.outputs.next_tag }}"
+          git push origin main
+          git push origin "${{ steps.version.outputs.next_tag }}"
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v3
         with:
-          script: |
-            const releaseType = '${{ github.event.inputs.release_type }}'
-            const { owner, repo } = context.repo
-
-            const tags = await github.paginate(github.rest.repos.listTags, {
-              owner,
-              repo,
-              per_page: 100,
-            })
-
-            const semverTagRegex = /^v(\d+)\.(\d+)\.(\d+)$/
-            const semverTags = tags
-              .map((tag) => {
-                const match = tag.name.match(semverTagRegex)
-                if (!match) return null
-                return {
-                  name: tag.name,
-                  major: Number(match[1]),
-                  minor: Number(match[2]),
-                  patch: Number(match[3]),
-                }
-              })
-              .filter(Boolean)
-              .sort((a, b) => {
-                if (a.major !== b.major) return b.major - a.major
-                if (a.minor !== b.minor) return b.minor - a.minor
-                return b.patch - a.patch
-              })
-
-            const current = semverTags[0] || { major: 0, minor: 0, patch: 0 }
-            const next = {
-              major: current.major,
-              minor: current.minor,
-              patch: current.patch,
-            }
-
-            if (releaseType === 'major') {
-              next.major += 1
-              next.minor = 0
-              next.patch = 0
-            } else if (releaseType === 'minor') {
-              next.minor += 1
-              next.patch = 0
-            } else {
-              next.patch += 1
-            }
-
-            const nextTag = `v${next.major}.${next.minor}.${next.patch}`
-            core.setOutput('next_tag', nextTag)
-            core.notice(`Next release tag: ${nextTag}`)
-
-      - name: Create annotated tag on current commit
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const { owner, repo } = context.repo
-            const tagName = '${{ steps.version.outputs.next_tag }}'
-            const commitSha = context.sha
-
-            const createdTag = await github.rest.git.createTag({
-              owner,
-              repo,
-              tag: tagName,
-              message: `Release ${tagName}`,
-              object: commitSha,
-              type: 'commit',
-            })
-
-            await github.rest.git.createRef({
-              owner,
-              repo,
-              ref: `refs/tags/${tagName}`,
-              sha: createdTag.data.sha,
-            })
-
-            core.notice(`Created tag ${tagName} at ${commitSha}`)
+          tag_name: ${{ steps.version.outputs.next_tag }}
+          generate_release_notes: true
