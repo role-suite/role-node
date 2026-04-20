@@ -54,7 +54,11 @@ jobs:
       - name: Read coverage percentage
         id: coverage
         run: |
-          node -e "const fs=require('node:fs'); const s=JSON.parse(fs.readFileSync('coverage/coverage-summary.json','utf8')); const p=Math.round(s.total.lines.pct); const c=p>=90?'green':p>=80?'yellow':p>=70?'orange':'red'; fs.appendFileSync(process.env.GITHUB_OUTPUT, `pct=${p}\ncolor=${c}\n`);"
+          if [ -z "${GITHUB_OUTPUT:-}" ]; then
+            echo "GITHUB_OUTPUT is not set"
+            exit 1
+          fi
+          node -e "const fs=require('node:fs'); const s=JSON.parse(fs.readFileSync('coverage/coverage-summary.json','utf8')); const p=Math.round(s.total.lines.pct); const c=p>=90?'green':p>=80?'yellow':p>=70?'orange':'red'; console.log('pct=' + p); console.log('color=' + c);" >> "$GITHUB_OUTPUT"
 
       - name: Generate coverage badge
         uses: emibcn/badge-action@v2
