@@ -7,6 +7,7 @@ import {
   setAuthRepoDbClient,
 } from "../../src/modules/auth/auth.repo.js";
 import { setCollectionsRepoDbClient } from "../../src/modules/collections/collections.repo.js";
+import { ROUTE_PATTERNS, routeBuilders } from "../../src/shared/http/routes.js";
 import { createAuthTestDb } from "../helpers/auth-test-db.js";
 
 const testDb = createAuthTestDb();
@@ -24,7 +25,7 @@ describe("HTTP security behavior", () => {
   });
 
   it("rejects malformed auth payload", async () => {
-    const response = await request(app).post("/api/auth/login").send({
+    const response = await request(app).post(ROUTE_PATTERNS.auth.login).send({
       email: "not-an-email",
       password: "123",
     });
@@ -36,26 +37,28 @@ describe("HTTP security behavior", () => {
   });
 
   it("rejects unsupported methods on auth route", async () => {
-    const response = await request(app).delete("/api/auth/login");
+    const response = await request(app).delete(ROUTE_PATTERNS.auth.login);
 
     expect(response.status).toBe(404);
     expect(response.body.success).toBe(false);
   });
 
   it("does not expose internal error details for domain errors", async () => {
-    await request(app).post("/api/auth/register").send({
+    await request(app).post(ROUTE_PATTERNS.auth.register).send({
       name: "Alpha",
       email: "alpha@example.com",
       password: "password123",
       accountType: "single",
     });
 
-    const response = await request(app).post("/api/auth/register").send({
-      name: "Beta",
-      email: "alpha@example.com",
-      password: "password123",
-      accountType: "single",
-    });
+    const response = await request(app)
+      .post(ROUTE_PATTERNS.auth.register)
+      .send({
+        name: "Beta",
+        email: "alpha@example.com",
+        password: "password123",
+        accountType: "single",
+      });
 
     expect(response.status).toBe(409);
     expect(response.body).toEqual(
@@ -70,23 +73,25 @@ describe("HTTP security behavior", () => {
   });
 
   it("rejects malformed collection endpoint payload", async () => {
-    const register = await request(app).post("/api/auth/register").send({
-      name: "Owner",
-      email: "owner@example.com",
-      password: "password123",
-      accountType: "single",
-    });
+    const register = await request(app)
+      .post(ROUTE_PATTERNS.auth.register)
+      .send({
+        name: "Owner",
+        email: "owner@example.com",
+        password: "password123",
+        accountType: "single",
+      });
     const token = register.body.data.tokens.accessToken;
 
     const workspace = await request(app)
-      .post("/api/workspaces")
+      .post(ROUTE_PATTERNS.workspaces.create)
       .set("Authorization", `Bearer ${token}`)
       .send({ name: "Security Team" });
 
     const workspaceId = workspace.body.data.id as number;
 
     const collection = await request(app)
-      .post(`/api/workspaces/${workspaceId}/collections`)
+      .post(routeBuilders.workspaceCollections(workspaceId))
       .set("Authorization", `Bearer ${token}`)
       .send({ name: "Orders" });
 
@@ -94,7 +99,7 @@ describe("HTTP security behavior", () => {
 
     const response = await request(app)
       .post(
-        `/api/workspaces/${workspaceId}/collections/${collectionId}/endpoints`,
+        routeBuilders.workspaceCollectionEndpoints(workspaceId, collectionId),
       )
       .set("Authorization", `Bearer ${token}`)
       .send({
@@ -110,16 +115,18 @@ describe("HTTP security behavior", () => {
   });
 
   it("rejects malformed collection route params", async () => {
-    const register = await request(app).post("/api/auth/register").send({
-      name: "Owner",
-      email: "owner@example.com",
-      password: "password123",
-      accountType: "single",
-    });
+    const register = await request(app)
+      .post(ROUTE_PATTERNS.auth.register)
+      .send({
+        name: "Owner",
+        email: "owner@example.com",
+        password: "password123",
+        accountType: "single",
+      });
     const token = register.body.data.tokens.accessToken;
 
     const response = await request(app)
-      .get("/api/workspaces/not-a-number/collections")
+      .get(routeBuilders.workspaceCollections("not-a-number"))
       .set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(400);

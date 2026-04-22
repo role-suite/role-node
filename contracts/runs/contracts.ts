@@ -5,6 +5,7 @@ import {
   workspaceRunByIdParamsSchema,
   workspaceRunParamsSchema,
 } from "../../src/modules/runs/runs.schema.js";
+import { ROUTE_PATTERNS } from "../../src/shared/http/routes.js";
 import {
   apiErrorSchema,
   apiSuccessSchema,
@@ -118,7 +119,7 @@ const runResultSchema = z
 export const runContracts: EndpointContract[] = [
   {
     method: "POST",
-    path: "/api/workspaces/:workspaceId/runs",
+    path: ROUTE_PATTERNS.runs.create,
     auth: "bearer",
     request: {
       params: workspaceRunParamsSchema,
@@ -151,7 +152,7 @@ export const runContracts: EndpointContract[] = [
   },
   {
     method: "GET",
-    path: "/api/workspaces/:workspaceId/runs/:runId",
+    path: ROUTE_PATTERNS.runs.byId,
     auth: "bearer",
     request: { params: workspaceRunByIdParamsSchema },
     responses: {
@@ -165,7 +166,7 @@ export const runContracts: EndpointContract[] = [
   },
   {
     method: "POST",
-    path: "/api/workspaces/:workspaceId/runs/:runId/cancel",
+    path: ROUTE_PATTERNS.runs.cancel,
     auth: "bearer",
     request: { params: workspaceRunByIdParamsSchema },
     responses: {

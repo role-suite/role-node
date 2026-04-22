@@ -21,6 +21,7 @@ import {
   workspaceMemberSchema,
   workspaceSummarySchema,
 } from "../shared.js";
+import { ROUTE_PATTERNS } from "../../src/shared/http/routes.js";
 
 const invitationResponseSchema = z
   .object({
@@ -49,7 +50,7 @@ const workspaceEventSchema = z
 export const workspaceContracts: EndpointContract[] = [
   {
     method: "GET",
-    path: "/api/workspaces",
+    path: ROUTE_PATTERNS.workspaces.list,
     auth: "bearer",
     request: {},
     responses: {
@@ -65,7 +66,7 @@ export const workspaceContracts: EndpointContract[] = [
   },
   {
     method: "GET",
-    path: "/api/workspaces/:workspaceId",
+    path: ROUTE_PATTERNS.workspaces.byId,
     auth: "bearer",
     request: { params: workspaceIdSchema },
     responses: {
@@ -82,7 +83,7 @@ export const workspaceContracts: EndpointContract[] = [
   },
   {
     method: "POST",
-    path: "/api/workspaces",
+    path: ROUTE_PATTERNS.workspaces.create,
     auth: "bearer",
     request: { body: createWorkspaceSchema },
     responses: {
@@ -95,7 +96,7 @@ export const workspaceContracts: EndpointContract[] = [
   },
   {
     method: "GET",
-    path: "/api/workspaces/:workspaceId/members",
+    path: ROUTE_PATTERNS.workspaces.members,
     auth: "bearer",
     request: { params: workspaceIdSchema },
     responses: {
@@ -111,7 +112,7 @@ export const workspaceContracts: EndpointContract[] = [
   },
   {
     method: "POST",
-    path: "/api/workspaces/:workspaceId/members",
+    path: ROUTE_PATTERNS.workspaces.members,
     auth: "bearer",
     request: {
       params: workspaceIdSchema,
@@ -129,7 +130,7 @@ export const workspaceContracts: EndpointContract[] = [
   },
   {
     method: "POST",
-    path: "/api/workspaces/:workspaceId/invitations",
+    path: ROUTE_PATTERNS.workspaces.invitations,
     auth: "bearer",
     request: {
       params: workspaceIdSchema,
@@ -150,7 +151,7 @@ export const workspaceContracts: EndpointContract[] = [
   },
   {
     method: "PATCH",
-    path: "/api/workspaces/:workspaceId/members/:memberUserId",
+    path: ROUTE_PATTERNS.workspaces.memberByUserId,
     auth: "bearer",
     request: {
       params: workspaceMemberParamsSchema,
@@ -170,7 +171,7 @@ export const workspaceContracts: EndpointContract[] = [
   },
   {
     method: "DELETE",
-    path: "/api/workspaces/:workspaceId/members/:memberUserId",
+    path: ROUTE_PATTERNS.workspaces.memberByUserId,
     auth: "bearer",
     request: { params: workspaceMemberParamsSchema },
     responses: {
@@ -189,7 +190,7 @@ export const workspaceContracts: EndpointContract[] = [
   },
   {
     method: "POST",
-    path: "/api/workspaces/join",
+    path: ROUTE_PATTERNS.workspaces.join,
     auth: "bearer",
     request: { body: acceptWorkspaceInvitationSchema },
     responses: {
@@ -212,7 +213,7 @@ export const workspaceContracts: EndpointContract[] = [
   },
   {
     method: "POST",
-    path: "/api/workspaces/:workspaceId/leave",
+    path: ROUTE_PATTERNS.workspaces.leave,
     auth: "bearer",
     request: { params: workspaceIdSchema },
     responses: {
@@ -228,7 +229,7 @@ export const workspaceContracts: EndpointContract[] = [
   },
   {
     method: "POST",
-    path: "/api/workspaces/:workspaceId/convert-to-team",
+    path: ROUTE_PATTERNS.workspaces.convertToTeam,
     auth: "bearer",
     request: {
       params: workspaceIdSchema,
@@ -253,7 +254,7 @@ export const workspaceContracts: EndpointContract[] = [
   },
   {
     method: "GET",
-    path: "/api/workspaces/:workspaceId/updates",
+    path: ROUTE_PATTERNS.workspaces.updates,
     auth: "bearer",
     request: {
       params: workspaceIdSchema,

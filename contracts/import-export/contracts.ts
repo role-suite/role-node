@@ -6,6 +6,7 @@ import {
   workspaceImportExportJobByIdParamsSchema,
   workspaceImportExportParamsSchema,
 } from "../../src/modules/import-export/import-export.schema.js";
+import { ROUTE_PATTERNS } from "../../src/shared/http/routes.js";
 import {
   apiSuccessSchema,
   idSchema,
@@ -31,7 +32,7 @@ const importExportJobSchema = z
 export const importExportContracts: EndpointContract[] = [
   {
     method: "GET",
-    path: "/api/workspaces/:workspaceId/import-export/jobs",
+    path: ROUTE_PATTERNS.importExport.jobs,
     auth: "bearer",
     request: { params: workspaceImportExportParamsSchema },
     responses: {
@@ -47,7 +48,7 @@ export const importExportContracts: EndpointContract[] = [
   },
   {
     method: "GET",
-    path: "/api/workspaces/:workspaceId/import-export/jobs/:jobId",
+    path: ROUTE_PATTERNS.importExport.jobById,
     auth: "bearer",
     request: { params: workspaceImportExportJobByIdParamsSchema },
     responses: {
@@ -61,7 +62,7 @@ export const importExportContracts: EndpointContract[] = [
   },
   {
     method: "POST",
-    path: "/api/workspaces/:workspaceId/import-export/exports",
+    path: ROUTE_PATTERNS.importExport.exports,
     auth: "bearer",
     request: {
       params: workspaceImportExportParamsSchema,
@@ -77,7 +78,7 @@ export const importExportContracts: EndpointContract[] = [
   },
   {
     method: "POST",
-    path: "/api/workspaces/:workspaceId/import-export/imports",
+    path: ROUTE_PATTERNS.importExport.imports,
     auth: "bearer",
     request: {
       params: workspaceImportExportParamsSchema,

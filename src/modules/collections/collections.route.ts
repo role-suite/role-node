@@ -1,63 +1,79 @@
 import { Router } from "express";
 
+import { ROUTE_SEGMENTS } from "../../shared/http/routes.js";
 import { collectionsController } from "./collections.controller.js";
 
 export const collectionsRouter = Router({ mergeParams: true });
 
-collectionsRouter.get("/", collectionsController.list);
-collectionsRouter.get("/:collectionId", collectionsController.getById);
-collectionsRouter.post("/", collectionsController.create);
-collectionsRouter.patch("/:collectionId", collectionsController.update);
-collectionsRouter.delete("/:collectionId", collectionsController.remove);
 collectionsRouter.get(
-  "/:collectionId/endpoints",
+  ROUTE_SEGMENTS.collections.list,
+  collectionsController.list,
+);
+collectionsRouter.get(
+  ROUTE_SEGMENTS.collections.byId,
+  collectionsController.getById,
+);
+collectionsRouter.post(
+  ROUTE_SEGMENTS.collections.create,
+  collectionsController.create,
+);
+collectionsRouter.patch(
+  ROUTE_SEGMENTS.collections.byId,
+  collectionsController.update,
+);
+collectionsRouter.delete(
+  ROUTE_SEGMENTS.collections.byId,
+  collectionsController.remove,
+);
+collectionsRouter.get(
+  ROUTE_SEGMENTS.collections.endpoints,
   collectionsController.listEndpoints,
 );
 collectionsRouter.get(
-  "/:collectionId/endpoints/:endpointId",
+  ROUTE_SEGMENTS.collections.endpointById,
   collectionsController.getEndpointById,
 );
 collectionsRouter.post(
-  "/:collectionId/endpoints",
+  ROUTE_SEGMENTS.collections.endpoints,
   collectionsController.createEndpoint,
 );
 collectionsRouter.patch(
-  "/:collectionId/endpoints/:endpointId",
+  ROUTE_SEGMENTS.collections.endpointById,
   collectionsController.updateEndpoint,
 );
 collectionsRouter.delete(
-  "/:collectionId/endpoints/:endpointId",
+  ROUTE_SEGMENTS.collections.endpointById,
   collectionsController.removeEndpoint,
 );
 collectionsRouter.get(
-  "/:collectionId/endpoints/:endpointId/examples",
+  ROUTE_SEGMENTS.collections.endpointExamples,
   collectionsController.listEndpointExamples,
 );
 collectionsRouter.post(
-  "/:collectionId/endpoints/:endpointId/examples",
+  ROUTE_SEGMENTS.collections.endpointExamples,
   collectionsController.createEndpointExample,
 );
 collectionsRouter.patch(
-  "/:collectionId/endpoints/:endpointId/examples/:exampleId",
+  ROUTE_SEGMENTS.collections.endpointExampleById,
   collectionsController.updateEndpointExample,
 );
 collectionsRouter.delete(
-  "/:collectionId/endpoints/:endpointId/examples/:exampleId",
+  ROUTE_SEGMENTS.collections.endpointExampleById,
   collectionsController.removeEndpointExample,
 );
 collectionsRouter.get(
-  "/:collectionId/folders",
+  ROUTE_SEGMENTS.collections.folders,
   collectionsController.listFolders,
 );
 collectionsRouter.post(
-  "/:collectionId/folders",
+  ROUTE_SEGMENTS.collections.folders,
   collectionsController.createFolder,
 );
 collectionsRouter.patch(
-  "/:collectionId/folders/:folderId",
+  ROUTE_SEGMENTS.collections.folderById,
   collectionsController.updateFolder,
 );
 collectionsRouter.delete(
-  "/:collectionId/folders/:folderId",
+  ROUTE_SEGMENTS.collections.folderById,
   collectionsController.removeFolder,
 );

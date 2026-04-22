@@ -7,6 +7,7 @@ import {
   setAuthRepoDbClient,
 } from "../../src/modules/auth/auth.repo.js";
 import { createAuthTestDb } from "../helpers/auth-test-db.js";
+import { ROUTE_PATTERNS } from "../../src/shared/http/routes.js";
 
 const testDb = createAuthTestDb();
 
@@ -33,7 +34,7 @@ describe("App integration", () => {
 
   it("registers and logs in a user", async () => {
     const registerResponse = await request(app)
-      .post("/api/auth/register")
+      .post(ROUTE_PATTERNS.auth.register)
       .send({
         name: "Altay",
         email: "altay@example.com",
@@ -45,10 +46,12 @@ describe("App integration", () => {
     expect(registerResponse.body.success).toBe(true);
     expect(registerResponse.body.data.user.email).toBe("altay@example.com");
 
-    const loginResponse = await request(app).post("/api/auth/login").send({
-      email: "altay@example.com",
-      password: "password123",
-    });
+    const loginResponse = await request(app)
+      .post(ROUTE_PATTERNS.auth.login)
+      .send({
+        email: "altay@example.com",
+        password: "password123",
+      });
 
     expect(loginResponse.status).toBe(200);
     expect(loginResponse.body.success).toBe(true);
@@ -63,7 +66,7 @@ describe("App integration", () => {
   });
 
   it("rejects duplicate auth emails", async () => {
-    await request(app).post("/api/auth/register").send({
+    await request(app).post(ROUTE_PATTERNS.auth.register).send({
       name: "First",
       email: "dup@example.com",
       password: "password123",
@@ -71,7 +74,7 @@ describe("App integration", () => {
     });
 
     const duplicateResponse = await request(app)
-      .post("/api/auth/register")
+      .post(ROUTE_PATTERNS.auth.register)
       .send({
         name: "Second",
         email: "dup@example.com",
@@ -99,12 +102,14 @@ describe("App integration", () => {
   });
 
   it("returns 400 for invalid register payload", async () => {
-    const response = await request(app).post("/api/auth/register").send({
-      name: "A",
-      email: "not-an-email",
-      password: "123",
-      accountType: "single",
-    });
+    const response = await request(app)
+      .post(ROUTE_PATTERNS.auth.register)
+      .send({
+        name: "A",
+        email: "not-an-email",
+        password: "123",
+        accountType: "single",
+      });
 
     expect(response.status).toBe(400);
     expect(response.body.success).toBe(false);
@@ -113,7 +118,7 @@ describe("App integration", () => {
   });
 
   it("returns 401 for missing token on protected route", async () => {
-    const response = await request(app).get("/api/workspaces");
+    const response = await request(app).get(ROUTE_PATTERNS.workspaces.list);
 
     expect(response.status).toBe(401);
     expect(response.body).toEqual(

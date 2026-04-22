@@ -7,6 +7,7 @@ import {
   setAuthRepoDbClient,
 } from "../../src/modules/auth/auth.repo.js";
 import { setImportExportRepoDbClient } from "../../src/modules/import-export/import-export.repo.js";
+import { ROUTE_PATTERNS, routeBuilders } from "../../src/shared/http/routes.js";
 import { createAuthTestDb } from "../helpers/auth-test-db.js";
 
 const testDb = createAuthTestDb();
@@ -24,22 +25,24 @@ describe("import/export integration", () => {
   });
 
   it("allows owners to create jobs and retrieve them", async () => {
-    const register = await request(app).post("/api/auth/register").send({
-      name: "Owner",
-      email: "owner@example.com",
-      password: "password123",
-      accountType: "single",
-    });
+    const register = await request(app)
+      .post(ROUTE_PATTERNS.auth.register)
+      .send({
+        name: "Owner",
+        email: "owner@example.com",
+        password: "password123",
+        accountType: "single",
+      });
     const token = register.body.data.tokens.accessToken;
 
     const workspace = await request(app)
-      .post("/api/workspaces")
+      .post(ROUTE_PATTERNS.workspaces.create)
       .set("Authorization", `Bearer ${token}`)
       .send({ name: "Backups Team" });
     const workspaceId = workspace.body.data.id as number;
 
     const createExport = await request(app)
-      .post(`/api/workspaces/${workspaceId}/import-export/exports`)
+      .post(routeBuilders.workspaceImportExportExports(workspaceId))
       .set("Authorization", `Bearer ${token}`)
       .send({ format: "json", includeRuns: true });
 
@@ -48,7 +51,7 @@ describe("import/export integration", () => {
     expect(createExport.body.data.summary.includeRuns).toBe(true);
 
     const createImport = await request(app)
-      .post(`/api/workspaces/${workspaceId}/import-export/imports`)
+      .post(routeBuilders.workspaceImportExportImports(workspaceId))
       .set("Authorization", `Bearer ${token}`)
       .send({
         format: "json",
@@ -63,7 +66,7 @@ describe("import/export integration", () => {
     expect(createImport.body.data.summary.rootKeyCount).toBe(2);
 
     const listJobs = await request(app)
-      .get(`/api/workspaces/${workspaceId}/import-export/jobs`)
+      .get(routeBuilders.workspaceImportExportJobs(workspaceId))
       .set("Authorization", `Bearer ${token}`);
 
     expect(listJobs.status).toBe(200);
@@ -71,7 +74,7 @@ describe("import/export integration", () => {
 
     const jobId = createExport.body.data.id as number;
     const getJob = await request(app)
-      .get(`/api/workspaces/${workspaceId}/import-export/jobs/${jobId}`)
+      .get(routeBuilders.workspaceImportExportJobById(workspaceId, jobId))
       .set("Authorization", `Bearer ${token}`);
 
     expect(getJob.status).toBe(200);
@@ -79,13 +82,13 @@ describe("import/export integration", () => {
   });
 
   it("allows members to read jobs but blocks creating jobs", async () => {
-    const owner = await request(app).post("/api/auth/register").send({
+    const owner = await request(app).post(ROUTE_PATTERNS.auth.register).send({
       name: "Owner",
       email: "owner@example.com",
       password: "password123",
       accountType: "single",
     });
-    const member = await request(app).post("/api/auth/register").send({
+    const member = await request(app).post(ROUTE_PATTERNS.auth.register).send({
       name: "Member",
       email: "member@example.com",
       password: "password123",
@@ -96,23 +99,23 @@ describe("import/export integration", () => {
     const memberToken = member.body.data.tokens.accessToken;
 
     const workspace = await request(app)
-      .post("/api/workspaces")
+      .post(ROUTE_PATTERNS.workspaces.create)
       .set("Authorization", `Bearer ${ownerToken}`)
       .send({ name: "Shared Team" });
     const workspaceId = workspace.body.data.id as number;
 
     await request(app)
-      .post(`/api/workspaces/${workspaceId}/members`)
+      .post(routeBuilders.workspaceMembers(workspaceId))
       .set("Authorization", `Bearer ${ownerToken}`)
       .send({ email: "member@example.com", role: "member" });
 
     const ownerJob = await request(app)
-      .post(`/api/workspaces/${workspaceId}/import-export/exports`)
+      .post(routeBuilders.workspaceImportExportExports(workspaceId))
       .set("Authorization", `Bearer ${ownerToken}`)
       .send({ format: "json" });
 
     const listAsMember = await request(app)
-      .get(`/api/workspaces/${workspaceId}/import-export/jobs`)
+      .get(routeBuilders.workspaceImportExportJobs(workspaceId))
       .set("Authorization", `Bearer ${memberToken}`);
 
     expect(listAsMember.status).toBe(200);
@@ -120,14 +123,17 @@ describe("import/export integration", () => {
 
     const getAsMember = await request(app)
       .get(
-        `/api/workspaces/${workspaceId}/import-export/jobs/${ownerJob.body.data.id as number}`,
+        routeBuilders.workspaceImportExportJobById(
+          workspaceId,
+          ownerJob.body.data.id as number,
+        ),
       )
       .set("Authorization", `Bearer ${memberToken}`);
 
     expect(getAsMember.status).toBe(200);
 
     const deniedExport = await request(app)
-      .post(`/api/workspaces/${workspaceId}/import-export/exports`)
+      .post(routeBuilders.workspaceImportExportExports(workspaceId))
       .set("Authorization", `Bearer ${memberToken}`)
       .send({ format: "json" });
 

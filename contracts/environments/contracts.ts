@@ -16,6 +16,7 @@ import {
   standardRouteErrors,
   type EndpointContract,
 } from "../shared.js";
+import { ROUTE_PATTERNS } from "../../src/shared/http/routes.js";
 
 const environmentResponseSchema = z
   .object({
@@ -50,7 +51,7 @@ const deletedResponseSchema = apiSuccessSchema(
 export const environmentContracts: EndpointContract[] = [
   {
     method: "GET",
-    path: "/api/workspaces/:workspaceId/environments",
+    path: ROUTE_PATTERNS.environments.list,
     auth: "bearer",
     request: { params: workspaceEnvironmentParamsSchema },
     responses: {
@@ -67,7 +68,7 @@ export const environmentContracts: EndpointContract[] = [
   },
   {
     method: "GET",
-    path: "/api/workspaces/:workspaceId/environments/:environmentId",
+    path: ROUTE_PATTERNS.environments.byId,
     auth: "bearer",
     request: { params: workspaceEnvironmentByIdParamsSchema },
     responses: {
@@ -84,7 +85,7 @@ export const environmentContracts: EndpointContract[] = [
   },
   {
     method: "POST",
-    path: "/api/workspaces/:workspaceId/environments",
+    path: ROUTE_PATTERNS.environments.list,
     auth: "bearer",
     request: {
       params: workspaceEnvironmentParamsSchema,
@@ -105,7 +106,7 @@ export const environmentContracts: EndpointContract[] = [
   },
   {
     method: "PATCH",
-    path: "/api/workspaces/:workspaceId/environments/:environmentId",
+    path: ROUTE_PATTERNS.environments.byId,
     auth: "bearer",
     request: {
       params: workspaceEnvironmentByIdParamsSchema,
@@ -126,7 +127,7 @@ export const environmentContracts: EndpointContract[] = [
   },
   {
     method: "DELETE",
-    path: "/api/workspaces/:workspaceId/environments/:environmentId",
+    path: ROUTE_PATTERNS.environments.byId,
     auth: "bearer",
     request: { params: workspaceEnvironmentByIdParamsSchema },
     responses: {
@@ -140,7 +141,7 @@ export const environmentContracts: EndpointContract[] = [
   },
   {
     method: "GET",
-    path: "/api/workspaces/:workspaceId/environments/:environmentId/variables",
+    path: ROUTE_PATTERNS.environments.variables,
     auth: "bearer",
     request: { params: workspaceEnvironmentByIdParamsSchema },
     responses: {
@@ -157,7 +158,7 @@ export const environmentContracts: EndpointContract[] = [
   },
   {
     method: "GET",
-    path: "/api/workspaces/:workspaceId/environments/:environmentId/variables/:variableId",
+    path: ROUTE_PATTERNS.environments.variableById,
     auth: "bearer",
     request: { params: workspaceEnvironmentVariableByIdParamsSchema },
     responses: {
@@ -174,7 +175,7 @@ export const environmentContracts: EndpointContract[] = [
   },
   {
     method: "POST",
-    path: "/api/workspaces/:workspaceId/environments/:environmentId/variables",
+    path: ROUTE_PATTERNS.environments.variables,
     auth: "bearer",
     request: {
       params: workspaceEnvironmentByIdParamsSchema,
@@ -195,7 +196,7 @@ export const environmentContracts: EndpointContract[] = [
   },
   {
     method: "PATCH",
-    path: "/api/workspaces/:workspaceId/environments/:environmentId/variables/:variableId",
+    path: ROUTE_PATTERNS.environments.variableById,
     auth: "bearer",
     request: {
       params: workspaceEnvironmentVariableByIdParamsSchema,
@@ -216,7 +217,7 @@ export const environmentContracts: EndpointContract[] = [
   },
   {
     method: "DELETE",
-    path: "/api/workspaces/:workspaceId/environments/:environmentId/variables/:variableId",
+    path: ROUTE_PATTERNS.environments.variableById,
     auth: "bearer",
     request: { params: workspaceEnvironmentVariableByIdParamsSchema },
     responses: {

@@ -5,6 +5,7 @@ import {
   refreshTokenSchema,
   registerSchema,
 } from "../../src/modules/auth/auth.schema.js";
+import { ROUTE_PATTERNS } from "../../src/shared/http/routes.js";
 import {
   apiErrorSchema,
   apiSuccessSchema,
@@ -60,7 +61,7 @@ const meResponseSchema = authResponseSchema.omit({ tokens: true });
 export const authContracts: EndpointContract[] = [
   {
     method: "POST",
-    path: "/api/auth/register",
+    path: ROUTE_PATTERNS.auth.register,
     auth: "none",
     request: { body: registerSchema },
     responses: {
@@ -77,7 +78,7 @@ export const authContracts: EndpointContract[] = [
   },
   {
     method: "POST",
-    path: "/api/auth/login",
+    path: ROUTE_PATTERNS.auth.login,
     auth: "none",
     request: { body: loginSchema },
     responses: {
@@ -104,7 +105,7 @@ export const authContracts: EndpointContract[] = [
   },
   {
     method: "POST",
-    path: "/api/auth/refresh",
+    path: ROUTE_PATTERNS.auth.refresh,
     auth: "none",
     request: { body: refreshTokenSchema },
     responses: {
@@ -121,7 +122,7 @@ export const authContracts: EndpointContract[] = [
   },
   {
     method: "POST",
-    path: "/api/auth/logout",
+    path: ROUTE_PATTERNS.auth.logout,
     auth: "none",
     request: { body: refreshTokenSchema },
     responses: {
@@ -136,7 +137,7 @@ export const authContracts: EndpointContract[] = [
   },
   {
     method: "GET",
-    path: "/api/auth/me",
+    path: ROUTE_PATTERNS.auth.me,
     auth: "bearer",
     request: {},
     responses: {

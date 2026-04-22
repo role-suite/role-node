@@ -22,6 +22,7 @@ import {
   standardRouteErrors,
   type EndpointContract,
 } from "../shared.js";
+import { ROUTE_PATTERNS } from "../../src/shared/http/routes.js";
 
 const endpointKeyValueSchema = z
   .object({
@@ -170,7 +171,7 @@ const deletedResponseSchema = apiSuccessSchema(
 export const collectionContracts: EndpointContract[] = [
   {
     method: "GET",
-    path: "/api/workspaces/:workspaceId/collections",
+    path: ROUTE_PATTERNS.collections.list,
     auth: "bearer",
     request: { params: workspaceCollectionParamsSchema },
     responses: {
@@ -187,7 +188,7 @@ export const collectionContracts: EndpointContract[] = [
   },
   {
     method: "GET",
-    path: "/api/workspaces/:workspaceId/collections/:collectionId",
+    path: ROUTE_PATTERNS.collections.byId,
     auth: "bearer",
     request: { params: workspaceCollectionByIdParamsSchema },
     responses: {
@@ -204,7 +205,7 @@ export const collectionContracts: EndpointContract[] = [
   },
   {
     method: "POST",
-    path: "/api/workspaces/:workspaceId/collections",
+    path: ROUTE_PATTERNS.collections.list,
     auth: "bearer",
     request: {
       params: workspaceCollectionParamsSchema,
@@ -224,7 +225,7 @@ export const collectionContracts: EndpointContract[] = [
   },
   {
     method: "PATCH",
-    path: "/api/workspaces/:workspaceId/collections/:collectionId",
+    path: ROUTE_PATTERNS.collections.byId,
     auth: "bearer",
     request: {
       params: workspaceCollectionByIdParamsSchema,
@@ -244,7 +245,7 @@ export const collectionContracts: EndpointContract[] = [
   },
   {
     method: "DELETE",
-    path: "/api/workspaces/:workspaceId/collections/:collectionId",
+    path: ROUTE_PATTERNS.collections.byId,
     auth: "bearer",
     request: { params: workspaceCollectionByIdParamsSchema },
     responses: {
@@ -258,7 +259,7 @@ export const collectionContracts: EndpointContract[] = [
   },
   {
     method: "GET",
-    path: "/api/workspaces/:workspaceId/collections/:collectionId/endpoints",
+    path: ROUTE_PATTERNS.collections.endpoints,
     auth: "bearer",
     request: { params: workspaceCollectionByIdParamsSchema },
     responses: {
@@ -275,7 +276,7 @@ export const collectionContracts: EndpointContract[] = [
   },
   {
     method: "GET",
-    path: "/api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId",
+    path: ROUTE_PATTERNS.collections.endpointById,
     auth: "bearer",
     request: { params: workspaceCollectionEndpointByIdParamsSchema },
     responses: {
@@ -292,7 +293,7 @@ export const collectionContracts: EndpointContract[] = [
   },
   {
     method: "POST",
-    path: "/api/workspaces/:workspaceId/collections/:collectionId/endpoints",
+    path: ROUTE_PATTERNS.collections.endpoints,
     auth: "bearer",
     request: {
       params: workspaceCollectionByIdParamsSchema,
@@ -312,7 +313,7 @@ export const collectionContracts: EndpointContract[] = [
   },
   {
     method: "PATCH",
-    path: "/api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId",
+    path: ROUTE_PATTERNS.collections.endpointById,
     auth: "bearer",
     request: {
       params: workspaceCollectionEndpointByIdParamsSchema,
@@ -332,7 +333,7 @@ export const collectionContracts: EndpointContract[] = [
   },
   {
     method: "DELETE",
-    path: "/api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId",
+    path: ROUTE_PATTERNS.collections.endpointById,
     auth: "bearer",
     request: { params: workspaceCollectionEndpointByIdParamsSchema },
     responses: {
@@ -346,7 +347,7 @@ export const collectionContracts: EndpointContract[] = [
   },
   {
     method: "GET",
-    path: "/api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples",
+    path: ROUTE_PATTERNS.collections.endpointExamples,
     auth: "bearer",
     request: { params: workspaceCollectionEndpointByIdParamsSchema },
     responses: {
@@ -363,7 +364,7 @@ export const collectionContracts: EndpointContract[] = [
   },
   {
     method: "POST",
-    path: "/api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples",
+    path: ROUTE_PATTERNS.collections.endpointExamples,
     auth: "bearer",
     request: {
       params: workspaceCollectionEndpointByIdParamsSchema,
@@ -383,7 +384,7 @@ export const collectionContracts: EndpointContract[] = [
   },
   {
     method: "PATCH",
-    path: "/api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples/:exampleId",
+    path: ROUTE_PATTERNS.collections.endpointExampleById,
     auth: "bearer",
     request: {
       params: workspaceCollectionEndpointExampleByIdParamsSchema,
@@ -403,7 +404,7 @@ export const collectionContracts: EndpointContract[] = [
   },
   {
     method: "DELETE",
-    path: "/api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples/:exampleId",
+    path: ROUTE_PATTERNS.collections.endpointExampleById,
     auth: "bearer",
     request: { params: workspaceCollectionEndpointExampleByIdParamsSchema },
     responses: {
@@ -417,7 +418,7 @@ export const collectionContracts: EndpointContract[] = [
   },
   {
     method: "GET",
-    path: "/api/workspaces/:workspaceId/collections/:collectionId/folders",
+    path: ROUTE_PATTERNS.collections.folders,
     auth: "bearer",
     request: { params: workspaceCollectionByIdParamsSchema },
     responses: {
@@ -434,7 +435,7 @@ export const collectionContracts: EndpointContract[] = [
   },
   {
     method: "POST",
-    path: "/api/workspaces/:workspaceId/collections/:collectionId/folders",
+    path: ROUTE_PATTERNS.collections.folders,
     auth: "bearer",
     request: {
       params: workspaceCollectionByIdParamsSchema,
@@ -454,7 +455,7 @@ export const collectionContracts: EndpointContract[] = [
   },
   {
     method: "PATCH",
-    path: "/api/workspaces/:workspaceId/collections/:collectionId/folders/:folderId",
+    path: ROUTE_PATTERNS.collections.folderById,
     auth: "bearer",
     request: {
       params: workspaceCollectionFolderByIdParamsSchema,
@@ -474,7 +475,7 @@ export const collectionContracts: EndpointContract[] = [
   },
   {
     method: "DELETE",
-    path: "/api/workspaces/:workspaceId/collections/:collectionId/folders/:folderId",
+    path: ROUTE_PATTERNS.collections.folderById,
     auth: "bearer",
     request: { params: workspaceCollectionFolderByIdParamsSchema },
     responses: {

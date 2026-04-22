@@ -4,6 +4,7 @@ import { authRouter } from "./modules/auth/auth.route.js";
 import { workspacesRouter } from "./modules/workspaces/workspaces.route.js";
 import { appResponse } from "./shared/app-response.js";
 import { errorHandler } from "./shared/errors/error-handler.js";
+import { API_MOUNTS, ROUTE_SEGMENTS } from "./shared/http/routes.js";
 import { notFoundHandler } from "./shared/middleware/not-found.js";
 import { requestLogger } from "./shared/middleware/request-logger.js";
 
@@ -12,12 +13,12 @@ export const app = express();
 app.use(requestLogger);
 app.use(express.json());
 
-app.get("/health", (_req, res) => {
+app.get(ROUTE_SEGMENTS.health, (_req, res) => {
   appResponse.sendSuccess(res, 200, { status: "ok" });
 });
 
-app.use("/api/auth", authRouter);
-app.use("/api/workspaces", workspacesRouter);
+app.use(API_MOUNTS.auth, authRouter);
+app.use(API_MOUNTS.workspaces, workspacesRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

@@ -1,10 +1,23 @@
 import { Router } from "express";
 
+import { ROUTE_SEGMENTS } from "../../shared/http/routes.js";
 import { importExportController } from "./import-export.controller.js";
 
 export const importExportRouter = Router({ mergeParams: true });
 
-importExportRouter.get("/jobs", importExportController.listJobs);
-importExportRouter.get("/jobs/:jobId", importExportController.getJobById);
-importExportRouter.post("/exports", importExportController.createExport);
-importExportRouter.post("/imports", importExportController.createImport);
+importExportRouter.get(
+  ROUTE_SEGMENTS.importExport.jobs,
+  importExportController.listJobs,
+);
+importExportRouter.get(
+  ROUTE_SEGMENTS.importExport.jobById,
+  importExportController.getJobById,
+);
+importExportRouter.post(
+  ROUTE_SEGMENTS.importExport.exports,
+  importExportController.createExport,
+);
+importExportRouter.post(
+  ROUTE_SEGMENTS.importExport.imports,
+  importExportController.createImport,
+);
