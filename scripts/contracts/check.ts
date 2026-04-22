@@ -33,7 +33,11 @@ const collectPropertyPaths = (
   const objectSchema = schema as JsonObject;
   const properties = objectSchema.properties;
 
-  if (properties && typeof properties === "object" && !Array.isArray(properties)) {
+  if (
+    properties &&
+    typeof properties === "object" &&
+    !Array.isArray(properties)
+  ) {
     for (const [key, childSchema] of Object.entries(properties)) {
       const propertyPath = basePath ? `${basePath}.${key}` : key;
       paths.add(propertyPath);
@@ -59,7 +63,10 @@ const collectPropertyPaths = (
   }
 
   if (objectSchema.items) {
-    for (const nested of collectPropertyPaths(objectSchema.items, `${basePath}[]`)) {
+    for (const nested of collectPropertyPaths(
+      objectSchema.items,
+      `${basePath}[]`,
+    )) {
       paths.add(nested);
     }
   }
@@ -89,7 +96,9 @@ const compareSnapshots = (): number => {
   }
 
   if (current.missingRuntimeRoutes.length > 0) {
-    console.error("Found contract routes missing in runtime router registrations:");
+    console.error(
+      "Found contract routes missing in runtime router registrations:",
+    );
 
     for (const route of current.missingRuntimeRoutes) {
       console.error(`- ${route.method} ${route.path}`);
@@ -113,7 +122,10 @@ const compareSnapshots = (): number => {
     ]),
   );
   const currentByKey = new Map(
-    current.endpoints.map((endpoint) => [`${endpoint.method} ${endpoint.path}`, endpoint]),
+    current.endpoints.map((endpoint) => [
+      `${endpoint.method} ${endpoint.path}`,
+      endpoint,
+    ]),
   );
 
   const changedEndpoints: string[] = [];
@@ -131,7 +143,11 @@ const compareSnapshots = (): number => {
       changedEndpoints.push(endpointKey);
     }
 
-    const schemaPairs: Array<{ name: string; before: JsonValue; after: JsonValue }> = [
+    const schemaPairs: Array<{
+      name: string;
+      before: JsonValue;
+      after: JsonValue;
+    }> = [
       {
         name: "request.params",
         before: previousEndpoint.request.params,
@@ -154,9 +170,15 @@ const compareSnapshots = (): number => {
       },
     ];
 
-    for (let index = 0; index < previousEndpoint.responses.errors.length; index += 1) {
-      const previousErrorSchema = previousEndpoint.responses.errors[index]?.schema;
-      const currentErrorSchema = currentEndpoint.responses.errors[index]?.schema;
+    for (
+      let index = 0;
+      index < previousEndpoint.responses.errors.length;
+      index += 1
+    ) {
+      const previousErrorSchema =
+        previousEndpoint.responses.errors[index]?.schema;
+      const currentErrorSchema =
+        currentEndpoint.responses.errors[index]?.schema;
 
       if (!previousErrorSchema || !currentErrorSchema) {
         continue;

@@ -129,7 +129,9 @@ describe("App integration", () => {
 
     expect(response.status).toBe(400);
     expect(response.headers["x-request-id"]).toBeDefined();
-    expect(response.body.error.requestId).toBe(response.headers["x-request-id"]);
+    expect(response.body.error.requestId).toBe(
+      response.headers["x-request-id"],
+    );
   });
 
   it("returns 401 for missing token on protected route", async () => {

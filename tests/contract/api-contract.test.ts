@@ -197,9 +197,7 @@ describe("API contract", () => {
     expect(() =>
       successEnvelopeSchema(
         z.object({ items: z.array(collectionSchema) }),
-      ).parse(
-        listCollections.body,
-      ),
+      ).parse(listCollections.body),
     ).not.toThrow();
   });
 

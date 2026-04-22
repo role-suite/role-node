@@ -12,8 +12,8 @@ const DOC_PATH_PREFIXES = [
 const resolveBaseRefCandidates = (): string[] => {
   const envRef = process.env.CONTRACT_BASE_REF?.trim();
 
-  return [envRef, "origin/main", "HEAD~1"].filter(
-    (value): value is string => Boolean(value && value.length > 0),
+  return [envRef, "origin/main", "HEAD~1"].filter((value): value is string =>
+    Boolean(value && value.length > 0),
   );
 };
 
@@ -47,9 +47,7 @@ const runDocsGuard = (): number => {
   }
 
   if (!changedFiles) {
-    console.log(
-      "Skipping docs guard: could not diff against configured refs.",
-    );
+    console.log("Skipping docs guard: could not diff against configured refs.");
     return 0;
   }
 

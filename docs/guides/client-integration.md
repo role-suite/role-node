@@ -185,19 +185,19 @@ Cursor rules:
 
 Use `error.code` for branching logic (not `error.message`).
 
-| Code | HTTP | Typical handling |
-| ---- | ---- | ---------------- |
-| `VALIDATION_FAILED` | 400 | Do not retry unchanged payload; surface field errors |
-| `MISSING_ACCESS_TOKEN` | 401 | Acquire/login, then retry once with token |
-| `INVALID_ACCESS_TOKEN` | 401 | Attempt refresh; if refresh fails, force login |
-| `INVALID_REFRESH_TOKEN` | 401 | Force login |
-| `REFRESH_SESSION_INVALID` | 401 | Force login |
-| `WORKSPACE_ACCESS_DENIED` | 403 | Do not retry; show permission state |
-| `WORKSPACE_NOT_FOUND` | 404 | Do not retry until resource selection changes |
-| `RUN_POLICY_BLOCKED` | 422 | Do not retry unchanged request; adjust target/policy |
-| `RUN_TIMEOUT` | 408 | Safe to retry idempotent run with backoff/adjusted timeout |
-| `RUN_RESPONSE_TOO_LARGE` | 413 | Retry only after lowering response size or raising configured limit |
-| `RUN_NETWORK_ERROR` | 502 | Retry with backoff (idempotent only) |
+| Code                      | HTTP | Typical handling                                                    |
+| ------------------------- | ---- | ------------------------------------------------------------------- |
+| `VALIDATION_FAILED`       | 400  | Do not retry unchanged payload; surface field errors                |
+| `MISSING_ACCESS_TOKEN`    | 401  | Acquire/login, then retry once with token                           |
+| `INVALID_ACCESS_TOKEN`    | 401  | Attempt refresh; if refresh fails, force login                      |
+| `INVALID_REFRESH_TOKEN`   | 401  | Force login                                                         |
+| `REFRESH_SESSION_INVALID` | 401  | Force login                                                         |
+| `WORKSPACE_ACCESS_DENIED` | 403  | Do not retry; show permission state                                 |
+| `WORKSPACE_NOT_FOUND`     | 404  | Do not retry until resource selection changes                       |
+| `RUN_POLICY_BLOCKED`      | 422  | Do not retry unchanged request; adjust target/policy                |
+| `RUN_TIMEOUT`             | 408  | Safe to retry idempotent run with backoff/adjusted timeout          |
+| `RUN_RESPONSE_TOO_LARGE`  | 413  | Retry only after lowering response size or raising configured limit |
+| `RUN_NETWORK_ERROR`       | 502  | Retry with backoff (idempotent only)                                |
 
 For complete registry see `docs/errors.md`.
 

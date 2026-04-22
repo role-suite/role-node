@@ -32,7 +32,11 @@ const collectPropertyPaths = (
   const objectSchema = schema as JsonObject;
   const properties = objectSchema.properties;
 
-  if (properties && typeof properties === "object" && !Array.isArray(properties)) {
+  if (
+    properties &&
+    typeof properties === "object" &&
+    !Array.isArray(properties)
+  ) {
     for (const [key, childSchema] of Object.entries(properties)) {
       const propertyPath = basePath ? `${basePath}.${key}` : key;
       paths.add(propertyPath);
@@ -58,7 +62,10 @@ const collectPropertyPaths = (
   }
 
   if (objectSchema.items) {
-    for (const nested of collectPropertyPaths(objectSchema.items, `${basePath}[]`)) {
+    for (const nested of collectPropertyPaths(
+      objectSchema.items,
+      `${basePath}[]`,
+    )) {
       paths.add(nested);
     }
   }
@@ -112,7 +119,10 @@ const collectRequiredPaths = (
   }
 
   if (objectSchema.items) {
-    for (const path of collectRequiredPaths(objectSchema.items, `${basePath}[]`)) {
+    for (const path of collectRequiredPaths(
+      objectSchema.items,
+      `${basePath}[]`,
+    )) {
       required.add(path);
     }
   }
@@ -137,8 +147,8 @@ const collectRequiredPaths = (
 const resolveBaseRefCandidates = (): string[] => {
   const envRef = process.env.CONTRACT_BASE_REF?.trim();
 
-  return [envRef, "origin/main", "HEAD~1"].filter(
-    (value): value is string => Boolean(value && value.length > 0),
+  return [envRef, "origin/main", "HEAD~1"].filter((value): value is string =>
+    Boolean(value && value.length > 0),
   );
 };
 
@@ -149,7 +159,9 @@ const parseCurrentSnapshot = (): PublicContractsSnapshot => {
     );
   }
 
-  return JSON.parse(readFileSync(snapshotFilePath, "utf8")) as PublicContractsSnapshot;
+  return JSON.parse(
+    readFileSync(snapshotFilePath, "utf8"),
+  ) as PublicContractsSnapshot;
 };
 
 const parseBaseSnapshot = (baseRef: string): PublicContractsSnapshot => {
@@ -188,7 +200,10 @@ const main = (): number => {
     ]),
   );
   const currentByKey = new Map(
-    current.endpoints.map((endpoint) => [`${endpoint.method} ${endpoint.path}`, endpoint]),
+    current.endpoints.map((endpoint) => [
+      `${endpoint.method} ${endpoint.path}`,
+      endpoint,
+    ]),
   );
 
   const removedEndpoints: string[] = [];
@@ -204,7 +219,10 @@ const main = (): number => {
       continue;
     }
 
-    if (previousEndpoint.responses.success.status !== currentEndpoint.responses.success.status) {
+    if (
+      previousEndpoint.responses.success.status !==
+      currentEndpoint.responses.success.status
+    ) {
       changedSuccessStatuses.push(
         `${key} success status ${previousEndpoint.responses.success.status} -> ${currentEndpoint.responses.success.status}`,
       );
@@ -226,7 +244,9 @@ const main = (): number => {
     const requestParts = ["params", "query", "body"] as const;
 
     for (const part of requestParts) {
-      const beforeRequired = collectRequiredPaths(previousEndpoint.request[part]);
+      const beforeRequired = collectRequiredPaths(
+        previousEndpoint.request[part],
+      );
       const afterRequired = collectRequiredPaths(currentEndpoint.request[part]);
 
       for (const field of afterRequired) {

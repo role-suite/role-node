@@ -53,7 +53,10 @@ export const importExportContracts: EndpointContract[] = [
     auth: "bearer",
     request: { params: workspaceImportExportJobByIdParamsSchema },
     responses: {
-      success: { status: 200, schema: apiObjectSuccessSchema(importExportJobSchema) },
+      success: {
+        status: 200,
+        schema: apiObjectSuccessSchema(importExportJobSchema),
+      },
       errors: [
         standardRouteErrors.validationFailed,
         standardRouteErrors.forbidden,
@@ -70,7 +73,10 @@ export const importExportContracts: EndpointContract[] = [
       body: createWorkspaceExportSchema,
     },
     responses: {
-      success: { status: 201, schema: apiObjectSuccessSchema(importExportJobSchema) },
+      success: {
+        status: 201,
+        schema: apiObjectSuccessSchema(importExportJobSchema),
+      },
       errors: [
         standardRouteErrors.validationFailed,
         standardRouteErrors.forbidden,
@@ -86,7 +92,10 @@ export const importExportContracts: EndpointContract[] = [
       body: createWorkspaceImportSchema,
     },
     responses: {
-      success: { status: 201, schema: apiObjectSuccessSchema(importExportJobSchema) },
+      success: {
+        status: 201,
+        schema: apiObjectSuccessSchema(importExportJobSchema),
+      },
       errors: [
         standardRouteErrors.validationFailed,
         standardRouteErrors.forbidden,

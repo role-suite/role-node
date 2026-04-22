@@ -66,7 +66,10 @@ export const authContracts: EndpointContract[] = [
     auth: "none",
     request: { body: registerSchema },
     responses: {
-      success: { status: 201, schema: apiObjectSuccessSchema(authResponseSchema) },
+      success: {
+        status: 201,
+        schema: apiObjectSuccessSchema(authResponseSchema),
+      },
       errors: [
         standardRouteErrors.validationFailed,
         {
@@ -83,7 +86,10 @@ export const authContracts: EndpointContract[] = [
     auth: "none",
     request: { body: loginSchema },
     responses: {
-      success: { status: 200, schema: apiObjectSuccessSchema(authResponseSchema) },
+      success: {
+        status: 200,
+        schema: apiObjectSuccessSchema(authResponseSchema),
+      },
       errors: [
         standardRouteErrors.validationFailed,
         {
@@ -110,7 +116,10 @@ export const authContracts: EndpointContract[] = [
     auth: "none",
     request: { body: refreshTokenSchema },
     responses: {
-      success: { status: 200, schema: apiObjectSuccessSchema(authResponseSchema) },
+      success: {
+        status: 200,
+        schema: apiObjectSuccessSchema(authResponseSchema),
+      },
       errors: [
         standardRouteErrors.validationFailed,
         {
@@ -137,7 +146,10 @@ export const authContracts: EndpointContract[] = [
     auth: "bearer",
     request: {},
     responses: {
-      success: { status: 200, schema: apiObjectSuccessSchema(meResponseSchema) },
+      success: {
+        status: 200,
+        schema: apiObjectSuccessSchema(meResponseSchema),
+      },
       errors: [
         standardRouteErrors.missingAccessToken,
         standardRouteErrors.invalidAccessToken,

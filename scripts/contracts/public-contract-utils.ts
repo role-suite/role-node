@@ -150,7 +150,10 @@ const toJsonSchema = (schema: z.ZodTypeAny): JsonValue => {
   );
 };
 
-const extractRoutesFromRouter = (router: RouterLike, basePath: string): RouteRef[] => {
+const extractRoutesFromRouter = (
+  router: RouterLike,
+  basePath: string,
+): RouteRef[] => {
   const stack = router.stack ?? [];
   const collected: RouteRef[] = [];
 
@@ -221,16 +224,21 @@ export const buildPublicContractsSnapshot = (): PublicContractsSnapshot => {
     (route) => !runtimeRouteKeys.has(`${route.method} ${route.path}`),
   );
 
-  const endpoints = [...allContracts]
-    .sort(compareRouteRefs)
-    .map((contract): EndpointSnapshot => ({
+  const endpoints = [...allContracts].sort(compareRouteRefs).map(
+    (contract): EndpointSnapshot => ({
       method: contract.method,
       path: normalizePath(contract.path),
       auth: contract.auth,
       request: {
-        params: contract.request.params ? toJsonSchema(contract.request.params) : null,
-        query: contract.request.query ? toJsonSchema(contract.request.query) : null,
-        body: contract.request.body ? toJsonSchema(contract.request.body) : null,
+        params: contract.request.params
+          ? toJsonSchema(contract.request.params)
+          : null,
+        query: contract.request.query
+          ? toJsonSchema(contract.request.query)
+          : null,
+        body: contract.request.body
+          ? toJsonSchema(contract.request.body)
+          : null,
       },
       responses: {
         success: {
@@ -243,7 +251,8 @@ export const buildPublicContractsSnapshot = (): PublicContractsSnapshot => {
           schema: toJsonSchema(errorResponse.schema),
         })),
       },
-    }));
+    }),
+  );
 
   return {
     version: 1,

@@ -6,10 +6,10 @@ Update this table on every release.
 
 ## Version compatibility
 
-| role-node version | supported role-sdk versions | supported role-client versions |
-| ----------------- | --------------------------- | ------------------------------ |
-| `main` (unreleased) | `main` | `main` |
-| `1.0.x` | `1.0.x` | `1.0.x` |
+| role-node version   | supported role-sdk versions | supported role-client versions |
+| ------------------- | --------------------------- | ------------------------------ |
+| `main` (unreleased) | `main`                      | `main`                         |
+| `1.0.x`             | `1.0.x`                     | `1.0.x`                        |
 
 ## Notes
 

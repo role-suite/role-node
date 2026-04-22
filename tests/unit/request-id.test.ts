@@ -26,7 +26,10 @@ describe("request id middleware", () => {
     expect(next).toHaveBeenCalledOnce();
     expect((req as { requestId?: string }).requestId).toBe("incoming-id");
     expect(res.locals.requestId).toBe("incoming-id");
-    expect(res.setHeader).toHaveBeenCalledWith(REQUEST_ID_HEADER, "incoming-id");
+    expect(res.setHeader).toHaveBeenCalledWith(
+      REQUEST_ID_HEADER,
+      "incoming-id",
+    );
   });
 
   it("generates request id when missing", () => {
@@ -43,7 +46,9 @@ describe("request id middleware", () => {
     expect(String((req as { requestId?: string }).requestId)).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
     );
-    expect(res.locals.requestId).toBe((req as { requestId?: string }).requestId);
+    expect(res.locals.requestId).toBe(
+      (req as { requestId?: string }).requestId,
+    );
     expect(res.setHeader).toHaveBeenCalledWith(
       REQUEST_ID_HEADER,
       (req as { requestId?: string }).requestId,

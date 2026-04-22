@@ -12,7 +12,9 @@ type CursorPage = {
   hasMore: boolean;
 };
 
-const object = <T extends Record<string, unknown>>(result: T): ApiResponse<T> => ({
+const object = <T extends Record<string, unknown>>(
+  result: T,
+): ApiResponse<T> => ({
   success: true,
   data: result,
 });
