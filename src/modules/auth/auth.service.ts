@@ -1,10 +1,11 @@
 import { env } from "../../config/env.js";
-import { appResponse } from "../../shared/app-response.js";
 import {
   hashPassword,
   hashToken,
   verifyPassword,
 } from "../../shared/auth/password.js";
+import { createAppError } from "../../shared/errors/app-error.js";
+import { ERROR_CODES } from "../../shared/errors/error-codes.js";
 import {
   createAuthToken,
   verifyRefreshToken,
@@ -140,13 +141,13 @@ const selectWorkspaceIdForLogin = async (
   const memberships = await authRepo.listMembershipsByUser(userId);
 
   if (memberships.length === 0) {
-    throw appResponse.withStatus(403, "No workspace membership found");
+    throw createAppError(ERROR_CODES.auth.NO_WORKSPACE_MEMBERSHIP);
   }
 
   const defaultMembership = memberships[0];
 
   if (!defaultMembership) {
-    throw appResponse.withStatus(403, "No workspace membership found");
+    throw createAppError(ERROR_CODES.auth.NO_WORKSPACE_MEMBERSHIP);
   }
 
   return {
@@ -185,7 +186,7 @@ export const authService = {
     const existingUser = await authRepo.findUserByEmail(payload.email);
 
     if (existingUser) {
-      throw appResponse.withStatus(409, "Email already in use");
+      throw createAppError(ERROR_CODES.auth.EMAIL_ALREADY_IN_USE);
     }
 
     const user = await authRepo.createUser({
@@ -218,14 +219,14 @@ export const authService = {
     const user = await authRepo.findUserByEmail(payload.email);
 
     if (!user || !verifyPassword(payload.password, user.passwordHash)) {
-      throw appResponse.withStatus(401, "Invalid credentials");
+      throw createAppError(ERROR_CODES.auth.INVALID_CREDENTIALS);
     }
 
     const { workspaceId, role } = await selectWorkspaceIdForLogin(user.id);
     const workspace = await authRepo.findWorkspaceById(workspaceId);
 
     if (!workspace) {
-      throw appResponse.withStatus(404, "Workspace not found");
+      throw createAppError(ERROR_CODES.workspaces.WORKSPACE_NOT_FOUND);
     }
 
     const tokens = await issueTokenPair(user.id, workspace.id);
@@ -240,7 +241,7 @@ export const authService = {
     );
 
     if (!tokenPayload) {
-      throw appResponse.withStatus(401, "Invalid refresh token");
+      throw createAppError(ERROR_CODES.auth.INVALID_REFRESH_TOKEN);
     }
 
     const session = await authRepo.findSessionById(tokenPayload.sid);
@@ -253,7 +254,7 @@ export const authService = {
       session.workspaceId !== tokenPayload.wid ||
       session.refreshTokenHash !== hashToken(payload.refreshToken)
     ) {
-      throw appResponse.withStatus(401, "Refresh session is invalid");
+      throw createAppError(ERROR_CODES.auth.REFRESH_SESSION_INVALID);
     }
 
     const user = await authRepo.findUserById(session.userId);
@@ -264,7 +265,7 @@ export const authService = {
     );
 
     if (!user || !workspace || !membership) {
-      throw appResponse.withStatus(401, "Refresh session is invalid");
+      throw createAppError(ERROR_CODES.auth.REFRESH_SESSION_INVALID);
     }
 
     await authRepo.revokeSessionById(session.id);
@@ -295,7 +296,7 @@ export const authService = {
     );
 
     if (!user || !workspace || !membership) {
-      throw appResponse.withStatus(401, "Authenticated context is invalid");
+      throw createAppError(ERROR_CODES.common.AUTH_CONTEXT_INVALID);
     }
 
     return {

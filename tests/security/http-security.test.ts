@@ -31,7 +31,8 @@ describe("HTTP security behavior", () => {
 
     expect(response.status).toBe(400);
     expect(response.body.success).toBe(false);
-    expect(response.body.message).toBe("Validation failed");
+    expect(response.body.error.code).toBe("VALIDATION_FAILED");
+    expect(response.body.error.message).toBe("Validation failed");
   });
 
   it("rejects unsupported methods on auth route", async () => {
@@ -57,10 +58,15 @@ describe("HTTP security behavior", () => {
     });
 
     expect(response.status).toBe(409);
-    expect(response.body).toEqual({
-      success: false,
-      message: "Email already in use",
-    });
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        success: false,
+        error: expect.objectContaining({
+          code: "EMAIL_ALREADY_IN_USE",
+          message: "Email already in use",
+        }),
+      }),
+    );
   });
 
   it("rejects malformed collection endpoint payload", async () => {
@@ -99,7 +105,8 @@ describe("HTTP security behavior", () => {
 
     expect(response.status).toBe(400);
     expect(response.body.success).toBe(false);
-    expect(response.body.message).toBe("Validation failed");
+    expect(response.body.error.code).toBe("VALIDATION_FAILED");
+    expect(response.body.error.message).toBe("Validation failed");
   });
 
   it("rejects malformed collection route params", async () => {
@@ -117,6 +124,7 @@ describe("HTTP security behavior", () => {
 
     expect(response.status).toBe(400);
     expect(response.body.success).toBe(false);
-    expect(response.body.message).toBe("Validation failed");
+    expect(response.body.error.code).toBe("VALIDATION_FAILED");
+    expect(response.body.error.message).toBe("Validation failed");
   });
 });

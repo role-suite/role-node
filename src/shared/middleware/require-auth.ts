@@ -2,8 +2,9 @@ import type { NextFunction, Request, Response } from "express";
 
 import { env } from "../../config/env.js";
 import { verifyAccessToken } from "../auth/tokens.js";
-import { appResponse } from "../app-response.js";
 import { authRepo } from "../../modules/auth/auth.repo.js";
+import { createAppError } from "../errors/app-error.js";
+import { ERROR_CODES } from "../errors/error-codes.js";
 
 const getBearerToken = (authorizationHeader?: string): string | null => {
   if (!authorizationHeader) {
@@ -27,13 +28,13 @@ export const requireAuth = async (
   const token = getBearerToken(req.header("authorization"));
 
   if (!token) {
-    throw appResponse.withStatus(401, "Missing access token");
+    throw createAppError(ERROR_CODES.common.MISSING_ACCESS_TOKEN);
   }
 
   const payload = verifyAccessToken(token, env.AUTH_ACCESS_TOKEN_SECRET);
 
   if (!payload) {
-    throw appResponse.withStatus(401, "Invalid access token");
+    throw createAppError(ERROR_CODES.common.INVALID_ACCESS_TOKEN);
   }
 
   const user = await authRepo.findUserById(payload.sub);
@@ -44,7 +45,7 @@ export const requireAuth = async (
   );
 
   if (!user || !workspace || !membership) {
-    throw appResponse.withStatus(401, "Authenticated context is invalid");
+    throw createAppError(ERROR_CODES.common.AUTH_CONTEXT_INVALID);
   }
 
   req.auth = {

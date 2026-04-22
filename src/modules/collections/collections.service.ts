@@ -1,5 +1,6 @@
 import { authRepo } from "../auth/auth.repo.js";
-import { appResponse } from "../../shared/app-response.js";
+import { createAppError } from "../../shared/errors/app-error.js";
+import { ERROR_CODES } from "../../shared/errors/error-codes.js";
 import { workspaceEventsService } from "../workspaces/workspace-events.service.js";
 
 import {
@@ -236,7 +237,7 @@ const requireWorkspaceMembership = async (
   );
 
   if (!membership) {
-    throw appResponse.withStatus(403, "Workspace access denied");
+    throw createAppError(ERROR_CODES.workspaces.WORKSPACE_ACCESS_DENIED);
   }
 
   return { role: membership.role };
@@ -249,10 +250,7 @@ const requireWorkspaceWriterRole = async (
   const membership = await requireWorkspaceMembership(userId, workspaceId);
 
   if (membership.role === "member") {
-    throw appResponse.withStatus(
-      403,
-      "Only workspace owners and admins can modify collections",
-    );
+    throw createAppError(ERROR_CODES.collections.MODIFY_FORBIDDEN);
   }
 };
 
@@ -260,7 +258,7 @@ const requireWorkspaceExists = async (workspaceId: number): Promise<void> => {
   const workspace = await authRepo.findWorkspaceById(workspaceId);
 
   if (!workspace) {
-    throw appResponse.withStatus(404, "Workspace not found");
+    throw createAppError(ERROR_CODES.workspaces.WORKSPACE_NOT_FOUND);
   }
 };
 
@@ -271,7 +269,7 @@ const requireCollectionInWorkspace = async (
   const collection = await collectionsRepo.findById(collectionId);
 
   if (!collection || collection.workspaceId !== workspaceId) {
-    throw appResponse.withStatus(404, "Collection not found");
+    throw createAppError(ERROR_CODES.collections.COLLECTION_NOT_FOUND);
   }
 
   return collection;
@@ -284,7 +282,7 @@ const requireFolderInCollection = async (
   const folder = await collectionsRepo.findFolderById(folderId);
 
   if (!folder || folder.collectionId !== collectionId) {
-    throw appResponse.withStatus(404, "Collection folder not found");
+    throw createAppError(ERROR_CODES.collections.FOLDER_NOT_FOUND);
   }
 
   return folder;
@@ -302,7 +300,7 @@ const validateParentFolderReference = async (
   const parent = await requireFolderInCollection(collectionId, parentFolderId);
 
   if (currentFolderId !== undefined && parent.id === currentFolderId) {
-    throw appResponse.withStatus(400, "Folder cannot be its own parent");
+    throw createAppError(ERROR_CODES.collections.FOLDER_SELF_PARENT);
   }
 };
 
@@ -385,7 +383,7 @@ export const collectionsService = {
     const updated = await collectionsRepo.findById(existing.id);
 
     if (!updated) {
-      throw appResponse.withStatus(404, "Collection not found");
+      throw createAppError(ERROR_CODES.collections.COLLECTION_NOT_FOUND);
     }
 
     await workspaceEventsService.publish({
@@ -443,7 +441,7 @@ export const collectionsService = {
     const endpoint = await collectionsRepo.findEndpointById(endpointId);
 
     if (!endpoint || endpoint.collectionId !== collectionId) {
-      throw appResponse.withStatus(404, "Collection endpoint not found");
+      throw createAppError(ERROR_CODES.collections.ENDPOINT_NOT_FOUND);
     }
 
     return mapEndpoint(endpoint);
@@ -505,7 +503,7 @@ export const collectionsService = {
     const existing = await collectionsRepo.findEndpointById(endpointId);
 
     if (!existing || existing.collectionId !== collectionId) {
-      throw appResponse.withStatus(404, "Collection endpoint not found");
+      throw createAppError(ERROR_CODES.collections.ENDPOINT_NOT_FOUND);
     }
 
     const nextHeaders =
@@ -548,7 +546,7 @@ export const collectionsService = {
     const updated = await collectionsRepo.findEndpointById(existing.id);
 
     if (!updated) {
-      throw appResponse.withStatus(404, "Collection endpoint not found");
+      throw createAppError(ERROR_CODES.collections.ENDPOINT_NOT_FOUND);
     }
 
     await workspaceEventsService.publish({
@@ -578,7 +576,7 @@ export const collectionsService = {
     const existing = await collectionsRepo.findEndpointById(endpointId);
 
     if (!existing || existing.collectionId !== collectionId) {
-      throw appResponse.withStatus(404, "Collection endpoint not found");
+      throw createAppError(ERROR_CODES.collections.ENDPOINT_NOT_FOUND);
     }
 
     await collectionsRepo.deleteEndpointById(endpointId);
@@ -674,7 +672,7 @@ export const collectionsService = {
     const updated = await collectionsRepo.findFolderById(existing.id);
 
     if (!updated) {
-      throw appResponse.withStatus(404, "Collection folder not found");
+      throw createAppError(ERROR_CODES.collections.FOLDER_NOT_FOUND);
     }
 
     await workspaceEventsService.publish({
@@ -726,7 +724,7 @@ export const collectionsService = {
     const endpoint = await collectionsRepo.findEndpointById(endpointId);
 
     if (!endpoint || endpoint.collectionId !== collectionId) {
-      throw appResponse.withStatus(404, "Collection endpoint not found");
+      throw createAppError(ERROR_CODES.collections.ENDPOINT_NOT_FOUND);
     }
 
     const examples = await collectionsRepo.listExamplesByEndpoint(endpointId);
@@ -745,7 +743,7 @@ export const collectionsService = {
     const endpoint = await collectionsRepo.findEndpointById(endpointId);
 
     if (!endpoint || endpoint.collectionId !== collectionId) {
-      throw appResponse.withStatus(404, "Collection endpoint not found");
+      throw createAppError(ERROR_CODES.collections.ENDPOINT_NOT_FOUND);
     }
 
     const created = await collectionsRepo.createEndpointExample({
@@ -787,16 +785,13 @@ export const collectionsService = {
     const endpoint = await collectionsRepo.findEndpointById(endpointId);
 
     if (!endpoint || endpoint.collectionId !== collectionId) {
-      throw appResponse.withStatus(404, "Collection endpoint not found");
+      throw createAppError(ERROR_CODES.collections.ENDPOINT_NOT_FOUND);
     }
 
     const existing = await collectionsRepo.findExampleById(exampleId);
 
     if (!existing || existing.endpointId !== endpointId) {
-      throw appResponse.withStatus(
-        404,
-        "Collection endpoint example not found",
-      );
+      throw createAppError(ERROR_CODES.collections.EXAMPLE_NOT_FOUND);
     }
 
     await collectionsRepo.updateExample({
@@ -814,10 +809,7 @@ export const collectionsService = {
     const updated = await collectionsRepo.findExampleById(exampleId);
 
     if (!updated) {
-      throw appResponse.withStatus(
-        404,
-        "Collection endpoint example not found",
-      );
+      throw createAppError(ERROR_CODES.collections.EXAMPLE_NOT_FOUND);
     }
 
     await workspaceEventsService.publish({
@@ -848,16 +840,13 @@ export const collectionsService = {
     const endpoint = await collectionsRepo.findEndpointById(endpointId);
 
     if (!endpoint || endpoint.collectionId !== collectionId) {
-      throw appResponse.withStatus(404, "Collection endpoint not found");
+      throw createAppError(ERROR_CODES.collections.ENDPOINT_NOT_FOUND);
     }
 
     const existing = await collectionsRepo.findExampleById(exampleId);
 
     if (!existing || existing.endpointId !== endpointId) {
-      throw appResponse.withStatus(
-        404,
-        "Collection endpoint example not found",
-      );
+      throw createAppError(ERROR_CODES.collections.EXAMPLE_NOT_FOUND);
     }
 
     await collectionsRepo.deleteExampleById(exampleId);

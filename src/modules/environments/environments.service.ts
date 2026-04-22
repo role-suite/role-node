@@ -1,4 +1,5 @@
-import { appResponse } from "../../shared/app-response.js";
+import { createAppError } from "../../shared/errors/app-error.js";
+import { ERROR_CODES } from "../../shared/errors/error-codes.js";
 import { authRepo } from "../auth/auth.repo.js";
 import { workspaceEventsService } from "../workspaces/workspace-events.service.js";
 import {
@@ -75,7 +76,7 @@ const requireWorkspaceMembership = async (
   );
 
   if (!membership) {
-    throw appResponse.withStatus(403, "Workspace access denied");
+    throw createAppError(ERROR_CODES.workspaces.WORKSPACE_ACCESS_DENIED);
   }
 
   return { role: membership.role };
@@ -88,10 +89,7 @@ const requireWorkspaceWriterRole = async (
   const membership = await requireWorkspaceMembership(userId, workspaceId);
 
   if (membership.role === "member") {
-    throw appResponse.withStatus(
-      403,
-      "Only workspace owners and admins can modify environments",
-    );
+    throw createAppError(ERROR_CODES.environments.MODIFY_FORBIDDEN);
   }
 };
 
@@ -99,7 +97,7 @@ const requireWorkspaceExists = async (workspaceId: number): Promise<void> => {
   const workspace = await authRepo.findWorkspaceById(workspaceId);
 
   if (!workspace) {
-    throw appResponse.withStatus(404, "Workspace not found");
+    throw createAppError(ERROR_CODES.workspaces.WORKSPACE_NOT_FOUND);
   }
 };
 
@@ -110,7 +108,7 @@ const requireEnvironmentInWorkspace = async (
   const environment = await environmentsRepo.findEnvironmentById(environmentId);
 
   if (!environment || environment.workspaceId !== workspaceId) {
-    throw appResponse.withStatus(404, "Environment not found");
+    throw createAppError(ERROR_CODES.environments.ENVIRONMENT_NOT_FOUND);
   }
 
   return environment;
@@ -123,7 +121,7 @@ const requireVariableInEnvironment = async (
   const variable = await environmentsRepo.findVariableById(variableId);
 
   if (!variable || variable.environmentId !== environmentId) {
-    throw appResponse.withStatus(404, "Environment variable not found");
+    throw createAppError(ERROR_CODES.environments.VARIABLE_NOT_FOUND);
   }
 
   return variable;
@@ -140,7 +138,7 @@ const ensureEnvironmentNameAvailable = async (
   );
 
   if (existing && existing.id !== currentEnvironmentId) {
-    throw appResponse.withStatus(409, "Environment name already exists");
+    throw createAppError(ERROR_CODES.environments.NAME_ALREADY_EXISTS);
   }
 };
 
@@ -155,10 +153,7 @@ const ensureVariableKeyAvailable = async (
   );
 
   if (existing && existing.id !== currentVariableId) {
-    throw appResponse.withStatus(
-      409,
-      "Environment variable key already exists",
-    );
+    throw createAppError(ERROR_CODES.environments.VARIABLE_KEY_ALREADY_EXISTS);
   }
 };
 
@@ -239,7 +234,7 @@ export const environmentsService = {
     const updated = await environmentsRepo.findEnvironmentById(existing.id);
 
     if (!updated) {
-      throw appResponse.withStatus(404, "Environment not found");
+      throw createAppError(ERROR_CODES.environments.ENVIRONMENT_NOT_FOUND);
     }
 
     await workspaceEventsService.publish({
@@ -365,7 +360,7 @@ export const environmentsService = {
     const updated = await environmentsRepo.findVariableById(existing.id);
 
     if (!updated) {
-      throw appResponse.withStatus(404, "Environment variable not found");
+      throw createAppError(ERROR_CODES.environments.VARIABLE_NOT_FOUND);
     }
 
     await workspaceEventsService.publish({

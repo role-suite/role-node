@@ -65,6 +65,7 @@ export const requestLogger = (
   let completed = false;
 
   res.locals.requestId = requestId;
+  req.requestId = requestId;
   res.setHeader(REQUEST_ID_HEADER, requestId);
 
   res.on("finish", () => {

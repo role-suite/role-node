@@ -1,6 +1,8 @@
 import type { Request, Response } from "express";
 
 import { appResponse } from "../../shared/app-response.js";
+import { createAppError } from "../../shared/errors/app-error.js";
+import { ERROR_CODES } from "../../shared/errors/error-codes.js";
 import {
   loginSchema,
   refreshTokenSchema,
@@ -35,7 +37,7 @@ export const authController = {
 
   async me(req: Request, res: Response): Promise<void> {
     if (!req.auth) {
-      throw appResponse.withStatus(401, "Missing authenticated context");
+      throw createAppError(ERROR_CODES.common.MISSING_AUTHENTICATED_CONTEXT);
     }
 
     const result = await authService.getMe(req.auth);

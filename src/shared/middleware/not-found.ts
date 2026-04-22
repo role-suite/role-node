@@ -1,11 +1,16 @@
 import type { Request, Response } from "express";
 
-import { appResponse } from "../app-response.js";
+import { createAppError, sendAppError } from "../errors/app-error.js";
+import { ERROR_CODES } from "../errors/error-codes.js";
 
 export const notFoundHandler = (req: Request, res: Response): void => {
-  appResponse.sendError(
+  sendAppError(
     res,
-    404,
-    `Route not found: ${req.method} ${req.originalUrl}`,
+    createAppError(ERROR_CODES.common.ROUTE_NOT_FOUND, {
+      details: {
+        method: req.method,
+        path: req.originalUrl,
+      },
+    }),
   );
 };

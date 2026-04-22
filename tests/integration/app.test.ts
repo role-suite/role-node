@@ -80,10 +80,15 @@ describe("App integration", () => {
       });
 
     expect(duplicateResponse.status).toBe(409);
-    expect(duplicateResponse.body).toEqual({
-      success: false,
-      message: "Email already in use",
-    });
+    expect(duplicateResponse.body).toEqual(
+      expect.objectContaining({
+        success: false,
+        error: expect.objectContaining({
+          code: "EMAIL_ALREADY_IN_USE",
+          message: "Email already in use",
+        }),
+      }),
+    );
   });
 
   it("returns 404 for unknown routes", async () => {
@@ -103,16 +108,22 @@ describe("App integration", () => {
 
     expect(response.status).toBe(400);
     expect(response.body.success).toBe(false);
-    expect(response.body.message).toBe("Validation failed");
+    expect(response.body.error.code).toBe("VALIDATION_FAILED");
+    expect(response.body.error.message).toBe("Validation failed");
   });
 
   it("returns 401 for missing token on protected route", async () => {
     const response = await request(app).get("/api/workspaces");
 
     expect(response.status).toBe(401);
-    expect(response.body).toEqual({
-      success: false,
-      message: "Missing access token",
-    });
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        success: false,
+        error: expect.objectContaining({
+          code: "MISSING_ACCESS_TOKEN",
+          message: "Missing access token",
+        }),
+      }),
+    );
   });
 });

@@ -1,7 +1,8 @@
 import { randomBytes } from "node:crypto";
 
-import { appResponse } from "../../shared/app-response.js";
 import { hashToken } from "../../shared/auth/password.js";
+import { createAppError } from "../../shared/errors/app-error.js";
+import { ERROR_CODES } from "../../shared/errors/error-codes.js";
 import type { z } from "zod";
 
 import { workspacesRepo, type WorkspaceRole } from "./workspaces.repo.js";
@@ -59,7 +60,7 @@ const requireWorkspaceMembership = async (
   );
 
   if (!membership) {
-    throw appResponse.withStatus(403, "Workspace access denied");
+    throw createAppError(ERROR_CODES.workspaces.WORKSPACE_ACCESS_DENIED);
   }
 
   return membership;
@@ -69,10 +70,7 @@ const requireWorkspaceOwner = async (userId: number, workspaceId: number) => {
   const membership = await requireWorkspaceMembership(userId, workspaceId);
 
   if (membership.role !== "owner") {
-    throw appResponse.withStatus(
-      403,
-      "Only workspace owners can manage members",
-    );
+    throw createAppError(ERROR_CODES.workspaces.MEMBERS_MANAGE_FORBIDDEN);
   }
 
   return membership;
@@ -149,7 +147,7 @@ export const workspacesService = {
     const workspace = await workspacesRepo.findWorkspaceById(workspaceId);
 
     if (!workspace) {
-      throw appResponse.withStatus(404, "Workspace not found");
+      throw createAppError(ERROR_CODES.workspaces.WORKSPACE_NOT_FOUND);
     }
 
     return {
@@ -219,20 +217,17 @@ export const workspacesService = {
     );
 
     if (!workspace) {
-      throw appResponse.withStatus(404, "Workspace not found");
+      throw createAppError(ERROR_CODES.workspaces.WORKSPACE_NOT_FOUND);
     }
 
     if (workspace.type === "personal") {
-      throw appResponse.withStatus(
-        400,
-        "Personal workspaces do not support additional members",
-      );
+      throw createAppError(ERROR_CODES.workspaces.PERSONAL_MEMBERS_UNSUPPORTED);
     }
 
     const invitedUser = await workspacesRepo.findUserByEmail(payload.email);
 
     if (!invitedUser) {
-      throw appResponse.withStatus(404, "User not found");
+      throw createAppError(ERROR_CODES.common.USER_NOT_FOUND);
     }
 
     const existingMembership =
@@ -242,7 +237,7 @@ export const workspacesService = {
       );
 
     if (existingMembership) {
-      throw appResponse.withStatus(409, "User is already a workspace member");
+      throw createAppError(ERROR_CODES.workspaces.MEMBERSHIP_ALREADY_EXISTS);
     }
 
     const membership = await workspacesRepo.createMembership({
@@ -282,13 +277,12 @@ export const workspacesService = {
     );
 
     if (!workspace) {
-      throw appResponse.withStatus(404, "Workspace not found");
+      throw createAppError(ERROR_CODES.workspaces.WORKSPACE_NOT_FOUND);
     }
 
     if (workspace.type === "personal") {
-      throw appResponse.withStatus(
-        400,
-        "Personal workspaces do not support invitations",
+      throw createAppError(
+        ERROR_CODES.workspaces.PERSONAL_INVITATIONS_UNSUPPORTED,
       );
     }
 
@@ -300,7 +294,7 @@ export const workspacesService = {
       );
 
     if (existingInvitation && existingInvitation.expiresAt > new Date()) {
-      throw appResponse.withStatus(409, "Invitation already pending");
+      throw createAppError(ERROR_CODES.workspaces.INVITATION_ALREADY_PENDING);
     }
 
     const existingUser = await workspacesRepo.findUserByEmail(email);
@@ -313,7 +307,7 @@ export const workspacesService = {
         );
 
       if (existingMembership) {
-        throw appResponse.withStatus(409, "User is already a workspace member");
+        throw createAppError(ERROR_CODES.workspaces.MEMBERSHIP_ALREADY_EXISTS);
       }
     }
 
@@ -363,25 +357,25 @@ export const workspacesService = {
       await workspacesRepo.findWorkspaceInvitationByTokenHash(tokenHash);
 
     if (!invitation) {
-      throw appResponse.withStatus(404, "Invitation not found");
+      throw createAppError(ERROR_CODES.workspaces.INVITATION_NOT_FOUND);
     }
 
     if (invitation.acceptedAt) {
-      throw appResponse.withStatus(409, "Invitation already used");
+      throw createAppError(ERROR_CODES.workspaces.INVITATION_ALREADY_USED);
     }
 
     if (invitation.expiresAt <= new Date()) {
-      throw appResponse.withStatus(410, "Invitation expired");
+      throw createAppError(ERROR_CODES.workspaces.INVITATION_EXPIRED);
     }
 
     const user = await workspacesRepo.findUserById(userId);
 
     if (!user) {
-      throw appResponse.withStatus(404, "User not found");
+      throw createAppError(ERROR_CODES.common.USER_NOT_FOUND);
     }
 
     if (normalizeEmail(user.email) !== invitation.email) {
-      throw appResponse.withStatus(403, "Invitation email does not match user");
+      throw createAppError(ERROR_CODES.workspaces.INVITATION_EMAIL_MISMATCH);
     }
 
     const workspace = await workspacesRepo.findWorkspaceById(
@@ -389,11 +383,11 @@ export const workspacesService = {
     );
 
     if (!workspace) {
-      throw appResponse.withStatus(404, "Workspace not found");
+      throw createAppError(ERROR_CODES.workspaces.WORKSPACE_NOT_FOUND);
     }
 
     if (workspace.type === "personal") {
-      throw appResponse.withStatus(400, "Workspace does not accept members");
+      throw createAppError(ERROR_CODES.workspaces.DOES_NOT_ACCEPT_MEMBERS);
     }
 
     const existingMembership =
@@ -403,7 +397,7 @@ export const workspacesService = {
       );
 
     if (existingMembership) {
-      throw appResponse.withStatus(409, "User is already a workspace member");
+      throw createAppError(ERROR_CODES.workspaces.MEMBERSHIP_ALREADY_EXISTS);
     }
 
     const membership = await workspacesRepo.createMembership({
@@ -461,11 +455,11 @@ export const workspacesService = {
       );
 
     if (!targetMembership) {
-      throw appResponse.withStatus(404, "Workspace member not found");
+      throw createAppError(ERROR_CODES.workspaces.MEMBER_NOT_FOUND);
     }
 
     if (targetMembership.role === "owner") {
-      throw appResponse.withStatus(400, "Owner role cannot be changed");
+      throw createAppError(ERROR_CODES.workspaces.OWNER_ROLE_IMMUTABLE);
     }
 
     await workspacesRepo.updateMembershipRole(
@@ -489,7 +483,7 @@ export const workspacesService = {
     const user = await workspacesRepo.findUserById(payload.memberUserId);
 
     if (!user) {
-      throw appResponse.withStatus(404, "User not found");
+      throw createAppError(ERROR_CODES.common.USER_NOT_FOUND);
     }
 
     return {
@@ -508,10 +502,7 @@ export const workspacesService = {
     await requireWorkspaceOwner(userId, workspaceId);
 
     if (memberUserId === userId) {
-      throw appResponse.withStatus(
-        400,
-        "Use leave endpoint to remove yourself",
-      );
+      throw createAppError(ERROR_CODES.workspaces.SELF_REMOVE_USE_LEAVE);
     }
 
     const targetMembership =
@@ -521,7 +512,7 @@ export const workspacesService = {
       );
 
     if (!targetMembership) {
-      throw appResponse.withStatus(404, "Workspace member not found");
+      throw createAppError(ERROR_CODES.workspaces.MEMBER_NOT_FOUND);
     }
 
     if (targetMembership.role === "owner") {
@@ -531,9 +522,8 @@ export const workspacesService = {
       );
 
       if (owners <= 1) {
-        throw appResponse.withStatus(
-          400,
-          "Cannot remove the last workspace owner",
+        throw createAppError(
+          ERROR_CODES.workspaces.LAST_OWNER_REMOVE_FORBIDDEN,
         );
       }
     }
@@ -565,10 +555,7 @@ export const workspacesService = {
       );
 
       if (owners <= 1) {
-        throw appResponse.withStatus(
-          400,
-          "Cannot leave as the last workspace owner",
-        );
+        throw createAppError(ERROR_CODES.workspaces.LAST_OWNER_LEAVE_FORBIDDEN);
       }
     }
 
@@ -600,11 +587,11 @@ export const workspacesService = {
     );
 
     if (!workspace) {
-      throw appResponse.withStatus(404, "Workspace not found");
+      throw createAppError(ERROR_CODES.workspaces.WORKSPACE_NOT_FOUND);
     }
 
     if (workspace.type === "team") {
-      throw appResponse.withStatus(400, "Workspace is already a team");
+      throw createAppError(ERROR_CODES.workspaces.ALREADY_TEAM);
     }
 
     const name = payload.name ?? workspace.name;

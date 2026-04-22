@@ -1,4 +1,5 @@
-import { appResponse } from "../../shared/app-response.js";
+import { createAppError } from "../../shared/errors/app-error.js";
+import { ERROR_CODES } from "../../shared/errors/error-codes.js";
 import { authRepo } from "../auth/auth.repo.js";
 import {
   importExportRepo,
@@ -47,7 +48,7 @@ const requireWorkspaceMembership = async (
   );
 
   if (!membership) {
-    throw appResponse.withStatus(403, "Workspace access denied");
+    throw createAppError(ERROR_CODES.workspaces.WORKSPACE_ACCESS_DENIED);
   }
 
   return { role: membership.role };
@@ -60,10 +61,7 @@ const requireWorkspaceWriterRole = async (
   const membership = await requireWorkspaceMembership(userId, workspaceId);
 
   if (membership.role === "member") {
-    throw appResponse.withStatus(
-      403,
-      "Only workspace owners and admins can run imports and exports",
-    );
+    throw createAppError(ERROR_CODES.importExport.RUN_FORBIDDEN);
   }
 };
 
@@ -85,7 +83,7 @@ export const importExportService = {
     const job = await importExportRepo.findByWorkspaceAndId(workspaceId, jobId);
 
     if (!job) {
-      throw appResponse.withStatus(404, "Import/export job not found");
+      throw createAppError(ERROR_CODES.importExport.JOB_NOT_FOUND);
     }
 
     return mapJob(job);

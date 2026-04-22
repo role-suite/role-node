@@ -41,16 +41,30 @@ export const apiSuccessSchema = <T extends z.ZodTypeAny>(data: T) =>
 export const apiErrorSchema = z
   .object({
     success: z.literal(false),
-    message: z.string(),
-    data: z.unknown().optional(),
+    error: z
+      .object({
+        code: z.string(),
+        message: z.string(),
+        details: z.record(z.string(), z.unknown()),
+        requestId: z.string(),
+      })
+      .strict(),
   })
   .strict();
 
 export const validationErrorSchema = z
   .object({
     success: z.literal(false),
-    message: z.literal("Validation failed"),
-    data: z.record(z.string(), z.array(z.string())),
+    error: z
+      .object({
+        code: z.literal("VALIDATION_FAILED"),
+        message: z.literal("Validation failed"),
+        details: z.object({
+          fieldErrors: z.record(z.string(), z.array(z.string())),
+        }),
+        requestId: z.string(),
+      })
+      .strict(),
   })
   .strict();
 

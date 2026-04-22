@@ -5,6 +5,9 @@ import { notFoundHandler } from "../../src/shared/middleware/not-found.js";
 describe("not found middleware", () => {
   it("returns route-not-found payload", () => {
     const response = {
+      locals: {
+        requestId: "req_test",
+      },
       status: vi.fn(),
       json: vi.fn(),
     };
@@ -21,7 +24,15 @@ describe("not found middleware", () => {
     expect(response.status).toHaveBeenCalledWith(404);
     expect(response.json).toHaveBeenCalledWith({
       success: false,
-      message: "Route not found: GET /unknown",
+      error: {
+        code: "ROUTE_NOT_FOUND",
+        message: "Route not found",
+        details: {
+          method: "GET",
+          path: "/unknown",
+        },
+        requestId: "req_test",
+      },
     });
   });
 });

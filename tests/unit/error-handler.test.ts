@@ -1,11 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
-import { appResponse } from "../../src/shared/app-response.js";
+import { createAppError } from "../../src/shared/errors/app-error.js";
+import { ERROR_CODES } from "../../src/shared/errors/error-codes.js";
 import { errorHandler } from "../../src/shared/errors/error-handler.js";
 
 const makeResponse = () => {
   const response = {
+    locals: {
+      requestId: "req_test",
+    },
     status: vi.fn(),
     json: vi.fn(),
   };
@@ -31,7 +35,11 @@ describe("error handler", () => {
     expect(response.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: false,
-        message: "Validation failed",
+        error: expect.objectContaining({
+          code: "VALIDATION_FAILED",
+          message: "Validation failed",
+          requestId: "req_test",
+        }),
       }),
     );
   });
@@ -63,8 +71,12 @@ describe("error handler", () => {
     expect(response.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: false,
-        message:
-          "Invalid URL parameters: workspaceId/collectionId must be numeric IDs from `id` (or `_id`) in API responses",
+        error: expect.objectContaining({
+          code: "INVALID_URL_PARAMETERS",
+          message:
+            "Invalid URL parameters: workspaceId/collectionId must be numeric IDs from `id` (or `_id`) in API responses",
+          requestId: "req_test",
+        }),
       }),
     );
   });
@@ -96,17 +108,21 @@ describe("error handler", () => {
     expect(response.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: false,
-        message:
-          "Invalid URL parameters: workspaceId/collectionId must be numeric IDs from `id` (or `_id`) in API responses",
+        error: expect.objectContaining({
+          code: "INVALID_URL_PARAMETERS",
+          message:
+            "Invalid URL parameters: workspaceId/collectionId must be numeric IDs from `id` (or `_id`) in API responses",
+          requestId: "req_test",
+        }),
       }),
     );
   });
 
-  it("handles centralized app-response errors", () => {
+  it("handles app errors", () => {
     const response = makeResponse();
 
     errorHandler(
-      appResponse.withStatus(403, "Forbidden"),
+      createAppError(ERROR_CODES.workspaces.WORKSPACE_ACCESS_DENIED),
       {} as never,
       response as never,
       vi.fn(),
@@ -115,7 +131,12 @@ describe("error handler", () => {
     expect(response.status).toHaveBeenCalledWith(403);
     expect(response.json).toHaveBeenCalledWith({
       success: false,
-      message: "Forbidden",
+      error: {
+        code: "WORKSPACE_ACCESS_DENIED",
+        message: "Workspace access denied",
+        details: {},
+        requestId: "req_test",
+      },
     });
   });
 
@@ -128,7 +149,11 @@ describe("error handler", () => {
     expect(response.json).toHaveBeenCalledWith(
       expect.objectContaining({
         success: false,
-        message: "Internal server error",
+        error: expect.objectContaining({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Internal server error",
+          requestId: "req_test",
+        }),
       }),
     );
   });

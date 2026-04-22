@@ -182,7 +182,7 @@ describe("runs service", () => {
     ).rejects.toMatchObject({
       statusCode,
       message: "Run failed",
-      success: false,
+      code,
     });
   });
 

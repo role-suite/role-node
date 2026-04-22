@@ -5,7 +5,8 @@ import {
   type ExecuteRunInput,
   type HttpRequestBody,
 } from "../../internal/runner/index.js";
-import { appResponse } from "../../shared/app-response.js";
+import { createAppError } from "../../shared/errors/app-error.js";
+import { ERROR_CODES } from "../../shared/errors/error-codes.js";
 import { authRepo } from "../auth/auth.repo.js";
 import type { CreateRunInput } from "./runs.schema.js";
 
@@ -21,7 +22,7 @@ const requireWorkspaceMembership = async (
   );
 
   if (!membership) {
-    throw appResponse.withStatus(403, "Workspace access denied");
+    throw createAppError(ERROR_CODES.workspaces.WORKSPACE_ACCESS_DENIED);
   }
 
   return { role: membership.role };
@@ -194,42 +195,6 @@ const toExecuteRunInput = (
   };
 };
 
-const mapErrorStatus = (code: string): number => {
-  if (code === "RUN_VALIDATION_FAILED") {
-    return 400;
-  }
-
-  if (code === "RUN_ACCESS_DENIED") {
-    return 403;
-  }
-
-  if (code === "RUN_SOURCE_NOT_FOUND") {
-    return 404;
-  }
-
-  if (code === "RUN_POLICY_BLOCKED") {
-    return 422;
-  }
-
-  if (code === "RUN_TIMEOUT") {
-    return 408;
-  }
-
-  if (code === "RUN_NETWORK_ERROR") {
-    return 502;
-  }
-
-  if (code === "RUN_RESPONSE_TOO_LARGE") {
-    return 413;
-  }
-
-  if (code === "RUN_CANCELLED") {
-    return 409;
-  }
-
-  return 500;
-};
-
 const throwForRunFailure = (run: {
   status: string;
   error: {
@@ -239,11 +204,29 @@ const throwForRunFailure = (run: {
   } | null;
 }): void => {
   if (run.status === "failed" && run.error) {
-    throw appResponse.withStatus(
-      mapErrorStatus(run.error.code),
-      run.error.message,
-      run.error.details,
-    );
+    switch (run.error.code) {
+      case ERROR_CODES.runs.RUN_VALIDATION_FAILED:
+      case ERROR_CODES.runs.RUN_ACCESS_DENIED:
+      case ERROR_CODES.runs.RUN_SOURCE_NOT_FOUND:
+      case ERROR_CODES.runs.RUN_POLICY_BLOCKED:
+      case ERROR_CODES.runs.RUN_TIMEOUT:
+      case ERROR_CODES.runs.RUN_NETWORK_ERROR:
+      case ERROR_CODES.runs.RUN_RESPONSE_TOO_LARGE:
+      case ERROR_CODES.runs.RUN_CANCELLED:
+      case ERROR_CODES.runs.RUN_INTERNAL_ERROR:
+        throw createAppError(run.error.code, {
+          message: run.error.message,
+          details: run.error.details ?? {},
+        });
+      default:
+        throw createAppError(ERROR_CODES.runs.RUN_INTERNAL_ERROR, {
+          message: run.error.message,
+          details: {
+            ...(run.error.details ?? {}),
+            originalCode: run.error.code,
+          },
+        });
+    }
   }
 };
 
@@ -272,7 +255,7 @@ export const runsService = {
     const run = await getRunById(workspaceId, runId);
 
     if (!run) {
-      throw appResponse.withStatus(404, "Run not found");
+      throw createAppError(ERROR_CODES.runs.RUN_NOT_FOUND);
     }
 
     return run;
@@ -287,7 +270,7 @@ export const runsService = {
     const run = await cancelRun(workspaceId, runId);
 
     if (!run) {
-      throw appResponse.withStatus(404, "Run not found");
+      throw createAppError(ERROR_CODES.runs.RUN_NOT_FOUND);
     }
 
     return run;
