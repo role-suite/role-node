@@ -21,6 +21,14 @@ All modules return the same machine-readable error envelope:
 - `error.details`: structured context (validation fields, params, upstream details).
 - `error.requestId`: request correlation id (`x-request-id` header value).
 
+## Correlation id behavior
+
+- Every request is assigned a correlation id by `src/shared/middleware/request-id.ts`.
+- If client sends `x-request-id`, the same value is reused; otherwise server generates a UUID.
+- Response always includes `x-request-id` header.
+- Error envelopes include the same value at `error.requestId`.
+- Structured logs include this request id to make cross-service tracing and production debugging easier.
+
 ## Error code registry
 
 Source of truth: `src/shared/errors/error-codes.ts`.
