@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 
 import { env } from "../../config/env.js";
 import { logger } from "../logger.js";
+import { getRequestIdFromContext } from "../request-context.js";
 import { AppError, createAppError, sendAppError } from "./app-error.js";
 import { ERROR_CODES } from "./error-codes.js";
 
@@ -70,11 +71,14 @@ export const errorHandler = (
   _next: NextFunction,
 ): void => {
   const requestId =
-    typeof res.locals === "object" &&
-    res.locals !== null &&
-    typeof res.locals.requestId === "string"
-      ? res.locals.requestId
-      : "unknown";
+    getRequestIdFromContext() ??
+    (typeof req.requestId === "string" && req.requestId
+      ? req.requestId
+      : typeof res.locals === "object" &&
+          res.locals !== null &&
+          typeof res.locals.requestId === "string"
+        ? res.locals.requestId
+        : "unknown");
 
   if (error instanceof ZodError) {
     const parsedUrlParams = parsePathParamsFromUrl(req.originalUrl);

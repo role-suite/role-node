@@ -1,5 +1,6 @@
 import type { Response } from "express";
 
+import { getRequestIdFromContext } from "../request-context.js";
 import { ERROR_CODE_DEFINITIONS, type ErrorCode } from "./error-codes.js";
 
 export type ApiErrorEnvelope = {
@@ -49,6 +50,12 @@ export const createAppError = (
 };
 
 const resolveRequestId = (res: Response): string => {
+  const contextRequestId = getRequestIdFromContext();
+
+  if (contextRequestId && contextRequestId.trim().length > 0) {
+    return contextRequestId;
+  }
+
   const requestId =
     typeof res.locals === "object" && res.locals !== null
       ? res.locals.requestId

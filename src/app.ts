@@ -6,10 +6,12 @@ import { appResponse } from "./shared/app-response.js";
 import { errorHandler } from "./shared/errors/error-handler.js";
 import { API_MOUNTS, ROUTE_SEGMENTS } from "./shared/http/routes.js";
 import { notFoundHandler } from "./shared/middleware/not-found.js";
+import { requestIdMiddleware } from "./shared/middleware/request-id.js";
 import { requestLogger } from "./shared/middleware/request-logger.js";
 
 export const app = express();
 
+app.use(requestIdMiddleware);
 app.use(requestLogger);
 app.use(express.json());
 

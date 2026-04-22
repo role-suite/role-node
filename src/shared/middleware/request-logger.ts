@@ -6,6 +6,20 @@ import { logger } from "../logger.js";
 
 const REQUEST_ID_HEADER = "x-request-id";
 
+const resolveRequestId = (req: Request): string => {
+  if (req.requestId && req.requestId.trim().length > 0) {
+    return req.requestId;
+  }
+
+  const incomingRequestId = req.header(REQUEST_ID_HEADER);
+
+  if (incomingRequestId && incomingRequestId.trim().length > 0) {
+    return incomingRequestId;
+  }
+
+  return randomUUID();
+};
+
 const normalizeIp = (ip: string): string => {
   if (ip === "::1") {
     return "127.0.0.1";
@@ -44,16 +58,6 @@ const resolveClientIp = (req: Request): string => {
   return normalizeIp(req.ip ?? "unknown");
 };
 
-const resolveRequestId = (req: Request): string => {
-  const incomingRequestId = req.header(REQUEST_ID_HEADER);
-
-  if (incomingRequestId && incomingRequestId.trim().length > 0) {
-    return incomingRequestId;
-  }
-
-  return randomUUID();
-};
-
 export const requestLogger = (
   req: Request,
   res: Response,
@@ -64,9 +68,17 @@ export const requestLogger = (
   const startedAt = process.hrtime.bigint();
   let completed = false;
 
-  res.locals.requestId = requestId;
-  req.requestId = requestId;
-  res.setHeader(REQUEST_ID_HEADER, requestId);
+  if (!req.requestId) {
+    req.requestId = requestId;
+  }
+
+  if (!res.locals.requestId) {
+    res.locals.requestId = requestId;
+  }
+
+  if (!res.getHeader(REQUEST_ID_HEADER)) {
+    res.setHeader(REQUEST_ID_HEADER, requestId);
+  }
 
   res.on("finish", () => {
     completed = true;

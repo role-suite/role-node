@@ -48,6 +48,40 @@ describe("logger", () => {
     expect(payload.payload.requestId).toBe("abc");
   });
 
+  it("includes request id from request context in production logs", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const [{ logger }, { runWithRequestContext }] = await Promise.all([
+      loadLogger("production"),
+      import("../../src/shared/request-context.js"),
+    ]);
+
+    runWithRequestContext("ctx-req-id", () => {
+      logger.info("contextual-log", { feature: "test" });
+    });
+
+    expect(logSpy).toHaveBeenCalledOnce();
+    const payload = JSON.parse(String(logSpy.mock.calls[0][0])) as {
+      requestId?: string;
+    };
+
+    expect(payload.requestId).toBe("ctx-req-id");
+  });
+
+  it("includes request id in development log prefix", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const [{ logger }, { runWithRequestContext }] = await Promise.all([
+      loadLogger("development"),
+      import("../../src/shared/request-context.js"),
+    ]);
+
+    runWithRequestContext("ctx-dev-id", () => {
+      logger.info("dev-context", { feature: "test" });
+    });
+
+    expect(logSpy).toHaveBeenCalledOnce();
+    expect(String(logSpy.mock.calls[0][0])).toContain("requestId=ctx-dev-id");
+  });
+
   it("writes errors to console.error and normalizes Error payload", async () => {
     const errorSpy = vi
       .spyOn(console, "error")

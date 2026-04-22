@@ -1,4 +1,5 @@
 import { env } from "../config/env.js";
+import { getRequestIdFromContext } from "./request-context.js";
 
 type LogLevel = "debug" | "info" | "warn" | "error";
 
@@ -33,7 +34,9 @@ const logDevelopment = (
   payload: unknown,
 ): void => {
   const timestamp = new Date().toISOString();
-  const prefix = `[${timestamp}] ${level.toUpperCase()} ${message}`;
+  const requestId = getRequestIdFromContext();
+  const requestIdSegment = requestId ? ` [requestId=${requestId}]` : "";
+  const prefix = `[${timestamp}] ${level.toUpperCase()} ${message}${requestIdSegment}`;
 
   if (payload === undefined) {
     if (level === "error") {
@@ -58,12 +61,14 @@ const logProduction = (
   message: string,
   payload: unknown,
 ): void => {
+  const requestId = getRequestIdFromContext();
   const entry = {
     level,
     message,
     timestamp: new Date().toISOString(),
     env: env.NODE_ENV,
     pid: process.pid,
+    requestId,
     payload,
   };
 

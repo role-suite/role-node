@@ -117,6 +117,21 @@ describe("App integration", () => {
     expect(response.body.error.message).toBe("Validation failed");
   });
 
+  it("returns matching request id in header and error envelope", async () => {
+    const response = await request(app)
+      .post(ROUTE_PATTERNS.auth.register)
+      .send({
+        name: "A",
+        email: "invalid-email",
+        password: "123",
+        accountType: "single",
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.headers["x-request-id"]).toBeDefined();
+    expect(response.body.error.requestId).toBe(response.headers["x-request-id"]);
+  });
+
   it("returns 401 for missing token on protected route", async () => {
     const response = await request(app).get(ROUTE_PATTERNS.workspaces.list);
 
