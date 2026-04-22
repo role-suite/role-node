@@ -43,13 +43,15 @@ When changing or adding a public endpoint:
 ```bash
 pnpm contracts:generate
 pnpm contracts:check
+pnpm contracts:breaking-check
+pnpm contracts:docs-check
 ```
 
 The generated snapshot is committed at `contracts/generated/public-api.snapshot.json`.
 
 ## Contract drift validation
 
-CI runs `pnpm contracts:check` to keep runtime routes, contracts, and docs aligned.
+CI runs a dedicated **Contract Check** job to keep runtime routes, contracts, and docs aligned.
 
 It fails when any of these drift signals appear:
 
@@ -57,6 +59,11 @@ It fails when any of these drift signals appear:
 - Contract route exists but is no longer registered in runtime routing
 - Request or response schema shape changed
 - Previously documented public fields were removed
+
+It also fails when:
+
+- A contract artifact change is incompatible with the base branch (removed endpoint, removed response fields, or newly required request fields)
+- Contract artifact changed but docs were not updated
 
 ## Scope note
 

@@ -51,6 +51,11 @@ git checkout -b feature/workspace-invitations
 - Use the GitHub Actions workflow `Release Tag` and choose bump type (`patch`, `minor`, `major`).
 - The tag triggers the CD workflow to build and release the tagged version.
 
+Release checklist:
+
+- Update `CHANGELOG.md`.
+- Update `docs/compatibility.md`.
+
 ## Code style
 
 - Use existing patterns in modules (schema -> service -> controller -> route).
