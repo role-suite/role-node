@@ -38,6 +38,26 @@ When changing or adding a public endpoint:
 3. Update matching endpoint contract in `contracts/<module>/contracts.ts`.
 4. Verify the endpoint appears in `contracts/index.ts` (`allContracts`).
 
+5. Refresh and verify public schema snapshot:
+
+```bash
+pnpm contracts:generate
+pnpm contracts:check
+```
+
+The generated snapshot is committed at `contracts/generated/public-api.snapshot.json`.
+
+## Contract drift validation
+
+CI runs `pnpm contracts:check` to keep runtime routes, contracts, and docs aligned.
+
+It fails when any of these drift signals appear:
+
+- Runtime route exists without a contract (undocumented route)
+- Contract route exists but is no longer registered in runtime routing
+- Request or response schema shape changed
+- Previously documented public fields were removed
+
 ## Scope note
 
 This directory covers module-level public API routes. Non-module operational routes (for example `/health`) are intentionally outside this module contract set.

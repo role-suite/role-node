@@ -99,6 +99,9 @@ jobs:
       - name: Run typecheck
         run: pnpm typecheck
 
+      - name: Check contract drift
+        run: pnpm contracts:check
+
   test:
     name: 3. Test
     runs-on: ubuntu-latest

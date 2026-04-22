@@ -13,6 +13,8 @@
     "audit": "pnpm audit --audit-level high",
     "start": "node dist/server.js",
     "create:module": "node scripts/create-module.mjs",
+    "contracts:generate": "tsx scripts/contracts/generate.ts",
+    "contracts:check": "tsx scripts/contracts/check.ts",
     "db:reset:docker": "docker compose down -v && docker compose up -d",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:migrate:up": "tsx scripts/migrate.ts up",
