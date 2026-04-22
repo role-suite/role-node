@@ -4,6 +4,7 @@ This folder is organized by concern.
 
 - `docs/api-versioning.md`: Public API compatibility and deprecation policy.
 - `docs/errors.md`: Unified API error envelope and error code table.
+- `docs/route-audit.md`: Route naming audit and anti-drift checklist.
 
 ## Architecture
 
