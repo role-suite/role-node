@@ -10,7 +10,9 @@ import {
   workspaceEnvironmentVariableByIdParamsSchema,
 } from "../../src/modules/environments/environments.schema.js";
 import {
-  apiSuccessSchema,
+  apiActionSuccessSchema,
+  apiListSuccessSchema,
+  apiObjectSuccessSchema,
   idSchema,
   isoDateTimeStringSchema,
   standardRouteErrors,
@@ -44,9 +46,7 @@ const environmentVariableResponseSchema = z
   })
   .strict();
 
-const deletedResponseSchema = apiSuccessSchema(
-  z.object({ deleted: z.literal(true) }).strict(),
-);
+const deletedResponseSchema = apiActionSuccessSchema("deleted");
 
 export const environmentContracts: EndpointContract[] = [
   {
@@ -57,7 +57,7 @@ export const environmentContracts: EndpointContract[] = [
     responses: {
       success: {
         status: 200,
-        schema: apiSuccessSchema(z.array(environmentResponseSchema)),
+        schema: apiListSuccessSchema(environmentResponseSchema),
       },
       errors: [
         standardRouteErrors.validationFailed,
@@ -74,7 +74,7 @@ export const environmentContracts: EndpointContract[] = [
     responses: {
       success: {
         status: 200,
-        schema: apiSuccessSchema(environmentResponseSchema),
+        schema: apiObjectSuccessSchema(environmentResponseSchema),
       },
       errors: [
         standardRouteErrors.validationFailed,
@@ -94,7 +94,7 @@ export const environmentContracts: EndpointContract[] = [
     responses: {
       success: {
         status: 201,
-        schema: apiSuccessSchema(environmentResponseSchema),
+        schema: apiObjectSuccessSchema(environmentResponseSchema),
       },
       errors: [
         standardRouteErrors.validationFailed,
@@ -115,7 +115,7 @@ export const environmentContracts: EndpointContract[] = [
     responses: {
       success: {
         status: 200,
-        schema: apiSuccessSchema(environmentResponseSchema),
+        schema: apiObjectSuccessSchema(environmentResponseSchema),
       },
       errors: [
         standardRouteErrors.validationFailed,
@@ -147,7 +147,7 @@ export const environmentContracts: EndpointContract[] = [
     responses: {
       success: {
         status: 200,
-        schema: apiSuccessSchema(z.array(environmentVariableResponseSchema)),
+        schema: apiListSuccessSchema(environmentVariableResponseSchema),
       },
       errors: [
         standardRouteErrors.validationFailed,
@@ -164,7 +164,7 @@ export const environmentContracts: EndpointContract[] = [
     responses: {
       success: {
         status: 200,
-        schema: apiSuccessSchema(environmentVariableResponseSchema),
+        schema: apiObjectSuccessSchema(environmentVariableResponseSchema),
       },
       errors: [
         standardRouteErrors.validationFailed,
@@ -184,7 +184,7 @@ export const environmentContracts: EndpointContract[] = [
     responses: {
       success: {
         status: 201,
-        schema: apiSuccessSchema(environmentVariableResponseSchema),
+        schema: apiObjectSuccessSchema(environmentVariableResponseSchema),
       },
       errors: [
         standardRouteErrors.validationFailed,
@@ -205,7 +205,7 @@ export const environmentContracts: EndpointContract[] = [
     responses: {
       success: {
         status: 200,
-        schema: apiSuccessSchema(environmentVariableResponseSchema),
+        schema: apiObjectSuccessSchema(environmentVariableResponseSchema),
       },
       errors: [
         standardRouteErrors.validationFailed,

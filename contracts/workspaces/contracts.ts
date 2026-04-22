@@ -12,8 +12,11 @@ import {
   workspaceUpdatesQuerySchema,
 } from "../../src/modules/workspaces/workspaces.schema.js";
 import {
+  apiActionSuccessSchema,
+  apiCursorPageSuccessSchema,
   apiErrorSchema,
-  apiSuccessSchema,
+  apiListSuccessSchema,
+  apiObjectSuccessSchema,
   idSchema,
   isoDateTimeStringSchema,
   standardRouteErrors,
@@ -56,7 +59,7 @@ export const workspaceContracts: EndpointContract[] = [
     responses: {
       success: {
         status: 200,
-        schema: apiSuccessSchema(z.array(workspaceSummarySchema)),
+        schema: apiListSuccessSchema(workspaceSummarySchema),
       },
       errors: [
         standardRouteErrors.missingAccessToken,
@@ -72,7 +75,7 @@ export const workspaceContracts: EndpointContract[] = [
     responses: {
       success: {
         status: 200,
-        schema: apiSuccessSchema(workspaceSummarySchema),
+        schema: apiObjectSuccessSchema(workspaceSummarySchema),
       },
       errors: [
         standardRouteErrors.validationFailed,
@@ -89,7 +92,7 @@ export const workspaceContracts: EndpointContract[] = [
     responses: {
       success: {
         status: 201,
-        schema: apiSuccessSchema(workspaceSummarySchema),
+        schema: apiObjectSuccessSchema(workspaceSummarySchema),
       },
       errors: [standardRouteErrors.validationFailed],
     },
@@ -102,7 +105,7 @@ export const workspaceContracts: EndpointContract[] = [
     responses: {
       success: {
         status: 200,
-        schema: apiSuccessSchema(z.array(workspaceMemberSchema)),
+        schema: apiListSuccessSchema(workspaceMemberSchema),
       },
       errors: [
         standardRouteErrors.validationFailed,
@@ -119,7 +122,10 @@ export const workspaceContracts: EndpointContract[] = [
       body: addWorkspaceMemberSchema.omit({ workspaceId: true }),
     },
     responses: {
-      success: { status: 201, schema: apiSuccessSchema(workspaceMemberSchema) },
+      success: {
+        status: 201,
+        schema: apiObjectSuccessSchema(workspaceMemberSchema),
+      },
       errors: [
         standardRouteErrors.validationFailed,
         standardRouteErrors.forbidden,
@@ -139,7 +145,7 @@ export const workspaceContracts: EndpointContract[] = [
     responses: {
       success: {
         status: 201,
-        schema: apiSuccessSchema(invitationResponseSchema),
+        schema: apiObjectSuccessSchema(invitationResponseSchema),
       },
       errors: [
         standardRouteErrors.validationFailed,
@@ -161,7 +167,10 @@ export const workspaceContracts: EndpointContract[] = [
       }),
     },
     responses: {
-      success: { status: 200, schema: apiSuccessSchema(workspaceMemberSchema) },
+      success: {
+        status: 200,
+        schema: apiObjectSuccessSchema(workspaceMemberSchema),
+      },
       errors: [
         standardRouteErrors.validationFailed,
         standardRouteErrors.forbidden,
@@ -175,12 +184,7 @@ export const workspaceContracts: EndpointContract[] = [
     auth: "bearer",
     request: { params: workspaceMemberParamsSchema },
     responses: {
-      success: {
-        status: 200,
-        schema: apiSuccessSchema(
-          z.object({ removed: z.literal(true) }).strict(),
-        ),
-      },
+      success: { status: 200, schema: apiActionSuccessSchema("deleted") },
       errors: [
         standardRouteErrors.validationFailed,
         standardRouteErrors.forbidden,
@@ -196,7 +200,7 @@ export const workspaceContracts: EndpointContract[] = [
     responses: {
       success: {
         status: 200,
-        schema: apiSuccessSchema(workspaceSummarySchema),
+        schema: apiObjectSuccessSchema(workspaceSummarySchema),
       },
       errors: [
         standardRouteErrors.validationFailed,
@@ -217,10 +221,7 @@ export const workspaceContracts: EndpointContract[] = [
     auth: "bearer",
     request: { params: workspaceIdSchema },
     responses: {
-      success: {
-        status: 200,
-        schema: apiSuccessSchema(z.object({ left: z.literal(true) }).strict()),
-      },
+      success: { status: 200, schema: apiActionSuccessSchema("left") },
       errors: [
         standardRouteErrors.validationFailed,
         standardRouteErrors.forbidden,
@@ -238,7 +239,7 @@ export const workspaceContracts: EndpointContract[] = [
     responses: {
       success: {
         status: 200,
-        schema: apiSuccessSchema(workspaceSummarySchema),
+        schema: apiObjectSuccessSchema(workspaceSummarySchema),
       },
       errors: [
         standardRouteErrors.validationFailed,
@@ -263,7 +264,7 @@ export const workspaceContracts: EndpointContract[] = [
     responses: {
       success: {
         status: 200,
-        schema: apiSuccessSchema(z.array(workspaceEventSchema)),
+        schema: apiCursorPageSuccessSchema(workspaceEventSchema),
       },
       errors: [
         standardRouteErrors.validationFailed,

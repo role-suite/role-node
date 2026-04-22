@@ -30,7 +30,7 @@ export const environmentsController = {
       auth.userId,
       workspaceId,
     );
-    appResponse.sendSuccess(res, 200, result);
+    appResponse.sendList(res, 200, result);
   },
 
   async getById(req: Request, res: Response): Promise<void> {
@@ -42,7 +42,7 @@ export const environmentsController = {
       workspaceId,
       environmentId,
     );
-    appResponse.sendSuccess(res, 200, result);
+    appResponse.sendObject(res, 200, result);
   },
 
   async create(req: Request, res: Response): Promise<void> {
@@ -54,7 +54,7 @@ export const environmentsController = {
       workspaceId,
       payload,
     );
-    appResponse.sendSuccess(res, 201, result);
+    appResponse.sendObject(res, 201, result);
   },
 
   async update(req: Request, res: Response): Promise<void> {
@@ -68,7 +68,7 @@ export const environmentsController = {
       environmentId,
       payload,
     );
-    appResponse.sendSuccess(res, 200, result);
+    appResponse.sendObject(res, 200, result);
   },
 
   async remove(req: Request, res: Response): Promise<void> {
@@ -80,7 +80,7 @@ export const environmentsController = {
       workspaceId,
       environmentId,
     );
-    appResponse.sendSuccess(res, 200, { deleted: true });
+    appResponse.sendAction(res, 200, "deleted");
   },
 
   async listVariables(req: Request, res: Response): Promise<void> {
@@ -92,7 +92,7 @@ export const environmentsController = {
       workspaceId,
       environmentId,
     );
-    appResponse.sendSuccess(res, 200, result);
+    appResponse.sendList(res, 200, result);
   },
 
   async getVariableById(req: Request, res: Response): Promise<void> {
@@ -105,7 +105,7 @@ export const environmentsController = {
       environmentId,
       variableId,
     );
-    appResponse.sendSuccess(res, 200, result);
+    appResponse.sendObject(res, 200, result);
   },
 
   async createVariable(req: Request, res: Response): Promise<void> {
@@ -119,7 +119,7 @@ export const environmentsController = {
       environmentId,
       payload,
     );
-    appResponse.sendSuccess(res, 201, result);
+    appResponse.sendObject(res, 201, result);
   },
 
   async updateVariable(req: Request, res: Response): Promise<void> {
@@ -134,7 +134,7 @@ export const environmentsController = {
       variableId,
       payload,
     );
-    appResponse.sendSuccess(res, 200, result);
+    appResponse.sendObject(res, 200, result);
   },
 
   async removeVariable(req: Request, res: Response): Promise<void> {
@@ -147,6 +147,6 @@ export const environmentsController = {
       environmentId,
       variableId,
     );
-    appResponse.sendSuccess(res, 200, { deleted: true });
+    appResponse.sendAction(res, 200, "deleted");
   },
 };

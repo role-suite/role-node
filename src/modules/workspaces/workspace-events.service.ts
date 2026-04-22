@@ -61,12 +61,13 @@ export const workspaceEventsService = {
 
     const mapped = events.map(mapEvent);
     const nextCursor = mapped.at(-1)?.id ?? since;
+    const hasMore = mapped.length === limit;
 
     return {
-      events: mapped,
+      items: mapped,
       cursor: {
-        since,
         next: nextCursor,
+        hasMore,
       },
     };
   },

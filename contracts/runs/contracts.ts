@@ -8,7 +8,7 @@ import {
 import { ROUTE_PATTERNS } from "../../src/shared/http/routes.js";
 import {
   apiErrorSchema,
-  apiSuccessSchema,
+  apiObjectSuccessSchema,
   idSchema,
   isoDateTimeStringSchema,
   standardRouteErrors,
@@ -126,7 +126,7 @@ export const runContracts: EndpointContract[] = [
       body: createRunSchema,
     },
     responses: {
-      success: { status: 201, schema: apiSuccessSchema(runResultSchema) },
+      success: { status: 201, schema: apiObjectSuccessSchema(runResultSchema) },
       errors: [
         standardRouteErrors.validationFailed,
         standardRouteErrors.forbidden,
@@ -156,7 +156,7 @@ export const runContracts: EndpointContract[] = [
     auth: "bearer",
     request: { params: workspaceRunByIdParamsSchema },
     responses: {
-      success: { status: 200, schema: apiSuccessSchema(runResultSchema) },
+      success: { status: 200, schema: apiObjectSuccessSchema(runResultSchema) },
       errors: [
         standardRouteErrors.validationFailed,
         standardRouteErrors.forbidden,
@@ -170,7 +170,7 @@ export const runContracts: EndpointContract[] = [
     auth: "bearer",
     request: { params: workspaceRunByIdParamsSchema },
     responses: {
-      success: { status: 200, schema: apiSuccessSchema(runResultSchema) },
+      success: { status: 200, schema: apiObjectSuccessSchema(runResultSchema) },
       errors: [
         standardRouteErrors.validationFailed,
         standardRouteErrors.forbidden,

@@ -41,3 +41,47 @@ When changing or adding a public endpoint:
 ## Scope note
 
 This directory covers module-level public API routes. Non-module operational routes (for example `/health`) are intentionally outside this module contract set.
+
+## Success response shapes
+
+All successful API responses use the shared envelope:
+
+```json
+{ "success": true, "data": ... }
+```
+
+Use one of these shared `data` shapes (defined in `src/shared/app-response.ts` and `contracts/shared.ts`):
+
+- Object result
+
+```json
+{ "success": true, "data": { "id": 1, "name": "Example" } }
+```
+
+- List result
+
+```json
+{ "success": true, "data": { "items": [{ "id": 1 }] } }
+```
+
+- Cursor page result
+
+```json
+{
+  "success": true,
+  "data": {
+    "items": [{ "id": 1 }],
+    "cursor": { "next": 1, "hasMore": false }
+  }
+}
+```
+
+- Action confirmation result
+
+```json
+{ "success": true, "data": { "action": "deleted" } }
+```
+
+Allowed action confirmations are: `deleted`, `left`, `revoked`, `cancelled`.
+
+Avoid endpoint-specific one-off success payloads unless there is a strict business need.

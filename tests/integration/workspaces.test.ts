@@ -45,7 +45,7 @@ describe("workspaces integration", () => {
       .set("Authorization", `Bearer ${accessToken}`);
 
     expect(listResponse.status).toBe(200);
-    expect(listResponse.body.data).toHaveLength(2);
+    expect(listResponse.body.data.items).toHaveLength(2);
   });
 
   it("returns workspace details for member", async () => {
@@ -128,7 +128,7 @@ describe("workspaces integration", () => {
       .set("Authorization", `Bearer ${ownerToken}`);
 
     expect(listMembersResponse.status).toBe(200);
-    expect(listMembersResponse.body.data).toHaveLength(2);
+    expect(listMembersResponse.body.data.items).toHaveLength(2);
 
     const updateRoleResponse = await request(app)
       .patch(`/api/workspaces/${workspaceId}/members/${memberId}`)
@@ -243,8 +243,8 @@ describe("workspaces integration", () => {
       .set("Authorization", `Bearer ${ownerToken}`);
 
     expect(firstPoll.status).toBe(200);
-    expect(Array.isArray(firstPoll.body.data.events)).toBe(true);
-    expect(firstPoll.body.data.events.length).toBeGreaterThan(0);
+    expect(Array.isArray(firstPoll.body.data.items)).toBe(true);
+    expect(firstPoll.body.data.items.length).toBeGreaterThan(0);
 
     const nextCursor = firstPoll.body.data.cursor.next as number;
 
@@ -260,7 +260,7 @@ describe("workspaces integration", () => {
       .set("Authorization", `Bearer ${ownerToken}`);
 
     expect(secondPoll.status).toBe(200);
-    expect(secondPoll.body.data.events.length).toBeGreaterThan(0);
-    expect(secondPoll.body.data.events[0].entity).toBe("workspace_member");
+    expect(secondPoll.body.data.items.length).toBeGreaterThan(0);
+    expect(secondPoll.body.data.items[0].entity).toBe("workspace_member");
   });
 });

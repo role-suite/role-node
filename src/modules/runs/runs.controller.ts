@@ -28,7 +28,7 @@ export const runsController = {
       workspaceId,
       payload,
     );
-    appResponse.sendSuccess(res, 201, result);
+    appResponse.sendObject(res, 201, result);
   },
 
   async getById(req: Request, res: Response): Promise<void> {
@@ -41,7 +41,7 @@ export const runsController = {
       workspaceId,
       runId,
     );
-    appResponse.sendSuccess(res, 200, result);
+    appResponse.sendObject(res, 200, result);
   },
 
   async cancel(req: Request, res: Response): Promise<void> {
@@ -54,6 +54,6 @@ export const runsController = {
       workspaceId,
       runId,
     );
-    appResponse.sendSuccess(res, 200, result);
+    appResponse.sendObject(res, 200, result);
   },
 };

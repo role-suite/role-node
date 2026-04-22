@@ -14,7 +14,7 @@ app.use(requestLogger);
 app.use(express.json());
 
 app.get(ROUTE_SEGMENTS.health, (_req, res) => {
-  appResponse.sendSuccess(res, 200, { status: "ok" });
+  appResponse.sendObject(res, 200, { status: "ok" });
 });
 
 app.use(API_MOUNTS.auth, authRouter);

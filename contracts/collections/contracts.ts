@@ -16,7 +16,9 @@ import {
   workspaceCollectionParamsSchema,
 } from "../../src/modules/collections/collections.schema.js";
 import {
-  apiSuccessSchema,
+  apiActionSuccessSchema,
+  apiListSuccessSchema,
+  apiObjectSuccessSchema,
   idSchema,
   isoDateTimeStringSchema,
   standardRouteErrors,
@@ -164,9 +166,7 @@ const collectionExampleResponseSchema = z
   })
   .strict();
 
-const deletedResponseSchema = apiSuccessSchema(
-  z.object({ deleted: z.literal(true) }).strict(),
-);
+const deletedResponseSchema = apiActionSuccessSchema("deleted");
 
 export const collectionContracts: EndpointContract[] = [
   {
@@ -177,7 +177,7 @@ export const collectionContracts: EndpointContract[] = [
     responses: {
       success: {
         status: 200,
-        schema: apiSuccessSchema(z.array(collectionResponseSchema)),
+        schema: apiListSuccessSchema(collectionResponseSchema),
       },
       errors: [
         standardRouteErrors.validationFailed,
@@ -194,7 +194,7 @@ export const collectionContracts: EndpointContract[] = [
     responses: {
       success: {
         status: 200,
-        schema: apiSuccessSchema(collectionResponseSchema),
+        schema: apiObjectSuccessSchema(collectionResponseSchema),
       },
       errors: [
         standardRouteErrors.validationFailed,
@@ -214,7 +214,7 @@ export const collectionContracts: EndpointContract[] = [
     responses: {
       success: {
         status: 201,
-        schema: apiSuccessSchema(collectionResponseSchema),
+        schema: apiObjectSuccessSchema(collectionResponseSchema),
       },
       errors: [
         standardRouteErrors.validationFailed,
@@ -234,7 +234,7 @@ export const collectionContracts: EndpointContract[] = [
     responses: {
       success: {
         status: 200,
-        schema: apiSuccessSchema(collectionResponseSchema),
+        schema: apiObjectSuccessSchema(collectionResponseSchema),
       },
       errors: [
         standardRouteErrors.validationFailed,
@@ -265,7 +265,7 @@ export const collectionContracts: EndpointContract[] = [
     responses: {
       success: {
         status: 200,
-        schema: apiSuccessSchema(z.array(collectionEndpointResponseSchema)),
+        schema: apiListSuccessSchema(collectionEndpointResponseSchema),
       },
       errors: [
         standardRouteErrors.validationFailed,
@@ -282,7 +282,7 @@ export const collectionContracts: EndpointContract[] = [
     responses: {
       success: {
         status: 200,
-        schema: apiSuccessSchema(collectionEndpointResponseSchema),
+        schema: apiObjectSuccessSchema(collectionEndpointResponseSchema),
       },
       errors: [
         standardRouteErrors.validationFailed,
@@ -302,7 +302,7 @@ export const collectionContracts: EndpointContract[] = [
     responses: {
       success: {
         status: 201,
-        schema: apiSuccessSchema(collectionEndpointResponseSchema),
+        schema: apiObjectSuccessSchema(collectionEndpointResponseSchema),
       },
       errors: [
         standardRouteErrors.validationFailed,
@@ -322,7 +322,7 @@ export const collectionContracts: EndpointContract[] = [
     responses: {
       success: {
         status: 200,
-        schema: apiSuccessSchema(collectionEndpointResponseSchema),
+        schema: apiObjectSuccessSchema(collectionEndpointResponseSchema),
       },
       errors: [
         standardRouteErrors.validationFailed,
@@ -353,7 +353,7 @@ export const collectionContracts: EndpointContract[] = [
     responses: {
       success: {
         status: 200,
-        schema: apiSuccessSchema(z.array(collectionExampleResponseSchema)),
+        schema: apiListSuccessSchema(collectionExampleResponseSchema),
       },
       errors: [
         standardRouteErrors.validationFailed,
@@ -373,7 +373,7 @@ export const collectionContracts: EndpointContract[] = [
     responses: {
       success: {
         status: 201,
-        schema: apiSuccessSchema(collectionExampleResponseSchema),
+        schema: apiObjectSuccessSchema(collectionExampleResponseSchema),
       },
       errors: [
         standardRouteErrors.validationFailed,
@@ -393,7 +393,7 @@ export const collectionContracts: EndpointContract[] = [
     responses: {
       success: {
         status: 200,
-        schema: apiSuccessSchema(collectionExampleResponseSchema),
+        schema: apiObjectSuccessSchema(collectionExampleResponseSchema),
       },
       errors: [
         standardRouteErrors.validationFailed,
@@ -424,7 +424,7 @@ export const collectionContracts: EndpointContract[] = [
     responses: {
       success: {
         status: 200,
-        schema: apiSuccessSchema(z.array(collectionFolderResponseSchema)),
+        schema: apiListSuccessSchema(collectionFolderResponseSchema),
       },
       errors: [
         standardRouteErrors.validationFailed,
@@ -444,7 +444,7 @@ export const collectionContracts: EndpointContract[] = [
     responses: {
       success: {
         status: 201,
-        schema: apiSuccessSchema(collectionFolderResponseSchema),
+        schema: apiObjectSuccessSchema(collectionFolderResponseSchema),
       },
       errors: [
         standardRouteErrors.validationFailed,
@@ -464,7 +464,7 @@ export const collectionContracts: EndpointContract[] = [
     responses: {
       success: {
         status: 200,
-        schema: apiSuccessSchema(collectionFolderResponseSchema),
+        schema: apiObjectSuccessSchema(collectionFolderResponseSchema),
       },
       errors: [
         standardRouteErrors.validationFailed,

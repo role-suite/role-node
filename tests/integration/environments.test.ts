@@ -52,7 +52,7 @@ describe("environments integration", () => {
       .set("Authorization", `Bearer ${token}`);
 
     expect(listResponse.status).toBe(200);
-    expect(listResponse.body.data).toHaveLength(1);
+    expect(listResponse.body.data.items).toHaveLength(1);
 
     const updateResponse = await request(app)
       .patch(`/api/workspaces/${workspaceId}/environments/${environmentId}`)
@@ -108,7 +108,7 @@ describe("environments integration", () => {
       .set("Authorization", `Bearer ${token}`);
 
     expect(listVar.status).toBe(200);
-    expect(listVar.body.data).toHaveLength(1);
+    expect(listVar.body.data.items).toHaveLength(1);
 
     const updateVar = await request(app)
       .patch(
@@ -175,7 +175,7 @@ describe("environments integration", () => {
       .set("Authorization", `Bearer ${memberToken}`);
 
     expect(listResponse.status).toBe(200);
-    expect(listResponse.body.data).toHaveLength(1);
+    expect(listResponse.body.data.items).toHaveLength(1);
 
     const listVariablesResponse = await request(app)
       .get(
@@ -184,7 +184,7 @@ describe("environments integration", () => {
       .set("Authorization", `Bearer ${memberToken}`);
 
     expect(listVariablesResponse.status).toBe(200);
-    expect(listVariablesResponse.body.data).toHaveLength(1);
+    expect(listVariablesResponse.body.data.items).toHaveLength(1);
 
     const denied = await request(app)
       .post(`/api/workspaces/${workspaceId}/environments`)

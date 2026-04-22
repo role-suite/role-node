@@ -7,8 +7,9 @@ import {
 } from "../../src/modules/auth/auth.schema.js";
 import { ROUTE_PATTERNS } from "../../src/shared/http/routes.js";
 import {
+  apiActionSuccessSchema,
   apiErrorSchema,
-  apiSuccessSchema,
+  apiObjectSuccessSchema,
   authTokenPairSchema,
   idSchema,
   standardRouteErrors,
@@ -65,7 +66,7 @@ export const authContracts: EndpointContract[] = [
     auth: "none",
     request: { body: registerSchema },
     responses: {
-      success: { status: 201, schema: apiSuccessSchema(authResponseSchema) },
+      success: { status: 201, schema: apiObjectSuccessSchema(authResponseSchema) },
       errors: [
         standardRouteErrors.validationFailed,
         {
@@ -82,7 +83,7 @@ export const authContracts: EndpointContract[] = [
     auth: "none",
     request: { body: loginSchema },
     responses: {
-      success: { status: 200, schema: apiSuccessSchema(authResponseSchema) },
+      success: { status: 200, schema: apiObjectSuccessSchema(authResponseSchema) },
       errors: [
         standardRouteErrors.validationFailed,
         {
@@ -109,7 +110,7 @@ export const authContracts: EndpointContract[] = [
     auth: "none",
     request: { body: refreshTokenSchema },
     responses: {
-      success: { status: 200, schema: apiSuccessSchema(authResponseSchema) },
+      success: { status: 200, schema: apiObjectSuccessSchema(authResponseSchema) },
       errors: [
         standardRouteErrors.validationFailed,
         {
@@ -126,12 +127,7 @@ export const authContracts: EndpointContract[] = [
     auth: "none",
     request: { body: refreshTokenSchema },
     responses: {
-      success: {
-        status: 200,
-        schema: apiSuccessSchema(
-          z.object({ loggedOut: z.literal(true) }).strict(),
-        ),
-      },
+      success: { status: 200, schema: apiActionSuccessSchema("revoked") },
       errors: [standardRouteErrors.validationFailed],
     },
   },
@@ -141,7 +137,7 @@ export const authContracts: EndpointContract[] = [
     auth: "bearer",
     request: {},
     responses: {
-      success: { status: 200, schema: apiSuccessSchema(meResponseSchema) },
+      success: { status: 200, schema: apiObjectSuccessSchema(meResponseSchema) },
       errors: [
         standardRouteErrors.missingAccessToken,
         standardRouteErrors.invalidAccessToken,

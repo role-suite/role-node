@@ -29,7 +29,7 @@ export const workspacesController = {
   async list(req: Request, res: Response): Promise<void> {
     const auth = requireAuthContext(req);
     const result = await workspacesService.listForUser(auth.userId);
-    appResponse.sendSuccess(res, 200, result);
+    appResponse.sendList(res, 200, result);
   },
 
   async getById(req: Request, res: Response): Promise<void> {
@@ -39,14 +39,14 @@ export const workspacesController = {
       auth.userId,
       workspaceId,
     );
-    appResponse.sendSuccess(res, 200, result);
+    appResponse.sendObject(res, 200, result);
   },
 
   async create(req: Request, res: Response): Promise<void> {
     const auth = requireAuthContext(req);
     const payload = createWorkspaceSchema.parse(req.body);
     const result = await workspacesService.createForUser(auth.userId, payload);
-    appResponse.sendSuccess(res, 201, result);
+    appResponse.sendObject(res, 201, result);
   },
 
   async listMembers(req: Request, res: Response): Promise<void> {
@@ -56,7 +56,7 @@ export const workspacesController = {
       auth.userId,
       workspaceId,
     );
-    appResponse.sendSuccess(res, 200, result);
+    appResponse.sendList(res, 200, result);
   },
 
   async addMember(req: Request, res: Response): Promise<void> {
@@ -70,7 +70,7 @@ export const workspacesController = {
       email: body.email,
       role: body.role,
     });
-    appResponse.sendSuccess(res, 201, result);
+    appResponse.sendObject(res, 201, result);
   },
 
   async createInvitation(req: Request, res: Response): Promise<void> {
@@ -87,14 +87,14 @@ export const workspacesController = {
         role: body.role,
       },
     );
-    appResponse.sendSuccess(res, 201, result);
+    appResponse.sendObject(res, 201, result);
   },
 
   async join(req: Request, res: Response): Promise<void> {
     const auth = requireAuthContext(req);
     const payload = acceptWorkspaceInvitationSchema.parse(req.body);
     const result = await workspacesService.joinForUser(auth.userId, payload);
-    appResponse.sendSuccess(res, 200, result);
+    appResponse.sendObject(res, 200, result);
   },
 
   async updateMemberRole(req: Request, res: Response): Promise<void> {
@@ -114,7 +114,7 @@ export const workspacesController = {
         role: body.role,
       },
     );
-    appResponse.sendSuccess(res, 200, result);
+    appResponse.sendObject(res, 200, result);
   },
 
   async removeMember(req: Request, res: Response): Promise<void> {
@@ -127,14 +127,14 @@ export const workspacesController = {
       workspaceId,
       memberUserId,
     );
-    appResponse.sendSuccess(res, 200, { removed: true });
+    appResponse.sendAction(res, 200, "deleted");
   },
 
   async leave(req: Request, res: Response): Promise<void> {
     const auth = requireAuthContext(req);
     const { workspaceId } = workspaceIdSchema.parse(req.params);
     await workspacesService.leaveForUser(auth.userId, workspaceId);
-    appResponse.sendSuccess(res, 200, { left: true });
+    appResponse.sendAction(res, 200, "left");
   },
 
   async convertToTeam(req: Request, res: Response): Promise<void> {
@@ -147,7 +147,7 @@ export const workspacesController = {
       workspaceId: params.workspaceId,
       name: body.name,
     });
-    appResponse.sendSuccess(res, 200, result);
+    appResponse.sendObject(res, 200, result);
   },
 
   async listUpdates(req: Request, res: Response): Promise<void> {
@@ -159,6 +159,6 @@ export const workspacesController = {
       workspaceId,
       query,
     );
-    appResponse.sendSuccess(res, 200, result);
+    appResponse.sendCursorPage(res, 200, result.items, result.cursor);
   },
 };

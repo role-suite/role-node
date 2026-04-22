@@ -70,7 +70,7 @@ describe("import/export integration", () => {
       .set("Authorization", `Bearer ${token}`);
 
     expect(listJobs.status).toBe(200);
-    expect(listJobs.body.data).toHaveLength(2);
+    expect(listJobs.body.data.items).toHaveLength(2);
 
     const jobId = createExport.body.data.id as number;
     const getJob = await request(app)
@@ -119,7 +119,7 @@ describe("import/export integration", () => {
       .set("Authorization", `Bearer ${memberToken}`);
 
     expect(listAsMember.status).toBe(200);
-    expect(listAsMember.body.data).toHaveLength(1);
+    expect(listAsMember.body.data.items).toHaveLength(1);
 
     const getAsMember = await request(app)
       .get(

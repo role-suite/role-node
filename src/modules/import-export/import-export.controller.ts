@@ -27,7 +27,7 @@ export const importExportController = {
       auth.userId,
       workspaceId,
     );
-    appResponse.sendSuccess(res, 200, result);
+    appResponse.sendList(res, 200, result);
   },
 
   async getJobById(req: Request, res: Response): Promise<void> {
@@ -39,7 +39,7 @@ export const importExportController = {
       workspaceId,
       jobId,
     );
-    appResponse.sendSuccess(res, 200, result);
+    appResponse.sendObject(res, 200, result);
   },
 
   async createExport(req: Request, res: Response): Promise<void> {
@@ -51,7 +51,7 @@ export const importExportController = {
       workspaceId,
       payload,
     );
-    appResponse.sendSuccess(res, 201, result);
+    appResponse.sendObject(res, 201, result);
   },
 
   async createImport(req: Request, res: Response): Promise<void> {
@@ -63,6 +63,6 @@ export const importExportController = {
       workspaceId,
       payload,
     );
-    appResponse.sendSuccess(res, 201, result);
+    appResponse.sendObject(res, 201, result);
   },
 };

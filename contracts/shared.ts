@@ -38,6 +38,53 @@ export const apiSuccessSchema = <T extends z.ZodTypeAny>(data: T) =>
     })
     .strict();
 
+export const apiObjectSuccessSchema = <T extends z.ZodTypeAny>(result: T) =>
+  apiSuccessSchema(result);
+
+export const apiListSuccessSchema = <T extends z.ZodTypeAny>(item: T) =>
+  apiSuccessSchema(
+    z
+      .object({
+        items: z.array(item),
+      })
+      .strict(),
+  );
+
+export const apiCursorShapeSchema = z
+  .object({
+    next: z.number().int().min(0),
+    hasMore: z.boolean(),
+  })
+  .strict();
+
+export const apiCursorPageSuccessSchema = <T extends z.ZodTypeAny>(item: T) =>
+  apiSuccessSchema(
+    z
+      .object({
+        items: z.array(item),
+        cursor: apiCursorShapeSchema,
+      })
+      .strict(),
+  );
+
+export const actionConfirmationSchema = z.enum([
+  "deleted",
+  "left",
+  "revoked",
+  "cancelled",
+]);
+
+export const apiActionSuccessSchema = (
+  action: z.infer<typeof actionConfirmationSchema>,
+) =>
+  apiSuccessSchema(
+    z
+      .object({
+        action: z.literal(action),
+      })
+      .strict(),
+  );
+
 export const apiErrorSchema = z
   .object({
     success: z.literal(false),

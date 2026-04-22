@@ -37,7 +37,7 @@ export const collectionsController = {
       auth.userId,
       workspaceId,
     );
-    appResponse.sendSuccess(res, 200, result);
+    appResponse.sendList(res, 200, result);
   },
 
   async getById(req: Request, res: Response): Promise<void> {
@@ -49,7 +49,7 @@ export const collectionsController = {
       workspaceId,
       collectionId,
     );
-    appResponse.sendSuccess(res, 200, result);
+    appResponse.sendObject(res, 200, result);
   },
 
   async create(req: Request, res: Response): Promise<void> {
@@ -61,7 +61,7 @@ export const collectionsController = {
       workspaceId,
       payload,
     );
-    appResponse.sendSuccess(res, 201, result);
+    appResponse.sendObject(res, 201, result);
   },
 
   async update(req: Request, res: Response): Promise<void> {
@@ -75,7 +75,7 @@ export const collectionsController = {
       collectionId,
       payload,
     );
-    appResponse.sendSuccess(res, 200, result);
+    appResponse.sendObject(res, 200, result);
   },
 
   async remove(req: Request, res: Response): Promise<void> {
@@ -87,7 +87,7 @@ export const collectionsController = {
       workspaceId,
       collectionId,
     );
-    appResponse.sendSuccess(res, 200, { deleted: true });
+    appResponse.sendAction(res, 200, "deleted");
   },
 
   async listEndpoints(req: Request, res: Response): Promise<void> {
@@ -99,7 +99,7 @@ export const collectionsController = {
       workspaceId,
       collectionId,
     );
-    appResponse.sendSuccess(res, 200, result);
+    appResponse.sendList(res, 200, result);
   },
 
   async getEndpointById(req: Request, res: Response): Promise<void> {
@@ -112,7 +112,7 @@ export const collectionsController = {
       collectionId,
       endpointId,
     );
-    appResponse.sendSuccess(res, 200, result);
+    appResponse.sendObject(res, 200, result);
   },
 
   async createEndpoint(req: Request, res: Response): Promise<void> {
@@ -126,7 +126,7 @@ export const collectionsController = {
       collectionId,
       payload,
     );
-    appResponse.sendSuccess(res, 201, result);
+    appResponse.sendObject(res, 201, result);
   },
 
   async updateEndpoint(req: Request, res: Response): Promise<void> {
@@ -141,7 +141,7 @@ export const collectionsController = {
       endpointId,
       payload,
     );
-    appResponse.sendSuccess(res, 200, result);
+    appResponse.sendObject(res, 200, result);
   },
 
   async removeEndpoint(req: Request, res: Response): Promise<void> {
@@ -154,7 +154,7 @@ export const collectionsController = {
       collectionId,
       endpointId,
     );
-    appResponse.sendSuccess(res, 200, { deleted: true });
+    appResponse.sendAction(res, 200, "deleted");
   },
 
   async listFolders(req: Request, res: Response): Promise<void> {
@@ -166,7 +166,7 @@ export const collectionsController = {
       workspaceId,
       collectionId,
     );
-    appResponse.sendSuccess(res, 200, result);
+    appResponse.sendList(res, 200, result);
   },
 
   async createFolder(req: Request, res: Response): Promise<void> {
@@ -180,7 +180,7 @@ export const collectionsController = {
       collectionId,
       payload,
     );
-    appResponse.sendSuccess(res, 201, result);
+    appResponse.sendObject(res, 201, result);
   },
 
   async updateFolder(req: Request, res: Response): Promise<void> {
@@ -195,7 +195,7 @@ export const collectionsController = {
       folderId,
       payload,
     );
-    appResponse.sendSuccess(res, 200, result);
+    appResponse.sendObject(res, 200, result);
   },
 
   async removeFolder(req: Request, res: Response): Promise<void> {
@@ -208,7 +208,7 @@ export const collectionsController = {
       collectionId,
       folderId,
     );
-    appResponse.sendSuccess(res, 200, { deleted: true });
+    appResponse.sendAction(res, 200, "deleted");
   },
 
   async listEndpointExamples(req: Request, res: Response): Promise<void> {
@@ -221,7 +221,7 @@ export const collectionsController = {
       collectionId,
       endpointId,
     );
-    appResponse.sendSuccess(res, 200, result);
+    appResponse.sendList(res, 200, result);
   },
 
   async createEndpointExample(req: Request, res: Response): Promise<void> {
@@ -236,7 +236,7 @@ export const collectionsController = {
       endpointId,
       payload,
     );
-    appResponse.sendSuccess(res, 201, result);
+    appResponse.sendObject(res, 201, result);
   },
 
   async updateEndpointExample(req: Request, res: Response): Promise<void> {
@@ -252,7 +252,7 @@ export const collectionsController = {
       exampleId,
       payload,
     );
-    appResponse.sendSuccess(res, 200, result);
+    appResponse.sendObject(res, 200, result);
   },
 
   async removeEndpointExample(req: Request, res: Response): Promise<void> {
@@ -266,6 +266,6 @@ export const collectionsController = {
       endpointId,
       exampleId,
     );
-    appResponse.sendSuccess(res, 200, { deleted: true });
+    appResponse.sendAction(res, 200, "deleted");
   },
 };

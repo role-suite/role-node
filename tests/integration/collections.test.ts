@@ -52,7 +52,7 @@ describe("collections integration", () => {
       .set("Authorization", `Bearer ${token}`);
 
     expect(listResponse.status).toBe(200);
-    expect(listResponse.body.data).toHaveLength(1);
+    expect(listResponse.body.data.items).toHaveLength(1);
 
     const updateResponse = await request(app)
       .patch(`/api/workspaces/${workspaceId}/collections/${collectionId}`)
@@ -108,7 +108,7 @@ describe("collections integration", () => {
       .set("Authorization", `Bearer ${memberToken}`);
 
     expect(listResponse.status).toBe(200);
-    expect(listResponse.body.data).toHaveLength(1);
+    expect(listResponse.body.data.items).toHaveLength(1);
 
     const createDenied = await request(app)
       .post(`/api/workspaces/${workspaceId}/collections`)
@@ -161,7 +161,7 @@ describe("collections integration", () => {
       .set("Authorization", `Bearer ${token}`);
 
     expect(listEndpoints.status).toBe(200);
-    expect(listEndpoints.body.data).toHaveLength(1);
+    expect(listEndpoints.body.data.items).toHaveLength(1);
 
     const updateEndpoint = await request(app)
       .patch(
