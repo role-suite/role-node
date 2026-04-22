@@ -225,6 +225,7 @@ Set `ENABLE_STARTUP_VALIDATION=false` when running locally without a configured 
 
 - `docs/guides/client-integration.md`: full client integration and payload reference
 - `docs/api-versioning.md`: API versioning rules and compatibility policy
+- `docs/compatibility.md`: role-node / role-sdk / role-client compatibility matrix
 - `docs/errors.md`: machine-readable error model and code registry
 - `docs/route-audit.md`: route registry audit and drift alignment notes
 - `docs/README.md`: documentation index
