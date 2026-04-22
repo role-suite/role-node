@@ -224,6 +224,7 @@ Set `ENABLE_STARTUP_VALIDATION=false` when running locally without a configured 
 ## 📚 Documentation
 
 - `docs/guides/client-integration.md`: full client integration and payload reference
+- `docs/api-versioning.md`: API versioning rules and compatibility policy
 - `docs/README.md`: documentation index
 - `docs/modules/*`: module-specific behavior
 - `migrations/README.md`: migration workflow

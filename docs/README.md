@@ -2,6 +2,8 @@
 
 This folder is organized by concern.
 
+- `docs/api-versioning.md`: Public API compatibility and deprecation policy.
+
 ## Architecture
 
 - `docs/architecture/overview.md`: Application layers, runtime flow, and shared infrastructure.
