@@ -99,14 +99,74 @@ jobs:
       - name: Run typecheck
         run: pnpm typecheck
 
+  contract-check:
+    name: 3. Contract Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: lint
+    env:
+      NODE_ENV: test
+      PORT: 3000
+      DB_DIALECT: postgres
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USER: role_user
+      DB_PASSWORD: role_pass
+      DB_NAME: role_node
+      DB_POOL_MIN: 0
+      DB_POOL_MAX: 10
+      DB_SSL: "false"
+      ENABLE_STARTUP_VALIDATION: "false"
+      AUTH_ACCESS_TOKEN_SECRET: test-access-secret-123456
+      AUTH_REFRESH_TOKEN_SECRET: test-refresh-secret-123456
+      AUTH_ACCESS_TOKEN_TTL_SECONDS: 900
+      AUTH_REFRESH_TOKEN_TTL_SECONDS: 604800
+      CONTRACT_BASE_REF: origin/main
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate contract snapshot
+        run: pnpm contracts:generate
+
       - name: Check contract drift
         run: pnpm contracts:check
 
+      - name: Check incompatible contract changes
+        run: pnpm contracts:breaking-check
+
+      - name: Require docs updates for contract changes
+        run: pnpm contracts:docs-check
+
+      - name: Upload contract snapshot artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-snapshot
+          path: contracts/generated/public-api.snapshot.json
+          if-no-files-found: error
+
   test:
-    name: 3. Test
+    name: 4. Test
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: lint
+    needs: contract-check
     env:
       NODE_ENV: test
       PORT: 3000
@@ -157,7 +217,7 @@ jobs:
           if-no-files-found: ignore
 
   build:
-    name: 4. Build
+    name: 5. Build
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: test
@@ -202,12 +262,12 @@ jobs:
   ci-status:
     name: CI Status
     runs-on: ubuntu-latest
-    needs: [format, lint, test, build]
+    needs: [format, lint, contract-check, test, build]
     if: always()
     steps:
       - name: Validate all required jobs passed
         run: |
-          if [ "${{ needs.format.result }}" != "success" ] || [ "${{ needs.lint.result }}" != "success" ] || [ "${{ needs.test.result }}" != "success" ] || [ "${{ needs.build.result }}" != "success" ]; then
+          if [ "${{ needs.format.result }}" != "success" ] || [ "${{ needs.lint.result }}" != "success" ] || [ "${{ needs.contract-check.result }}" != "success" ] || [ "${{ needs.test.result }}" != "success" ] || [ "${{ needs.build.result }}" != "success" ]; then
             echo "One or more required CI jobs failed."
             exit 1
           fi
