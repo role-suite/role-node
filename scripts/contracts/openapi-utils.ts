@@ -104,7 +104,9 @@ const toCamelCase = (value: string): string => {
 
 const toOperationId = (contract: EndpointContract): string => {
   const methodPrefix = contract.method.toLowerCase();
-  const segments = contract.path.split("/").filter((segment) => segment.length > 0);
+  const segments = contract.path
+    .split("/")
+    .filter((segment) => segment.length > 0);
 
   const parts = segments.map((segment) => {
     if (segment.startsWith(":")) {
@@ -156,7 +158,11 @@ const extractObjectProperties = (
   const rawProperties = schemaObject.properties;
   const rawRequired = schemaObject.required;
 
-  if (!rawProperties || typeof rawProperties !== "object" || Array.isArray(rawProperties)) {
+  if (
+    !rawProperties ||
+    typeof rawProperties !== "object" ||
+    Array.isArray(rawProperties)
+  ) {
     return null;
   }
 
@@ -205,8 +211,12 @@ const toParameters = (contract: EndpointContract): OpenApiParameter[] => {
     });
   }
 
-  const querySchema = contract.request.query ? toJsonSchema(contract.request.query) : null;
-  const queryDescriptor = querySchema ? extractObjectProperties(querySchema) : null;
+  const querySchema = contract.request.query
+    ? toJsonSchema(contract.request.query)
+    : null;
+  const queryDescriptor = querySchema
+    ? extractObjectProperties(querySchema)
+    : null;
 
   if (queryDescriptor) {
     const queryNames = Object.keys(queryDescriptor.properties).sort();
@@ -283,7 +293,10 @@ const methodRank = (method: string): number => {
   return index === -1 ? Number.MAX_SAFE_INTEGER : index;
 };
 
-const compareContracts = (left: EndpointContract, right: EndpointContract): number => {
+const compareContracts = (
+  left: EndpointContract,
+  right: EndpointContract,
+): number => {
   if (left.path !== right.path) {
     return left.path.localeCompare(right.path);
   }

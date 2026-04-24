@@ -55,7 +55,8 @@ describe("OpenAPI contract tools", () => {
 
     expect(openApi.paths["/api/workspaces/:workspaceId"]).toBeUndefined();
 
-    const workspaceByIdGet = openApi.paths["/api/workspaces/{workspaceId}"]?.get;
+    const workspaceByIdGet =
+      openApi.paths["/api/workspaces/{workspaceId}"]?.get;
     expect(workspaceByIdGet).toBeDefined();
     expect(workspaceByIdGet?.operationId).toBe("getApiWorkspacesByWorkspaceId");
     expect(workspaceByIdGet?.tags).toEqual(["workspaces"]);
@@ -69,13 +70,19 @@ describe("OpenAPI contract tools", () => {
         }),
       ]),
     );
-    expect(workspaceByIdGet?.responses["200"]?.content["application/json"]?.schema).toBeDefined();
+    expect(
+      workspaceByIdGet?.responses["200"]?.content["application/json"]?.schema,
+    ).toBeDefined();
 
     const authLoginPost = openApi.paths["/api/auth/login"]?.post;
     expect(authLoginPost).toBeDefined();
     expect(authLoginPost?.security).toBeUndefined();
-    expect(authLoginPost?.requestBody?.content["application/json"]?.schema).toBeDefined();
-    expect(authLoginPost?.responses["200"]?.content["application/json"]?.schema).toBeDefined();
+    expect(
+      authLoginPost?.requestBody?.content["application/json"]?.schema,
+    ).toBeDefined();
+    expect(
+      authLoginPost?.responses["200"]?.content["application/json"]?.schema,
+    ).toBeDefined();
   });
 
   it("maps every contract endpoint and auth requirement into OpenAPI", () => {
@@ -84,7 +91,8 @@ describe("OpenAPI contract tools", () => {
 
     for (const contract of allContracts) {
       const openApiPath = contract.path.replace(/:([A-Za-z0-9_]+)/g, "{$1}");
-      const operation = openApi.paths[openApiPath]?.[contract.method.toLowerCase()];
+      const operation =
+        openApi.paths[openApiPath]?.[contract.method.toLowerCase()];
 
       expect(operation).toBeDefined();
 
