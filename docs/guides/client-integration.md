@@ -5,6 +5,7 @@ This guide is the implementation reference for SDK/client engineers.
 Source of truth:
 
 - Contracts: `contracts/**/contracts.ts`
+- Publishable OpenAPI artifact: `contracts/generated/openapi.json`
 - Runtime behavior: `src/modules/**`
 - Verified examples copied from integration tests:
   - `tests/integration/auth.test.ts`
@@ -18,6 +19,7 @@ Source of truth:
 - JSON request header: `Content-Type: application/json`
 - Auth header (protected routes): `Authorization: Bearer <accessToken>`
 - Correlation header: every response includes `x-request-id`
+- OpenAPI path template style uses `{param}` (for example `/api/workspaces/{workspaceId}`)
 
 ### Success envelopes
 

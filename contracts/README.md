@@ -38,16 +38,24 @@ When changing or adding a public endpoint:
 3. Update matching endpoint contract in `contracts/<module>/contracts.ts`.
 4. Verify the endpoint appears in `contracts/index.ts` (`allContracts`).
 
-5. Refresh and verify public schema snapshot:
+5. Refresh and verify public contract artifacts:
 
 ```bash
 pnpm contracts:generate
 pnpm contracts:check
 pnpm contracts:breaking-check
 pnpm contracts:docs-check
+pnpm contracts:openapi:generate
+pnpm contracts:openapi:check
+pnpm contracts:openapi:lint
 ```
 
-The generated snapshot is committed at `contracts/generated/public-api.snapshot.json`.
+Generated artifacts committed to git:
+
+- `contracts/generated/public-api.snapshot.json`
+- `contracts/generated/openapi.json`
+
+The OpenAPI artifact is the publishable contract output for external consumers (SDK generation, client integration checks, and partner distribution).
 
 ## Contract drift validation
 
@@ -64,6 +72,7 @@ It also fails when:
 
 - A contract artifact change is incompatible with the base branch (removed endpoint, removed response fields, or newly required request fields)
 - Contract artifact changed but docs were not updated
+- OpenAPI artifact is stale relative to contract definitions
 
 ## Scope note
 

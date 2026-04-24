@@ -16,6 +16,8 @@ Public contract definitions live in:
 
 - `contracts/index.ts`
 - `contracts/README.md`
+- `contracts/generated/public-api.snapshot.json`
+- `contracts/generated/openapi.json`
 
 Any change to public behavior must update contracts in the same pull request.
 

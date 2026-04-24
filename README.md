@@ -103,11 +103,19 @@ pnpm db:migrate
 - `pnpm test:watch`: run tests in watch mode
 - `pnpm test:run`: run tests once
 - `pnpm test:coverage`: run tests with coverage report
+- `pnpm contracts:generate`: generate the contract snapshot artifact
+- `pnpm contracts:check`: fail when contract snapshot is stale
+- `pnpm contracts:breaking-check`: fail on incompatible contract changes vs base ref
+- `pnpm contracts:docs-check`: require docs updates when contract artifacts change
+- `pnpm contracts:openapi:generate`: generate `contracts/generated/openapi.json`
+- `pnpm contracts:openapi:check`: fail when OpenAPI artifact is stale
+- `pnpm contracts:openapi:lint`: lint OpenAPI artifact governance requirements
 
 ## 🚀 CI/CD
 
 - `CI` workflow (`.github/workflows/ci.yml`) runs on pull requests and pushes to `main` and `v*` tags.
 - It runs ordered quality gates as separate checks: `1. Format`, `2. Lint`, `3. Contract Check`, `4. Test`, `5. Build`, then a required `CI Status` gate.
+- `Contract Check` verifies both `contracts/generated/public-api.snapshot.json` and `contracts/generated/openapi.json` are regenerated and valid.
 - `Security` workflow (`.github/workflows/security.yml`) runs dependency audit and gitleaks secret scanning.
 - `CodeQL` workflow (`.github/workflows/codeql.yml`) runs static analysis for Actions and JavaScript/TypeScript.
 - `Coverage Badge` workflow (`.github/workflows/coverage-badge.yml`) updates `badges/coverage.svg` on pushes to `main`.
