@@ -39,13 +39,17 @@ const assertHandler = (
   }
 };
 
+const isErrnoException = (error: unknown): error is NodeJS.ErrnoException => {
+  return error instanceof Error;
+};
+
 const loadMigrations = async (): Promise<MigrationDefinition[]> => {
   let entries;
 
   try {
     entries = await readdir(migrationsDir, { withFileTypes: true });
   } catch (error) {
-    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+    if (isErrnoException(error) && error.code === "ENOENT") {
       return [];
     }
 
@@ -68,13 +72,16 @@ const loadMigrations = async (): Promise<MigrationDefinition[]> => {
       down?: unknown;
     };
 
-    assertHandler(loadedModule.up, "up", fileName);
-    assertHandler(loadedModule.down, "down", fileName);
+    const up = loadedModule.up;
+    const down = loadedModule.down;
+
+    assertHandler(up, "up", fileName);
+    assertHandler(down, "down", fileName);
 
     migrations.push({
       id: toMigrationId(fileName),
-      up: loadedModule.up,
-      down: loadedModule.down,
+      up,
+      down,
     });
   }
 

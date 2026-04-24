@@ -10,6 +10,8 @@ const createRequest = (
   method: "GET",
   url: "https://api.example.com/data",
   headers: headers ?? [],
+  queryParams: [],
+  body: null,
   auth,
 });
 
