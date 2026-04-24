@@ -145,8 +145,17 @@ jobs:
       - name: Generate contract snapshot
         run: pnpm contracts:generate
 
+      - name: Generate OpenAPI artifact
+        run: pnpm contracts:openapi:generate
+
       - name: Check contract drift
         run: pnpm contracts:check
+
+      - name: Check OpenAPI drift
+        run: pnpm contracts:openapi:check
+
+      - name: Lint OpenAPI artifact
+        run: pnpm contracts:openapi:lint
 
       - name: Check incompatible contract changes
         run: pnpm contracts:breaking-check
@@ -160,6 +169,14 @@ jobs:
         with:
           name: contract-snapshot
           path: contracts/generated/public-api.snapshot.json
+          if-no-files-found: error
+
+      - name: Upload OpenAPI artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-artifact
+          path: contracts/generated/openapi.json
           if-no-files-found: error
 
   test:
