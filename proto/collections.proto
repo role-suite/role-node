@@ -1,0 +1,230 @@
+syntax = "proto3";
+
+package role.v1;
+
+message CollectionItem {
+  int64 id = 1;
+  int64 legacy_id = 2;
+  int64 workspace_id = 3;
+  string name = 4;
+  string description = 5;
+  int64 created_by_user_id = 6;
+  string created_at = 7;
+  string updated_at = 8;
+}
+
+message CollectionEndpointItem {
+  int64 id = 1;
+  int64 collection_id = 2;
+  int64 folder_id = 3;
+  string name = 4;
+  string method = 5;
+  string url = 6;
+  string headers_json = 7;
+  string query_params_json = 8;
+  string body_json = 9;
+  string auth_json = 10;
+  int32 position = 11;
+  int64 created_by_user_id = 12;
+  string created_at = 13;
+  string updated_at = 14;
+}
+
+message CollectionFolderItem {
+  int64 id = 1;
+  int64 collection_id = 2;
+  int64 parent_folder_id = 3;
+  string name = 4;
+  int32 position = 5;
+  int64 created_by_user_id = 6;
+  string created_at = 7;
+  string updated_at = 8;
+}
+
+message CollectionExampleItem {
+  int64 id = 1;
+  int64 endpoint_id = 2;
+  string name = 3;
+  int32 status_code = 4;
+  string headers_json = 5;
+  string body = 6;
+  int32 position = 7;
+  int64 created_by_user_id = 8;
+  string created_at = 9;
+  string updated_at = 10;
+}
+
+message CollectionsListRequest {
+  int64 workspace_id = 1;
+}
+
+message CollectionByIdRequest {
+  int64 workspace_id = 1;
+  int64 collection_id = 2;
+}
+
+message CollectionCreateRequest {
+  int64 workspace_id = 1;
+  string name = 2;
+  string description = 3;
+}
+
+message CollectionUpdateRequest {
+  int64 workspace_id = 1;
+  int64 collection_id = 2;
+  string name = 3;
+  string description = 4;
+}
+
+message CollectionDeleteRequest {
+  int64 workspace_id = 1;
+  int64 collection_id = 2;
+}
+
+message CollectionEndpointByIdRequest {
+  int64 workspace_id = 1;
+  int64 collection_id = 2;
+  int64 endpoint_id = 3;
+}
+
+message CollectionEndpointCreateRequest {
+  int64 workspace_id = 1;
+  int64 collection_id = 2;
+  int64 folder_id = 3;
+  string name = 4;
+  string method = 5;
+  string url = 6;
+  string headers_json = 7;
+  string query_params_json = 8;
+  string body_json = 9;
+  string auth_json = 10;
+  int32 position = 11;
+}
+
+message CollectionEndpointUpdateRequest {
+  int64 workspace_id = 1;
+  int64 collection_id = 2;
+  int64 endpoint_id = 3;
+  int64 folder_id = 4;
+  string name = 5;
+  string method = 6;
+  string url = 7;
+  string headers_json = 8;
+  string query_params_json = 9;
+  string body_json = 10;
+  string auth_json = 11;
+  int32 position = 12;
+}
+
+message CollectionFolderByIdRequest {
+  int64 workspace_id = 1;
+  int64 collection_id = 2;
+  int64 folder_id = 3;
+}
+
+message CollectionFolderCreateRequest {
+  int64 workspace_id = 1;
+  int64 collection_id = 2;
+  string name = 3;
+  int64 parent_folder_id = 4;
+  int32 position = 5;
+}
+
+message CollectionFolderUpdateRequest {
+  int64 workspace_id = 1;
+  int64 collection_id = 2;
+  int64 folder_id = 3;
+  string name = 4;
+  int64 parent_folder_id = 5;
+  int32 position = 6;
+}
+
+message CollectionExampleByIdRequest {
+  int64 workspace_id = 1;
+  int64 collection_id = 2;
+  int64 endpoint_id = 3;
+  int64 example_id = 4;
+}
+
+message CollectionExampleCreateRequest {
+  int64 workspace_id = 1;
+  int64 collection_id = 2;
+  int64 endpoint_id = 3;
+  string name = 4;
+  int32 status_code = 5;
+  string headers_json = 6;
+  string body = 7;
+  int32 position = 8;
+}
+
+message CollectionExampleUpdateRequest {
+  int64 workspace_id = 1;
+  int64 collection_id = 2;
+  int64 endpoint_id = 3;
+  int64 example_id = 4;
+  string name = 5;
+  int32 status_code = 6;
+  string headers_json = 7;
+  string body = 8;
+  int32 position = 9;
+}
+
+message CollectionItemResponse {
+  CollectionItem item = 1;
+}
+
+message CollectionItemsResponse {
+  repeated CollectionItem items = 1;
+}
+
+message CollectionEndpointItemResponse {
+  CollectionEndpointItem item = 1;
+}
+
+message CollectionEndpointItemsResponse {
+  repeated CollectionEndpointItem items = 1;
+}
+
+message CollectionFolderItemResponse {
+  CollectionFolderItem item = 1;
+}
+
+message CollectionFolderItemsResponse {
+  repeated CollectionFolderItem items = 1;
+}
+
+message CollectionExampleItemResponse {
+  CollectionExampleItem item = 1;
+}
+
+message CollectionExampleItemsResponse {
+  repeated CollectionExampleItem items = 1;
+}
+
+message CollectionActionResponse {
+  string status = 1;
+}
+
+service CollectionsService {
+  rpc List(CollectionsListRequest) returns (CollectionItemsResponse);
+  rpc GetById(CollectionByIdRequest) returns (CollectionItemResponse);
+  rpc Create(CollectionCreateRequest) returns (CollectionItemResponse);
+  rpc Update(CollectionUpdateRequest) returns (CollectionItemResponse);
+  rpc Delete(CollectionDeleteRequest) returns (CollectionActionResponse);
+
+  rpc ListEndpoints(CollectionByIdRequest) returns (CollectionEndpointItemsResponse);
+  rpc GetEndpointById(CollectionEndpointByIdRequest) returns (CollectionEndpointItemResponse);
+  rpc CreateEndpoint(CollectionEndpointCreateRequest) returns (CollectionEndpointItemResponse);
+  rpc UpdateEndpoint(CollectionEndpointUpdateRequest) returns (CollectionEndpointItemResponse);
+  rpc DeleteEndpoint(CollectionEndpointByIdRequest) returns (CollectionActionResponse);
+
+  rpc ListFolders(CollectionByIdRequest) returns (CollectionFolderItemsResponse);
+  rpc CreateFolder(CollectionFolderCreateRequest) returns (CollectionFolderItemResponse);
+  rpc UpdateFolder(CollectionFolderUpdateRequest) returns (CollectionFolderItemResponse);
+  rpc DeleteFolder(CollectionFolderByIdRequest) returns (CollectionActionResponse);
+
+  rpc ListEndpointExamples(CollectionEndpointByIdRequest) returns (CollectionExampleItemsResponse);
+  rpc CreateEndpointExample(CollectionExampleCreateRequest) returns (CollectionExampleItemResponse);
+  rpc UpdateEndpointExample(CollectionExampleUpdateRequest) returns (CollectionExampleItemResponse);
+  rpc DeleteEndpointExample(CollectionExampleByIdRequest) returns (CollectionActionResponse);
+}

@@ -1,0 +1,156 @@
+syntax = "proto3";
+
+package role.v1;
+
+message WorkspaceSummary {
+  int64 id = 1;
+  int64 legacy_id = 2;
+  string name = 3;
+  string slug = 4;
+  string type = 5;
+  string role = 6;
+}
+
+message WorkspaceMember {
+  int64 user_id = 1;
+  string name = 2;
+  string email = 3;
+  string role = 4;
+}
+
+message WorkspaceInvitation {
+  int64 id = 1;
+  int64 workspace_id = 2;
+  string email = 3;
+  string role = 4;
+  string token = 5;
+  string expires_at = 6;
+}
+
+message WorkspaceUpdate {
+  int64 id = 1;
+  int64 workspace_id = 2;
+  int64 actor_user_id = 3;
+  string entity = 4;
+  string action = 5;
+  int64 entity_id = 6;
+  string payload_json = 7;
+  string created_at = 8;
+}
+
+message Cursor {
+  int64 next = 1;
+  bool has_more = 2;
+}
+
+message ListWorkspacesRequest {}
+
+message ListWorkspacesResponse {
+  repeated WorkspaceSummary items = 1;
+}
+
+message WorkspaceIdRequest {
+  int64 workspace_id = 1;
+}
+
+message GetWorkspaceResponse {
+  WorkspaceSummary item = 1;
+}
+
+message CreateWorkspaceRequest {
+  string name = 1;
+}
+
+message CreateWorkspaceResponse {
+  WorkspaceSummary item = 1;
+}
+
+message ListWorkspaceMembersResponse {
+  repeated WorkspaceMember items = 1;
+}
+
+message AddWorkspaceMemberRequest {
+  int64 workspace_id = 1;
+  string email = 2;
+  string role = 3;
+}
+
+message AddWorkspaceMemberResponse {
+  WorkspaceMember item = 1;
+}
+
+message CreateWorkspaceInvitationRequest {
+  int64 workspace_id = 1;
+  string email = 2;
+  string role = 3;
+}
+
+message CreateWorkspaceInvitationResponse {
+  WorkspaceInvitation item = 1;
+}
+
+message UpdateWorkspaceMemberRoleRequest {
+  int64 workspace_id = 1;
+  int64 member_user_id = 2;
+  string role = 3;
+}
+
+message UpdateWorkspaceMemberRoleResponse {
+  WorkspaceMember item = 1;
+}
+
+message RemoveWorkspaceMemberRequest {
+  int64 workspace_id = 1;
+  int64 member_user_id = 2;
+}
+
+message ActionResponse {
+  string status = 1;
+}
+
+message JoinWorkspaceRequest {
+  string token = 1;
+}
+
+message JoinWorkspaceResponse {
+  WorkspaceSummary item = 1;
+}
+
+message LeaveWorkspaceRequest {
+  int64 workspace_id = 1;
+}
+
+message ConvertWorkspaceToTeamRequest {
+  int64 workspace_id = 1;
+  string name = 2;
+}
+
+message ConvertWorkspaceToTeamResponse {
+  WorkspaceSummary item = 1;
+}
+
+message ListWorkspaceUpdatesRequest {
+  int64 workspace_id = 1;
+  int64 since = 2;
+  int32 limit = 3;
+}
+
+message ListWorkspaceUpdatesResponse {
+  repeated WorkspaceUpdate items = 1;
+  Cursor cursor = 2;
+}
+
+service WorkspacesService {
+  rpc List(ListWorkspacesRequest) returns (ListWorkspacesResponse);
+  rpc GetById(WorkspaceIdRequest) returns (GetWorkspaceResponse);
+  rpc Create(CreateWorkspaceRequest) returns (CreateWorkspaceResponse);
+  rpc ListMembers(WorkspaceIdRequest) returns (ListWorkspaceMembersResponse);
+  rpc AddMember(AddWorkspaceMemberRequest) returns (AddWorkspaceMemberResponse);
+  rpc CreateInvitation(CreateWorkspaceInvitationRequest) returns (CreateWorkspaceInvitationResponse);
+  rpc UpdateMemberRole(UpdateWorkspaceMemberRoleRequest) returns (UpdateWorkspaceMemberRoleResponse);
+  rpc RemoveMember(RemoveWorkspaceMemberRequest) returns (ActionResponse);
+  rpc Join(JoinWorkspaceRequest) returns (JoinWorkspaceResponse);
+  rpc Leave(LeaveWorkspaceRequest) returns (ActionResponse);
+  rpc ConvertToTeam(ConvertWorkspaceToTeamRequest) returns (ConvertWorkspaceToTeamResponse);
+  rpc ListUpdates(ListWorkspaceUpdatesRequest) returns (ListWorkspaceUpdatesResponse);
+}

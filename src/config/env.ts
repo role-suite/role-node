@@ -9,6 +9,22 @@ const envSchema = z
       .enum(["development", "test", "production"])
       .default("development"),
     PORT: z.coerce.number().int().positive().default(3000),
+    GRPC_ENABLED: z
+      .enum(["true", "false"])
+      .default("false")
+      .transform((value) => value === "true"),
+    GRPC_PORT: z.coerce.number().int().positive().default(50051),
+    GRPC_TLS_ENABLED: z
+      .enum(["true", "false"])
+      .default("false")
+      .transform((value) => value === "true"),
+    GRPC_MTLS_ENABLED: z
+      .enum(["true", "false"])
+      .default("false")
+      .transform((value) => value === "true"),
+    GRPC_TLS_CERT_PATH: z.string().min(1).optional(),
+    GRPC_TLS_KEY_PATH: z.string().min(1).optional(),
+    GRPC_TLS_CA_PATH: z.string().min(1).optional(),
     DB_DIALECT: z.enum(["postgres", "mysql", "mariadb"]).default("postgres"),
     DB_HOST: z.string().min(1),
     DB_PORT: z.coerce.number().int().positive(),
@@ -47,7 +63,48 @@ const envSchema = z
   .refine((input) => input.DB_POOL_MAX >= input.DB_POOL_MIN, {
     message: "DB_POOL_MAX must be greater than or equal to DB_POOL_MIN",
     path: ["DB_POOL_MAX"],
-  });
+  })
+  .refine(
+    (input) => {
+      if (!input.GRPC_TLS_ENABLED) {
+        return true;
+      }
+
+      return Boolean(input.GRPC_TLS_CERT_PATH && input.GRPC_TLS_KEY_PATH);
+    },
+    {
+      message:
+        "GRPC_TLS_CERT_PATH and GRPC_TLS_KEY_PATH are required when GRPC_TLS_ENABLED=true",
+      path: ["GRPC_TLS_CERT_PATH"],
+    },
+  )
+  .refine(
+    (input) => {
+      if (!input.GRPC_MTLS_ENABLED) {
+        return true;
+      }
+
+      return input.GRPC_TLS_ENABLED && Boolean(input.GRPC_TLS_CA_PATH);
+    },
+    {
+      message:
+        "GRPC_TLS_CA_PATH is required and GRPC_TLS_ENABLED must be true when GRPC_MTLS_ENABLED=true",
+      path: ["GRPC_TLS_CA_PATH"],
+    },
+  )
+  .refine(
+    (input) => {
+      if (!input.GRPC_MTLS_ENABLED) {
+        return true;
+      }
+
+      return input.GRPC_TLS_ENABLED;
+    },
+    {
+      message: "GRPC_TLS_ENABLED must be true when GRPC_MTLS_ENABLED=true",
+      path: ["GRPC_TLS_ENABLED"],
+    },
+  );
 
 const parsedEnv = envSchema.safeParse(process.env);
 
