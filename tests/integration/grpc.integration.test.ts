@@ -97,9 +97,18 @@ describe("gRPC integration", () => {
         v1: {
           AuthService: new (address: string, creds: unknown) => GrpcClient;
           HealthService: new (address: string, creds: unknown) => GrpcClient;
-          WorkspacesService: new (address: string, creds: unknown) => GrpcClient;
-          CollectionsService: new (address: string, creds: unknown) => GrpcClient;
-          EnvironmentsService: new (address: string, creds: unknown) => GrpcClient;
+          WorkspacesService: new (
+            address: string,
+            creds: unknown,
+          ) => GrpcClient;
+          CollectionsService: new (
+            address: string,
+            creds: unknown,
+          ) => GrpcClient;
+          EnvironmentsService: new (
+            address: string,
+            creds: unknown,
+          ) => GrpcClient;
           RunsService: new (address: string, creds: unknown) => GrpcClient;
           ImportExportService: new (
             address: string,
@@ -176,7 +185,10 @@ describe("gRPC integration", () => {
     });
 
     const ownerMd = new Metadata();
-    ownerMd.set("authorization", `Bearer ${owner.response.tokens.access_token}`);
+    ownerMd.set(
+      "authorization",
+      `Bearer ${owner.response.tokens.access_token}`,
+    );
 
     const createdWorkspace = await callUnary<{ item: { id: number | string } }>(
       workspacesClient!,
@@ -233,7 +245,10 @@ describe("gRPC integration", () => {
     });
 
     const ownerMd = new Metadata();
-    ownerMd.set("authorization", `Bearer ${owner.response.tokens.access_token}`);
+    ownerMd.set(
+      "authorization",
+      `Bearer ${owner.response.tokens.access_token}`,
+    );
 
     const workspace = await callUnary<{ item: { id: number | string } }>(
       workspacesClient!,
@@ -350,7 +365,9 @@ describe("gRPC integration", () => {
     );
     expect(workspaceList.response.items.length).toBeGreaterThan(0);
 
-    const createdCollection = await callUnary<{ item: { id: number | string } }>(
+    const createdCollection = await callUnary<{
+      item: { id: number | string };
+    }>(
       collectionsClient!,
       "Create",
       {
@@ -370,7 +387,9 @@ describe("gRPC integration", () => {
     );
     expect(collectionList.response.items.length).toBe(1);
 
-    const createdEnvironment = await callUnary<{ item: { id: number | string } }>(
+    const createdEnvironment = await callUnary<{
+      item: { id: number | string };
+    }>(
       environmentsClient!,
       "Create",
       { workspace_id: workspaceId, name: "Dev" },
@@ -421,10 +440,15 @@ describe("gRPC integration", () => {
     md.set("authorization", `Bearer ${register.response.tokens.access_token}`);
 
     await expect(
-      callUnary(runsClient!, "Create", {
-        workspace_id: Number(register.response.workspace.id),
-        payload_json: JSON.stringify({ invalid: true }),
-      }, md),
+      callUnary(
+        runsClient!,
+        "Create",
+        {
+          workspace_id: Number(register.response.workspace.id),
+          payload_json: JSON.stringify({ invalid: true }),
+        },
+        md,
+      ),
     ).rejects.toMatchObject({ code: 3 });
   });
 
