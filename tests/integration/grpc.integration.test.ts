@@ -118,7 +118,10 @@ describe("gRPC integration", () => {
       };
     };
 
-    grpcServerHandle = await startGrpcServer({ port: grpcPort });
+    grpcServerHandle = await startGrpcServer({
+      port: grpcPort,
+      forceEnable: true,
+    });
     const target = `localhost:${grpcPort}`;
 
     authClient = new grpcRoot.role.v1.AuthService(

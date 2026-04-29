@@ -96,8 +96,9 @@ const createGrpcServerCredentials = (): ServerCredentials => {
 
 export const startGrpcServer = async (options?: {
   port?: number;
+  forceEnable?: boolean;
 }): Promise<GrpcServerHandle | null> => {
-  if (!env.GRPC_ENABLED) {
+  if (!env.GRPC_ENABLED && !options?.forceEnable) {
     logger.info("gRPC server is disabled by GRPC_ENABLED");
     return null;
   }
