@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <strong>TypeScript + Express backend for workspaces, collections, environments, and request runs</strong>
+  <strong>TypeScript + Express backend with REST + gRPC transports for workspaces, collections, environments, and request runs</strong>
 </p>
 
 <p align="center">
@@ -30,7 +30,7 @@
 ## 🌟 Overview
 
 <p align="center">
-  role-node is a modular backend starter built with Express 5 and TypeScript. It provides a workspace-based API for collections, environments, and runnable HTTP requests, with strict schema validation and consistent error handling. It targets Postgres or MySQL with migration support and a tested module structure.
+  role-node is a modular backend starter built with Express 5 and TypeScript. It provides workspace-based functionality over both REST and gRPC transports for collections, environments, and runnable HTTP requests, with strict schema validation and consistent error handling. It targets Postgres or MySQL with migration support and a tested module structure.
 </p>
 
 ## ✨ Features
@@ -110,18 +110,26 @@ pnpm db:migrate
 - `pnpm contracts:openapi:generate`: generate `contracts/generated/openapi.json`
 - `pnpm contracts:openapi:check`: fail when OpenAPI artifact is stale
 - `pnpm contracts:openapi:lint`: lint OpenAPI artifact governance requirements
+- `pnpm grpc:generate`: generate gRPC type artifacts from `proto/*.proto`
+- `pnpm grpc:check`: fail when generated gRPC artifacts are stale
+- `pnpm grpc:test`: run gRPC unit + integration tests
+- `pnpm grpc:test:integration`: run gRPC integration tests only
+- `pnpm verify:grpc`: run gRPC artifact + gRPC test checks
+- `pnpm verify`: run local integrity gate (format, lint, typecheck, test, build, contracts)
 
 ## 🚀 CI/CD
 
 - `CI` workflow (`.github/workflows/ci.yml`) runs on pull requests and pushes to `main` and `v*` tags.
 - It runs ordered quality gates as separate checks: `1. Format`, `2. Lint`, `3. Contract Check`, `4. Test`, `5. Build`, then a required `CI Status` gate.
 - `Contract Check` verifies both `contracts/generated/public-api.snapshot.json` and `contracts/generated/openapi.json` are regenerated and valid.
+- `Contract Check` also validates gRPC artifact drift with `pnpm grpc:check`.
 - `Security` workflow (`.github/workflows/security.yml`) runs dependency audit and gitleaks secret scanning.
 - `CodeQL` workflow (`.github/workflows/codeql.yml`) runs static analysis for Actions and JavaScript/TypeScript.
 - `Coverage Badge` workflow (`.github/workflows/coverage-badge.yml`) updates `badges/coverage.svg` on pushes to `main`.
 - `CD` workflow (`.github/workflows/cd.yml`) builds and publishes Docker images to GHCR and deploys production from `v*` tags or manual dispatch.
 - CD is gated by `CI / CI Status` on the exact same commit SHA before publishing/deploying.
 - `Release` workflow (`.github/workflows/release-tag.yml`) performs semantic versioning from manual dispatch (`patch`, `minor`, `major`): it runs quality gates, bumps `package.json`, updates `CHANGELOG.md`, creates a `v*` tag, and creates the GitHub Release.
+- `Test` gate runs both `pnpm test:run` and `pnpm grpc:test` to enforce transport-level confidence.
 
 Release flow:
 
@@ -139,6 +147,13 @@ Validated in `src/config/env.ts` using Zod.
 
 - `NODE_ENV`: `development` | `test` | `production` (default: `development`)
 - `PORT`: positive integer (default: `3000`)
+- `GRPC_ENABLED`: `true` | `false` (default: `false`)
+- `GRPC_PORT`: positive integer (default: `50051`)
+- `GRPC_TLS_ENABLED`: `true` | `false` (default: `false`)
+- `GRPC_MTLS_ENABLED`: `true` | `false` (default: `false`)
+- `GRPC_TLS_CERT_PATH`: required when `GRPC_TLS_ENABLED=true`
+- `GRPC_TLS_KEY_PATH`: required when `GRPC_TLS_ENABLED=true`
+- `GRPC_TLS_CA_PATH`: required when `GRPC_MTLS_ENABLED=true`
 - `DB_DIALECT`: `postgres` | `mysql` | `mariadb` (default: `postgres`)
 - `DB_HOST`: database host
 - `DB_PORT`: database port
@@ -152,8 +167,29 @@ Validated in `src/config/env.ts` using Zod.
 
 On startup, the app validates environment values and checks database connectivity with `SELECT 1` before listening for requests.
 Set `ENABLE_STARTUP_VALIDATION=false` when running locally without a configured database.
+When `GRPC_ENABLED=true`, the app also starts a gRPC server with `HealthService/Check` on `GRPC_PORT`.
+
+## 🛰️ gRPC Services
+
+Current gRPC services (package `role.v1`):
+
+- `HealthService`: `Check`
+- `AuthService`: `Register`, `Login`, `Refresh`, `Logout`, `Me`
+- `WorkspacesService`: workspace/member/invitation/update operations
+- `CollectionsService`: collections/endpoints/folders/examples operations
+- `EnvironmentsService`: environments/variables operations
+- `RunsService`: `Create`, `GetById`, `Cancel`
+- `ImportExportService`: `ListJobs`, `GetJobById`, `CreateExportJob`, `CreateImportJob`
+
+Transport notes:
+
+- Rich payloads for runs and import-export currently use JSON string fields in proto messages (`payload_json`, `run_json`, `job_json`, `jobs_json`) to preserve parity with existing service DTOs.
+- Validate proto drift with `pnpm grpc:check` and run gRPC tests with `pnpm grpc:test`.
+- For hardening and compatibility policy, see `docs/guides/grpc-hardening.md`.
 
 ## 🧭 API Overview
+
+This section lists REST endpoints. Equivalent gRPC APIs are available in package `role.v1` and defined under `proto/*.proto`.
 
 ### Health
 

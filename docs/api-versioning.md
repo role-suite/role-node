@@ -1,5 +1,10 @@
 # API Versioning Policy
 
+This policy applies to both public transports in role-node:
+
+- REST API contracts (`contracts/generated/openapi.json`)
+- gRPC contracts (`proto/*.proto`)
+
 ## Current approach
 
 role-node keeps current public paths (for example, `/api/auth/login`, `/api/workspaces/:workspaceId/...`) and uses an explicit versioning policy for contract stability.
@@ -8,7 +13,7 @@ role-node keeps current public paths (for example, `/api/auth/login`, `/api/work
 - Route prefixes do not include `/v1` yet.
 - Breaking changes are introduced only in a new API line (for example, `v2`) with explicit announcement.
 
-SDKs and clients should declare compatibility as: `role-node API v1`.
+SDKs and clients should declare compatibility as: `role-node API v1` (REST and/or gRPC `role.v1`).
 
 ## Contract source of truth
 

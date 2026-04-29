@@ -6,11 +6,11 @@ type RequestContext = {
 
 const requestContextStorage = new AsyncLocalStorage<RequestContext>();
 
-export const runWithRequestContext = (
+export const runWithRequestContext = <T>(
   requestId: string,
-  callback: () => void,
-): void => {
-  requestContextStorage.run({ requestId }, callback);
+  callback: () => T,
+): T => {
+  return requestContextStorage.run({ requestId }, callback);
 };
 
 export const getRequestIdFromContext = (): string | undefined => {

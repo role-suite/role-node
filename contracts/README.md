@@ -1,6 +1,8 @@
 # API Contracts
 
-This directory is the single source of truth for role-node public API contracts.
+This directory covers REST API contracts. gRPC contracts are maintained in `proto/*.proto`.
+
+This directory is the single source of truth for role-node public REST API contracts.
 
 It documents every public route under these modules:
 
@@ -76,7 +78,9 @@ It also fails when:
 
 ## Scope note
 
-This directory covers module-level public API routes. Non-module operational routes (for example `/health`) are intentionally outside this module contract set.
+This directory covers module-level public REST routes. Non-module operational routes (for example `/health`) are intentionally outside this module contract set.
+
+gRPC service definitions (`role.v1`) are versioned separately in `proto/*.proto` and validated through `pnpm grpc:check`.
 
 ## Success response shapes
 

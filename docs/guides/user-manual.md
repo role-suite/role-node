@@ -4,6 +4,8 @@ This guide is a short onboarding path for first-time users.
 
 For complete endpoint and payload reference, use `docs/guides/user-reference-manual.md`.
 
+Note: this quickstart uses REST examples (`curl`). The same product capabilities are also available via gRPC (`role.v1`) when `GRPC_ENABLED=true`.
+
 ## 1) Start the backend
 
 ```bash

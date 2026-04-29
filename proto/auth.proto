@@ -1,0 +1,82 @@
+syntax = "proto3";
+
+package role.v1;
+
+message AuthUser {
+  int64 id = 1;
+  string name = 2;
+  string email = 3;
+}
+
+message AuthWorkspace {
+  int64 id = 1;
+  int64 legacy_id = 2;
+  string name = 3;
+  string slug = 4;
+  string type = 5;
+  string role = 6;
+}
+
+message AuthMembership {
+  int64 workspace_id = 1;
+  int64 legacy_id = 2;
+  string name = 3;
+  string slug = 4;
+  string type = 5;
+  string role = 6;
+}
+
+message AuthTokens {
+  string access_token = 1;
+  string refresh_token = 2;
+  int32 access_token_ttl_seconds = 3;
+  int32 refresh_token_ttl_seconds = 4;
+}
+
+message AuthPayload {
+  AuthUser user = 1;
+  AuthWorkspace workspace = 2;
+  repeated AuthMembership memberships = 3;
+  AuthTokens tokens = 4;
+}
+
+message RegisterRequest {
+  string name = 1;
+  string email = 2;
+  string password = 3;
+  string account_type = 4;
+  string team_name = 5;
+}
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message RefreshRequest {
+  string refresh_token = 1;
+}
+
+message LogoutRequest {
+  string refresh_token = 1;
+}
+
+message LogoutResponse {
+  string status = 1;
+}
+
+message MeRequest {}
+
+message MeResponse {
+  AuthUser user = 1;
+  AuthWorkspace workspace = 2;
+  repeated AuthMembership memberships = 3;
+}
+
+service AuthService {
+  rpc Register(RegisterRequest) returns (AuthPayload);
+  rpc Login(LoginRequest) returns (AuthPayload);
+  rpc Refresh(RefreshRequest) returns (AuthPayload);
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+  rpc Me(MeRequest) returns (MeResponse);
+}

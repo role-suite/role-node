@@ -1,0 +1,111 @@
+syntax = "proto3";
+
+package role.v1;
+
+message EnvironmentItem {
+  int64 id = 1;
+  int64 workspace_id = 2;
+  string name = 3;
+  int64 created_by_user_id = 4;
+  string created_at = 5;
+  string updated_at = 6;
+}
+
+message EnvironmentVariableItem {
+  int64 id = 1;
+  int64 environment_id = 2;
+  string key = 3;
+  string value = 4;
+  bool enabled = 5;
+  bool is_secret = 6;
+  int32 position = 7;
+  int64 created_by_user_id = 8;
+  string created_at = 9;
+  string updated_at = 10;
+}
+
+message EnvironmentListRequest {
+  int64 workspace_id = 1;
+}
+
+message EnvironmentByIdRequest {
+  int64 workspace_id = 1;
+  int64 environment_id = 2;
+}
+
+message EnvironmentVariableByIdRequest {
+  int64 workspace_id = 1;
+  int64 environment_id = 2;
+  int64 variable_id = 3;
+}
+
+message EnvironmentCreateRequest {
+  int64 workspace_id = 1;
+  string name = 2;
+}
+
+message EnvironmentUpdateRequest {
+  int64 workspace_id = 1;
+  int64 environment_id = 2;
+  optional string name = 3;
+}
+
+message EnvironmentVariableCreateRequest {
+  int64 workspace_id = 1;
+  int64 environment_id = 2;
+  string key = 3;
+  string value = 4;
+  bool enabled = 5;
+  bool is_secret = 6;
+  int32 position = 7;
+}
+
+message EnvironmentVariableUpdateRequest {
+  int64 workspace_id = 1;
+  int64 environment_id = 2;
+  int64 variable_id = 3;
+  optional string key = 4;
+  optional string value = 5;
+  optional bool enabled = 6;
+  optional bool is_secret = 7;
+  optional int32 position = 8;
+}
+
+message EnvironmentItemsResponse {
+  repeated EnvironmentItem items = 1;
+}
+
+message EnvironmentItemResponse {
+  EnvironmentItem item = 1;
+}
+
+message EnvironmentVariableItemsResponse {
+  repeated EnvironmentVariableItem items = 1;
+}
+
+message EnvironmentVariableItemResponse {
+  EnvironmentVariableItem item = 1;
+}
+
+message EnvironmentActionResponse {
+  string status = 1;
+}
+
+service EnvironmentsService {
+  rpc List(EnvironmentListRequest) returns (EnvironmentItemsResponse);
+  rpc GetById(EnvironmentByIdRequest) returns (EnvironmentItemResponse);
+  rpc Create(EnvironmentCreateRequest) returns (EnvironmentItemResponse);
+  rpc Update(EnvironmentUpdateRequest) returns (EnvironmentItemResponse);
+  rpc Delete(EnvironmentByIdRequest) returns (EnvironmentActionResponse);
+
+  rpc ListVariables(EnvironmentByIdRequest)
+      returns (EnvironmentVariableItemsResponse);
+  rpc GetVariableById(EnvironmentVariableByIdRequest)
+      returns (EnvironmentVariableItemResponse);
+  rpc CreateVariable(EnvironmentVariableCreateRequest)
+      returns (EnvironmentVariableItemResponse);
+  rpc UpdateVariable(EnvironmentVariableUpdateRequest)
+      returns (EnvironmentVariableItemResponse);
+  rpc DeleteVariable(EnvironmentVariableByIdRequest)
+      returns (EnvironmentActionResponse);
+}

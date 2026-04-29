@@ -157,6 +157,9 @@ jobs:
       - name: Lint OpenAPI artifact
         run: pnpm contracts:openapi:lint
 
+      - name: Check gRPC artifact drift
+        run: pnpm grpc:check
+
       - name: Check incompatible contract changes
         run: pnpm contracts:breaking-check
 
@@ -221,6 +224,9 @@ jobs:
 
       - name: Run test suite
         run: pnpm test:run
+
+      - name: Run gRPC unit tests
+        run: pnpm grpc:test
 
       - name: Run coverage
         run: pnpm test:coverage

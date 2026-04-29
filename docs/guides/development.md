@@ -16,6 +16,8 @@ Environment values are validated in `src/config/env.ts`.
 
 Database-related environment variables:
 
+- `GRPC_ENABLED`: `true` | `false`
+- `GRPC_PORT`: required only when gRPC is enabled
 - `DB_DIALECT`: `postgres` | `mysql` | `mariadb`
 - `DB_HOST`: required database host
 - `DB_PORT`: required database port
@@ -30,6 +32,7 @@ Database-related environment variables:
 Startup checks in `src/config/startup-validation.ts` verify:
 
 - app `PORT` is within valid range
+- gRPC `GRPC_PORT` is within valid range when enabled
 - Database is reachable (`SELECT 1`)
 
 When local DB is not available yet, set `ENABLE_STARTUP_VALIDATION=false`.
@@ -45,6 +48,25 @@ When local DB is not available yet, set `ENABLE_STARTUP_VALIDATION=false`.
 - `pnpm db:migrate:down [count]`: rollback last applied migrations
 - `pnpm db:migrate:status`: show applied/pending migration IDs
 - `pnpm db:reset:docker`: reset dockerized DBs (down -v, up -d)
+- `pnpm grpc:generate`: generate gRPC type artifacts from `proto/*.proto`
+- `pnpm grpc:check`: verify generated gRPC artifacts are current
+- `pnpm grpc:test`: run gRPC unit and integration tests
+- `pnpm grpc:test:integration`: run gRPC integration tests only
+- `pnpm verify:grpc`: run gRPC drift and gRPC tests together
+- `pnpm verify`: run full local quality and contract checks
+
+## gRPC transport notes
+
+- Proto contracts live in `proto/*.proto` with package `role.v1`.
+- gRPC service adapters live in `src/grpc/services/*` and delegate to existing module services.
+- Runs and import-export RPC payloads currently use JSON string fields (`payload_json`, `run_json`, `job_json`, `jobs_json`) to keep parity with current REST/service DTO shapes.
+
+## gRPC governance
+
+- Before opening a PR, run `pnpm verify:grpc` at minimum for transport checks.
+- CI enforces `pnpm grpc:check` in the contract gate and `pnpm grpc:test` in the test gate.
+- Any change to `proto/*.proto` must be accompanied by regenerated artifacts under `src/grpc/generated/`.
+- Production hardening details (TLS/mTLS, compatibility policy, deployment notes) are documented in `docs/guides/grpc-hardening.md`.
 
 ## Build and run
 

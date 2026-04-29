@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package role.v1;
+
+message HealthCheckRequest {
+  string service = 1;
+}
+
+message HealthCheckResponse {
+  string status = 1;
+  string service = 2;
+  int64 uptime_seconds = 3;
+}
+
+service HealthService {
+  rpc Check(HealthCheckRequest) returns (HealthCheckResponse);
+}

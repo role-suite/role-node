@@ -1,8 +1,14 @@
+import { Server as HttpServer } from "node:http";
+
 import { app } from "./app.js";
 import { closeDb } from "./config/db.js";
 import { env } from "./config/env.js";
 import { validateStartupOrThrow } from "./config/startup-validation.js";
+import { startGrpcServer } from "./grpc/server.js";
 import { logger } from "./shared/logger.js";
+
+let httpServer: HttpServer | null = null;
+let grpcServerHandle: Awaited<ReturnType<typeof startGrpcServer>> = null;
 
 const startServer = async (): Promise<void> => {
   try {
@@ -14,8 +20,10 @@ const startServer = async (): Promise<void> => {
       );
     }
 
-    app.listen(env.PORT, () => {
-      logger.info(`Server is running on port ${env.PORT}`, {
+    grpcServerHandle = await startGrpcServer();
+
+    httpServer = app.listen(env.PORT, () => {
+      logger.info(`REST API Server is running on port ${env.PORT}`, {
         localUrl: `http://localhost:${env.PORT}`,
       });
     });
@@ -32,6 +40,23 @@ const handleShutdown = async (signal: NodeJS.Signals): Promise<void> => {
   logger.info(`Received ${signal}, shutting down gracefully`);
 
   try {
+    if (httpServer) {
+      await new Promise<void>((resolve, reject) => {
+        httpServer?.close((error) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+
+          resolve();
+        });
+      });
+    }
+
+    if (grpcServerHandle) {
+      await grpcServerHandle.close();
+    }
+
     await closeDb();
   } catch (error) {
     logger.error("Error while closing database connections", error);
