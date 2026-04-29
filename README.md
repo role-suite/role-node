@@ -112,6 +112,7 @@ pnpm db:migrate
 - `pnpm contracts:openapi:lint`: lint OpenAPI artifact governance requirements
 - `pnpm grpc:generate`: generate gRPC type artifacts from `proto/*.proto`
 - `pnpm grpc:check`: fail when generated gRPC artifacts are stale
+- `pnpm grpc:bundle`: create versioned proto bundle artifact for SDK consumers
 - `pnpm grpc:test`: run gRPC unit + integration tests
 - `pnpm grpc:test:integration`: run gRPC integration tests only
 - `pnpm verify:grpc`: run gRPC artifact + gRPC test checks
@@ -186,6 +187,8 @@ Transport notes:
 - Rich payloads for runs and import-export currently use JSON string fields in proto messages (`payload_json`, `run_json`, `job_json`, `jobs_json`) to preserve parity with existing service DTOs.
 - Validate proto drift with `pnpm grpc:check` and run gRPC tests with `pnpm grpc:test`.
 - For hardening and compatibility policy, see `docs/guides/grpc-hardening.md`.
+- For SDK proto consumption workflow, see `docs/guides/grpc-proto-distribution.md`.
+- For SDK metadata/error contract, see `docs/guides/grpc-sdk-integration-contract.md`.
 
 ## 🧭 API Overview
 
@@ -268,6 +271,10 @@ This section lists REST endpoints. Equivalent gRPC APIs are available in package
 ## 📚 Documentation
 
 - `docs/guides/client-integration.md`: full client integration and payload reference
+- `docs/guides/grpc-proto-distribution.md`: proto tag pinning workflow for SDK consumers
+- `docs/guides/grpc-sdk-integration-contract.md`: gRPC metadata and error mapping contract for SDKs
+- `docs/guides/grpc-sdk-readiness.md`: SDK readiness checklist for gRPC adoption
+- `docs/guides/grpc-transport-parity.md`: REST/gRPC parity expectations and known differences
 - `docs/api-versioning.md`: API versioning rules and compatibility policy
 - `docs/compatibility.md`: role-node / role-sdk / role-client compatibility matrix
 - `docs/errors.md`: machine-readable error model and code registry

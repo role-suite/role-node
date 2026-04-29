@@ -12,6 +12,7 @@ role-node keeps current public paths (for example, `/api/auth/login`, `/api/work
 - Current stable API line: `v1`.
 - Route prefixes do not include `/v1` yet.
 - Breaking changes are introduced only in a new API line (for example, `v2`) with explicit announcement.
+- gRPC package line is `role.v1` and follows additive-first evolution.
 
 SDKs and clients should declare compatibility as: `role-node API v1` (REST and/or gRPC `role.v1`).
 
@@ -25,6 +26,8 @@ Public contract definitions live in:
 - `contracts/generated/openapi.json`
 
 Any change to public behavior must update contracts in the same pull request.
+
+For gRPC, proto definitions are distributed to SDK consumers via tag pinning workflow documented in `docs/guides/grpc-proto-distribution.md`.
 
 ## Change classification
 
@@ -60,6 +63,45 @@ An additive change is non-breaking when it does any of the following:
 - Adds a new enum/union value where clients are expected to handle unknown values safely.
 - Adds new error codes/statuses without changing existing success/error contracts.
 
+## gRPC compatibility rules (`role.v1`)
+
+These rules apply to all files under `proto/*.proto`.
+
+### Breaking proto changes
+
+A proto change is breaking if it does any of the following:
+
+- Removes an existing RPC method.
+- Renames an existing RPC method or service.
+- Changes request/response message type for an existing RPC.
+- Removes a message field.
+- Changes a field type incompatibly.
+- Changes field cardinality incompatibly (`optional`/`repeated`/singular).
+- Reuses or renumbers an existing field tag.
+- Moves a method or message to a different package line.
+
+### Non-breaking proto changes
+
+A proto change is additive/non-breaking when it does any of the following:
+
+- Adds a new RPC method to an existing service.
+- Adds a new optional field to a message using a new field tag.
+- Adds a new message or enum that does not alter existing method signatures.
+- Adds enum values where clients are expected to tolerate unknown values.
+
+### Field/tag safety requirements
+
+- Never reuse field numbers.
+- Never change field numbers for existing fields.
+- When removing fields, reserve removed field numbers and names in proto definitions.
+- Keep `role.v1` package stable for additive changes.
+
+### Version bump policy for gRPC
+
+- Keep `role.v1` for additive, backward-compatible changes.
+- Introduce `role.v2` for breaking wire or semantic changes.
+- Publish migration guidance before or with first `role.v2` release.
+
 ## Deprecation and support windows
 
 When a route or field is deprecated:
@@ -75,3 +117,4 @@ During the support window, behavior remains compatible except for critical secur
 - API compatibility statements are published in release notes.
 - SDK releases should explicitly state: `Supports role-node API v1`.
 - If a breaking change is needed, a migration guide is published before/with the new API line.
+- gRPC-impacting releases should explicitly mention `role.v1` compatibility status and any required SDK regeneration.

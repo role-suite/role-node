@@ -43,6 +43,7 @@ junit.xml
 .eslintcache
 .prettier-cache/
 .grpc-tmp/
+artifacts/grpc-proto/
 
 # Local runner config override
 config/request-runner.config.local.json
