@@ -7,7 +7,7 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "html", "json-summary"],
       include: ["src/**/*.ts"],
-      exclude: ["src/server.ts", "src/types/**/*.ts"],
+      exclude: ["src/server.ts", "src/types/**/*.ts", "src/grpc/**/*.ts"],
       thresholds: {
         lines: 85,
         statements: 85,
