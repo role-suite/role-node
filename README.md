@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <strong>TypeScript + Express backend for workspaces, collections, environments, and request runs</strong>
+  <strong>TypeScript + Express backend with REST + gRPC transports for workspaces, collections, environments, and request runs</strong>
 </p>
 
 <p align="center">
@@ -30,7 +30,7 @@
 ## 🌟 Overview
 
 <p align="center">
-  role-node is a modular backend starter built with Express 5 and TypeScript. It provides a workspace-based API for collections, environments, and runnable HTTP requests, with strict schema validation and consistent error handling. It targets Postgres or MySQL with migration support and a tested module structure.
+  role-node is a modular backend starter built with Express 5 and TypeScript. It provides workspace-based functionality over both REST and gRPC transports for collections, environments, and runnable HTTP requests, with strict schema validation and consistent error handling. It targets Postgres or MySQL with migration support and a tested module structure.
 </p>
 
 ## ✨ Features
@@ -188,6 +188,8 @@ Transport notes:
 - For hardening and compatibility policy, see `docs/guides/grpc-hardening.md`.
 
 ## 🧭 API Overview
+
+This section lists REST endpoints. Equivalent gRPC APIs are available in package `role.v1` and defined under `proto/*.proto`.
 
 ### Health
 

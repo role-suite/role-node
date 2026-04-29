@@ -2,10 +2,17 @@
 
 This guide is the implementation reference for SDK/client engineers.
 
+role-node exposes two public transports:
+
+- REST (JSON/HTTP) for route-based integrations.
+- gRPC (`role.v1`) for RPC-based integrations.
+
 Source of truth:
 
 - Contracts: `contracts/**/contracts.ts`
 - Publishable OpenAPI artifact: `contracts/generated/openapi.json`
+- gRPC proto contracts: `proto/*.proto`
+- Generated gRPC typings: `src/grpc/generated/role.pb.d.ts`
 - Runtime behavior: `src/modules/**`
 - Verified examples copied from integration tests:
   - `tests/integration/auth.test.ts`
@@ -15,11 +22,22 @@ Source of truth:
 
 ## Base behavior
 
+### REST transport
+
 - Base URL: environment specific (for example `https://api.example.com`)
 - JSON request header: `Content-Type: application/json`
 - Auth header (protected routes): `Authorization: Bearer <accessToken>`
 - Correlation header: every response includes `x-request-id`
 - OpenAPI path template style uses `{param}` (for example `/api/workspaces/{workspaceId}`)
+
+### gRPC transport
+
+- Package: `role.v1`
+- Local default endpoint when enabled: `localhost:50051`
+- Enable via environment: `GRPC_ENABLED=true`
+- Security options: TLS/mTLS via `GRPC_TLS_ENABLED` and `GRPC_MTLS_ENABLED`
+- Service and method contracts are defined in `proto/*.proto`
+- Transport hardening guide: `docs/guides/grpc-hardening.md`
 
 ### Success envelopes
 

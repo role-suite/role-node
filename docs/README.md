@@ -1,6 +1,6 @@
 # Documentation Index
 
-This folder is organized by concern.
+This folder is organized by concern across both public transports: REST and gRPC.
 
 - `docs/api-versioning.md`: Public API compatibility and deprecation policy.
 - `docs/compatibility.md`: role-node / role-sdk / role-client version compatibility matrix.
@@ -16,6 +16,7 @@ This folder is organized by concern.
 
 - `docs/guides/development.md`: Day-to-day development workflow.
 - `docs/guides/client-integration.md`: Client integration flow, API usage, and error handling.
+- `docs/guides/grpc-hardening.md`: gRPC TLS/mTLS hardening and compatibility policy.
 - `docs/guides/module-template.md`: Module generator usage and post-generation checklist.
 - `docs/guides/module-readiness.md`: Definition of done and readiness criteria.
 - `docs/guides/user-manual.md`: End-user/API-consumer quickstart.
