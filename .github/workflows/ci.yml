@@ -160,6 +160,9 @@ jobs:
       - name: Check gRPC artifact drift
         run: pnpm grpc:check
 
+      - name: Build proto bundle artifact
+        run: pnpm grpc:bundle
+
       - name: Check incompatible contract changes
         run: pnpm contracts:breaking-check
 
@@ -182,11 +185,58 @@ jobs:
           path: contracts/generated/openapi.json
           if-no-files-found: error
 
+      - name: Upload gRPC proto bundle artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: grpc-proto-bundle
+          path: artifacts/grpc-proto/
+          if-no-files-found: error
+
+  grpc-impact:
+    name: 3.1 gRPC Impact Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: contract-check
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate SDK impact docs for proto changes
+        run: |
+          set -euo pipefail
+
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "Not a pull_request event. Skipping proto-impact enforcement."
+            exit 0
+          fi
+
+          CHANGED_FILES="$(git diff --name-only origin/main...HEAD)"
+
+          if ! printf '%s\n' "$CHANGED_FILES" | grep -q '^proto/'; then
+            echo "No proto changes detected."
+            exit 0
+          fi
+
+          echo "Proto changes detected. Verifying required SDK-impact documentation updates..."
+          REQUIRED_DOCS_REGEX='^(docs/api-versioning.md|docs/guides/grpc-proto-distribution.md|docs/guides/grpc-sdk-integration-contract.md|docs/guides/grpc-transport-parity.md|docs/guides/grpc-typed-payload-migration.md|docs/guides/grpc-sdk-readiness.md|docs/guides/grpc-governance-ownership.md|README.md|.github/PULL_REQUEST_TEMPLATE.md)$'
+
+          if printf '%s\n' "$CHANGED_FILES" | grep -Eq "$REQUIRED_DOCS_REGEX"; then
+            echo "Proto changes include required SDK-impact documentation updates."
+            exit 0
+          fi
+
+          echo "Proto files changed but required SDK-impact docs were not updated."
+          echo "Update at least one of: docs/api-versioning.md, docs/guides/grpc-*.md, README.md, .github/PULL_REQUEST_TEMPLATE.md"
+          exit 1
+
   test:
     name: 4. Test
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: contract-check
+    needs: [contract-check, grpc-impact]
     env:
       NODE_ENV: test
       PORT: 3000
@@ -285,12 +335,12 @@ jobs:
   ci-status:
     name: CI Status
     runs-on: ubuntu-latest
-    needs: [format, lint, contract-check, test, build]
+    needs: [format, lint, contract-check, grpc-impact, test, build]
     if: always()
     steps:
       - name: Validate all required jobs passed
         run: |
-          if [ "${{ needs.format.result }}" != "success" ] || [ "${{ needs.lint.result }}" != "success" ] || [ "${{ needs.contract-check.result }}" != "success" ] || [ "${{ needs.test.result }}" != "success" ] || [ "${{ needs.build.result }}" != "success" ]; then
+          if [ "${{ needs.format.result }}" != "success" ] || [ "${{ needs.lint.result }}" != "success" ] || [ "${{ needs.contract-check.result }}" != "success" ] || [ "${{ needs.grpc-impact.result }}" != "success" ] || [ "${{ needs.test.result }}" != "success" ] || [ "${{ needs.build.result }}" != "success" ]; then
             echo "One or more required CI jobs failed."
             exit 1
           fi

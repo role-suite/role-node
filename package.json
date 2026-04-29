@@ -23,6 +23,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "grpc:check": "pnpm grpc:generate && git diff --exit-code -- src/grpc/generated",
+    "grpc:bundle": "mkdir -p artifacts/grpc-proto && tar -czf artifacts/grpc-proto/role-v1-proto.tar.gz proto && shasum -a 256 artifacts/grpc-proto/role-v1-proto.tar.gz > artifacts/grpc-proto/SHA256SUMS",
     "grpc:generate": "mkdir -p src/grpc/generated .grpc-tmp && pbjs -t static-module -w es6 -o .grpc-tmp/role.pb.js proto/*.proto && pbts -o src/grpc/generated/role.pb.d.ts .grpc-tmp/role.pb.js",
     "grpc:test": "vitest --run tests/unit/grpc-*.test.ts tests/integration/grpc.integration.test.ts",
     "grpc:test:integration": "vitest --run tests/integration/grpc.integration.test.ts",
