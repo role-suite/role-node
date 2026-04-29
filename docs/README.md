@@ -16,7 +16,13 @@ This folder is organized by concern across both public transports: REST and gRPC
 
 - `docs/guides/development.md`: Day-to-day development workflow.
 - `docs/guides/client-integration.md`: Client integration flow, API usage, and error handling.
+- `docs/guides/grpc-sdk-integration-contract.md`: gRPC metadata, error mapping, and SDK transport contract.
 - `docs/guides/grpc-hardening.md`: gRPC TLS/mTLS hardening and compatibility policy.
+- `docs/guides/grpc-proto-distribution.md`: Proto distribution and tag pinning workflow for SDK repositories.
+- `docs/guides/grpc-sdk-readiness.md`: SDK-side readiness checklist for gRPC integration.
+- `docs/guides/grpc-transport-parity.md`: REST/gRPC parity expectations and governance.
+- `docs/guides/grpc-typed-payload-migration.md`: Migration plan from JSON-string to typed proto payloads.
+- `docs/guides/grpc-governance-ownership.md`: Ownership, SLA, and escalation for proto governance.
 - `docs/guides/module-template.md`: Module generator usage and post-generation checklist.
 - `docs/guides/module-readiness.md`: Definition of done and readiness criteria.
 - `docs/guides/user-manual.md`: End-user/API-consumer quickstart.
