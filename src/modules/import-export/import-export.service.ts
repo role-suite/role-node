@@ -1,5 +1,9 @@
 import { createAppError } from "../../shared/errors/app-error.js";
 import { ERROR_CODES } from "../../shared/errors/error-codes.js";
+import {
+  recordDomainMetric,
+  withDomainSpan,
+} from "../../shared/telemetry-domain.js";
 import { authRepo } from "../auth/auth.repo.js";
 import {
   importExportRepo,
@@ -94,20 +98,37 @@ export const importExportService = {
     workspaceId: number,
     payload: CreateWorkspaceExportInput,
   ): Promise<ImportExportJobResponse> {
-    await requireWorkspaceWriterRole(userId, workspaceId);
-    const job = await importExportRepo.createJob({
-      workspaceId,
-      createdByUserId: userId,
-      type: "export",
-      format: payload.format,
-      summary: {
-        includeCollections: payload.includeCollections ?? true,
-        includeEnvironments: payload.includeEnvironments ?? true,
-        includeRuns: payload.includeRuns ?? false,
-      },
-    });
+    return withDomainSpan(
+      "import_export",
+      "create_export_job",
+      { "import_export.job_type": "export" },
+      async () => {
+        try {
+          await requireWorkspaceWriterRole(userId, workspaceId);
+          const job = await importExportRepo.createJob({
+            workspaceId,
+            createdByUserId: userId,
+            type: "export",
+            format: payload.format,
+            summary: {
+              includeCollections: payload.includeCollections ?? true,
+              includeEnvironments: payload.includeEnvironments ?? true,
+              includeRuns: payload.includeRuns ?? false,
+            },
+          });
 
-    return mapJob(job);
+          recordDomainMetric.importExport(
+            "create_export_job",
+            "success",
+            "export",
+          );
+          return mapJob(job);
+        } catch (error) {
+          recordDomainMetric.importExport("create_export_job", "error", "export");
+          throw error;
+        }
+      },
+    );
   },
 
   async createImportJobForWorkspace(
@@ -115,19 +136,36 @@ export const importExportService = {
     workspaceId: number,
     payload: CreateWorkspaceImportInput,
   ): Promise<ImportExportJobResponse> {
-    await requireWorkspaceWriterRole(userId, workspaceId);
-    const rootKeys = Object.keys(payload.payload);
-    const job = await importExportRepo.createJob({
-      workspaceId,
-      createdByUserId: userId,
-      type: "import",
-      format: payload.format,
-      summary: {
-        rootKeys,
-        rootKeyCount: rootKeys.length,
-      },
-    });
+    return withDomainSpan(
+      "import_export",
+      "create_import_job",
+      { "import_export.job_type": "import" },
+      async () => {
+        try {
+          await requireWorkspaceWriterRole(userId, workspaceId);
+          const rootKeys = Object.keys(payload.payload);
+          const job = await importExportRepo.createJob({
+            workspaceId,
+            createdByUserId: userId,
+            type: "import",
+            format: payload.format,
+            summary: {
+              rootKeys,
+              rootKeyCount: rootKeys.length,
+            },
+          });
 
-    return mapJob(job);
+          recordDomainMetric.importExport(
+            "create_import_job",
+            "success",
+            "import",
+          );
+          return mapJob(job);
+        } catch (error) {
+          recordDomainMetric.importExport("create_import_job", "error", "import");
+          throw error;
+        }
+      },
+    );
   },
 };
