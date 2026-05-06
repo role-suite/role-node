@@ -34,6 +34,8 @@ describe("otel collector config", () => {
     expect(config).toContain(
       "processors: [memory_limiter, attributes/redact, batch]",
     );
-    expect(config).not.toContain("processors: [memory_limiter, tail_sampling, batch]");
+    expect(config).not.toContain(
+      "processors: [memory_limiter, tail_sampling, batch]",
+    );
   });
 });

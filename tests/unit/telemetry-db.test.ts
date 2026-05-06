@@ -101,7 +101,9 @@ describe("telemetry-db", () => {
   });
 
   it("falls back to UNKNOWN operation for blank SQL", async () => {
-    await withDbQueryTelemetry("postgres", "   ", 0, async () => ({ ok: true }));
+    await withDbQueryTelemetry("postgres", "   ", 0, async () => ({
+      ok: true,
+    }));
 
     expect(telemetryState.span.setAttribute).toHaveBeenCalledWith(
       "db.operation.name",
@@ -115,12 +117,9 @@ describe("telemetry-db", () => {
   });
 
   it("records negative parameter counts without crashing", async () => {
-    await withDbQueryTelemetry(
-      "mysql",
-      "select 1",
-      -3,
-      async () => ({ ok: true }),
-    );
+    await withDbQueryTelemetry("mysql", "select 1", -3, async () => ({
+      ok: true,
+    }));
 
     expect(telemetryState.span.setAttribute).toHaveBeenCalledWith(
       "db.query.parameter_count",

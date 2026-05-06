@@ -43,11 +43,11 @@ describe("env telemetry validation", () => {
   };
 
   const expectEnvImportToExit = async (): Promise<void> => {
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation((
-      (code?: number) => {
-        throw new Error(`exit:${code ?? ""}`);
-      }
-    ) as never);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+      code?: number,
+    ) => {
+      throw new Error(`exit:${code ?? ""}`);
+    }) as never);
 
     await expect(import("../../src/config/env.js")).rejects.toThrow("exit:1");
     expect(exitSpy).toHaveBeenCalledWith(1);

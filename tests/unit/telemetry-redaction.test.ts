@@ -87,7 +87,12 @@ describe("telemetry redaction", () => {
     };
 
     expect(redactTelemetryPayload(input)).toEqual({
-      events: [null, "ok", { refresh_token: "[REDACTED]" }, ["x", { apiKey: "[REDACTED]" }]],
+      events: [
+        null,
+        "ok",
+        { refresh_token: "[REDACTED]" },
+        ["x", { apiKey: "[REDACTED]" }],
+      ],
     });
   });
 });
