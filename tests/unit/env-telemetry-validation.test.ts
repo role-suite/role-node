@@ -33,45 +33,60 @@ const baseEnv = {
 describe("env telemetry validation", () => {
   beforeEach(() => {
     vi.resetModules();
+    vi.unstubAllEnvs();
   });
 
+  const stubBaseEnv = (overrides: Record<string, string> = {}): void => {
+    Object.entries({ ...baseEnv, ...overrides }).forEach(([key, value]) => {
+      vi.stubEnv(key, value);
+    });
+  };
+
+  const expectEnvImportToExit = async (): Promise<void> => {
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation((
+      (code?: number) => {
+        throw new Error(`exit:${code ?? ""}`);
+      }
+    ) as never);
+
+    await expect(import("../../src/config/env.js")).rejects.toThrow("exit:1");
+    expect(exitSpy).toHaveBeenCalledWith(1);
+  };
+
   it("accepts valid OTEL ratio sampler bounds", async () => {
-    vi.stubEnv("OTEL_TRACES_SAMPLER", "ratio");
-    vi.stubEnv("OTEL_TRACES_SAMPLER_RATIO", "1");
-    Object.entries(baseEnv).forEach(([key, value]) => vi.stubEnv(key, value));
+    stubBaseEnv({
+      OTEL_TRACES_SAMPLER: "ratio",
+      OTEL_TRACES_SAMPLER_RATIO: "1",
+    });
 
     const { env } = await import("../../src/config/env.js");
 
     expect(env.OTEL_TRACES_SAMPLER).toBe("ratio");
-    expect(env.OTEL_TRACES_SAMPLER_RATIO).toBe(0.5);
+    expect(env.OTEL_TRACES_SAMPLER_RATIO).toBe(1);
   });
 
   it("fails when OTEL ratio sampler is above 1", async () => {
-    Object.entries({
-      ...baseEnv,
-      OTEL_TRACES_SAMPLER_RATIO: "1.5",
-    }).forEach(([key, value]) => vi.stubEnv(key, value));
-
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
-      code?: number,
-    ) => {
-      throw new Error(`exit:${code ?? ""}`);
-    }) as never);
-
-    await expect(import("../../src/config/env.js")).rejects.toThrow("exit:1");
-    expect(exitSpy).toHaveBeenCalledWith(1);
+    stubBaseEnv({ OTEL_TRACES_SAMPLER_RATIO: "1.5" });
+    await expectEnvImportToExit();
   });
 
   it("fails when OTEL ratio sampler is below 0", async () => {
-    Object.entries({
-      ...baseEnv,
-      OTEL_TRACES_SAMPLER_RATIO: "-0.1",
-    }).forEach(([key, value]) => vi.stubEnv(key, value));
+    stubBaseEnv({ OTEL_TRACES_SAMPLER_RATIO: "-0.1" });
+    await expectEnvImportToExit();
+  });
 
-    vi.spyOn(process, "exit").mockImplementation(((code?: number) => {
-      throw new Error(`exit:${code ?? ""}`);
-    }) as never);
+  it("fails when OTEL exporter endpoint is not a valid URL", async () => {
+    stubBaseEnv({ OTEL_EXPORTER_OTLP_ENDPOINT: "not-a-url" });
+    await expectEnvImportToExit();
+  });
 
-    await expect(import("../../src/config/env.js")).rejects.toThrow("exit:1");
+  it("fails when OTEL metrics export interval is non-positive", async () => {
+    stubBaseEnv({ OTEL_METRICS_EXPORT_INTERVAL_MS: "0" });
+    await expectEnvImportToExit();
+  });
+
+  it("fails when OTEL sampler mode is invalid", async () => {
+    stubBaseEnv({ OTEL_TRACES_SAMPLER: "probabilistic" });
+    await expectEnvImportToExit();
   });
 });

@@ -66,4 +66,28 @@ describe("telemetry redaction", () => {
       },
     });
   });
+
+  it("handles circular payloads without throwing or leaking tokens", () => {
+    const input: Record<string, unknown> = {
+      label: "root",
+      accessToken: "raw-token",
+    };
+    input.self = input;
+
+    expect(redactTelemetryPayload(input)).toEqual({
+      label: "root",
+      accessToken: "[REDACTED]",
+      self: "[Circular]",
+    });
+  });
+
+  it("handles mixed arrays and null values", () => {
+    const input = {
+      events: [null, "ok", { refresh_token: "r1" }, ["x", { apiKey: "k" }]],
+    };
+
+    expect(redactTelemetryPayload(input)).toEqual({
+      events: [null, "ok", { refresh_token: "[REDACTED]" }, ["x", { apiKey: "[REDACTED]" }]],
+    });
+  });
 });

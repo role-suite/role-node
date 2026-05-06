@@ -163,6 +163,22 @@ describe("logger", () => {
     });
   });
 
+  it("handles circular payloads safely in production logs", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const { logger } = await loadLogger("production");
+    const payload: Record<string, unknown> = {
+      accessToken: "raw-token",
+    };
+    payload.self = payload;
+
+    logger.info("prod-circular", payload);
+
+    const serialized = String(logSpy.mock.calls[0][0]);
+    expect(serialized).toContain("[REDACTED]");
+    expect(serialized).toContain("[Circular]");
+    expect(serialized).not.toContain("raw-token");
+  });
+
   it("writes errors to console.error and normalizes Error payload", async () => {
     const errorSpy = vi
       .spyOn(console, "error")
