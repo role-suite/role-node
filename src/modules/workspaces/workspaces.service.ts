@@ -397,7 +397,9 @@ export const workspacesService = {
 
         if (normalizeEmail(user.email) !== invitation.email) {
           recordDomainMetric.workspace("join", "error");
-          throw createAppError(ERROR_CODES.workspaces.INVITATION_EMAIL_MISMATCH);
+          throw createAppError(
+            ERROR_CODES.workspaces.INVITATION_EMAIL_MISMATCH,
+          );
         }
 
         const workspace = await workspacesRepo.findWorkspaceById(
@@ -422,7 +424,9 @@ export const workspacesService = {
 
         if (existingMembership) {
           recordDomainMetric.workspace("join", "error");
-          throw createAppError(ERROR_CODES.workspaces.MEMBERSHIP_ALREADY_EXISTS);
+          throw createAppError(
+            ERROR_CODES.workspaces.MEMBERSHIP_ALREADY_EXISTS,
+          );
         }
 
         const membership = await workspacesRepo.createMembership({
@@ -434,28 +438,28 @@ export const workspacesService = {
         await workspacesRepo.markWorkspaceInvitationAccepted(invitation.id);
 
         await workspaceEventsService.publish({
-      workspaceId: invitation.workspaceId,
-      actorUserId: userId,
-      entity: "workspace_invitation",
-      action: "accepted",
-      entityId: invitation.id,
-      payload: {
-        email: invitation.email,
-        role: invitation.role,
-      },
-    });
+          workspaceId: invitation.workspaceId,
+          actorUserId: userId,
+          entity: "workspace_invitation",
+          action: "accepted",
+          entityId: invitation.id,
+          payload: {
+            email: invitation.email,
+            role: invitation.role,
+          },
+        });
 
         await workspaceEventsService.publish({
-      workspaceId: invitation.workspaceId,
-      actorUserId: userId,
-      entity: "workspace_member",
-      action: "joined",
-      entityId: userId,
-      payload: {
-        userId,
-        role: membership.role,
-      },
-    });
+          workspaceId: invitation.workspaceId,
+          actorUserId: userId,
+          entity: "workspace_member",
+          action: "joined",
+          entityId: userId,
+          payload: {
+            userId,
+            role: membership.role,
+          },
+        });
 
         recordDomainMetric.workspace("join", "success");
         return {
@@ -579,7 +583,10 @@ export const workspacesService = {
       "leave",
       { "workspace.operation": "leave" },
       async () => {
-        const membership = await requireWorkspaceMembership(userId, workspaceId);
+        const membership = await requireWorkspaceMembership(
+          userId,
+          workspaceId,
+        );
 
         if (membership.role === "owner") {
           const owners = await workspacesRepo.countMembershipsByRole(

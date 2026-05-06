@@ -52,11 +52,11 @@ describe("env telemetry validation", () => {
       OTEL_TRACES_SAMPLER_RATIO: "1.5",
     }).forEach(([key, value]) => vi.stubEnv(key, value));
 
-    const exitSpy = vi
-      .spyOn(process, "exit")
-      .mockImplementation(((code?: number) => {
-        throw new Error(`exit:${code ?? ""}`);
-      }) as never);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
+      code?: number,
+    ) => {
+      throw new Error(`exit:${code ?? ""}`);
+    }) as never);
 
     await expect(import("../../src/config/env.js")).rejects.toThrow("exit:1");
     expect(exitSpy).toHaveBeenCalledWith(1);

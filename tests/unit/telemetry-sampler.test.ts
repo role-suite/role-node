@@ -45,6 +45,8 @@ describe("telemetry sampler", () => {
       OTEL_TRACES_SAMPLER_RATIO: 0.25,
     });
 
-    expect(buildTraceSampler().toString()).toContain("ParentBased{root=TraceIdRatioBased");
+    expect(buildTraceSampler().toString()).toContain(
+      "ParentBased{root=TraceIdRatioBased",
+    );
   });
 });

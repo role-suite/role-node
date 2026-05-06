@@ -79,9 +79,14 @@ describe("telemetry-db", () => {
     const failure = new Error("db failed");
 
     await expect(
-      withDbQueryTelemetry("mysql", "update users set name = ?", 1, async () => {
-        throw failure;
-      }),
+      withDbQueryTelemetry(
+        "mysql",
+        "update users set name = ?",
+        1,
+        async () => {
+          throw failure;
+        },
+      ),
     ).rejects.toThrow("db failed");
 
     expect(telemetryState.counterAdd).toHaveBeenCalledWith(1, {

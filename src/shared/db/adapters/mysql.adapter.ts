@@ -47,7 +47,9 @@ const createTransactionClient = (
         sql,
         params.length,
         async () =>
-          connection.execute<RowDataPacket[] | ResultSetHeader>(sql, [...params]),
+          connection.execute<RowDataPacket[] | ResultSetHeader>(sql, [
+            ...params,
+          ]),
       );
       return normalizeRows<TRow>(rows);
     } catch (error) {
@@ -84,7 +86,9 @@ class MysqlDatabaseClient implements DatabaseClient {
         sql,
         params.length,
         async () =>
-          this.pool.execute<RowDataPacket[] | ResultSetHeader>(sql, [...params]),
+          this.pool.execute<RowDataPacket[] | ResultSetHeader>(sql, [
+            ...params,
+          ]),
       );
       return normalizeRows<TRow>(rows);
     } catch (error) {

@@ -59,11 +59,7 @@ const envSchema = z
     OTEL_TRACES_SAMPLER: z
       .enum(["always_on", "always_off", "ratio"])
       .default("always_on"),
-    OTEL_TRACES_SAMPLER_RATIO: z.coerce
-      .number()
-      .min(0)
-      .max(1)
-      .default(1),
+    OTEL_TRACES_SAMPLER_RATIO: z.coerce.number().min(0).max(1).default(1),
     AUTH_ACCESS_TOKEN_SECRET: z
       .string()
       .min(16)

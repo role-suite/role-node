@@ -24,7 +24,9 @@ describe("ci telemetry workflow", () => {
     expect(workflow).toContain("name: 4.5 Telemetry");
     expect(workflow).toContain("run: pnpm telemetry:test");
     expect(workflow).toContain("run: pnpm telemetry:validate");
-    expect(workflow).toContain("needs: [format, lint, contract-check, grpc-impact, test, telemetry, build]");
+    expect(workflow).toContain(
+      "needs: [format, lint, contract-check, grpc-impact, test, telemetry, build]",
+    );
     expect(workflow).toContain("needs.telemetry.result");
   });
 });

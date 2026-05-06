@@ -1,46 +1,88 @@
 {
-  "annotations": {"list": [{"builtIn": 1, "datasource": {"type": "grafana", "uid": "-- Grafana --"}, "enable": true, "hide": true, "iconColor": "rgba(0, 211, 255, 1)", "name": "Annotations & Alerts", "type": "dashboard"}]},
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
   "editable": true,
   "panels": [
     {
       "type": "timeseries",
       "title": "Auth Operations (success/error)",
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "targets": [{"refId": "A", "expr": "sum(rate(role_auth_operations_total[5m])) by (operation, outcome)", "legendFormat": "{{operation}} {{outcome}}"}]
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(role_auth_operations_total[5m])) by (operation, outcome)",
+          "legendFormat": "{{operation}} {{outcome}}"
+        }
+      ]
     },
     {
       "type": "timeseries",
       "title": "Workspace Operations (success/error)",
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "targets": [{"refId": "A", "expr": "sum(rate(role_workspace_operations_total[5m])) by (operation, outcome)", "legendFormat": "{{operation}} {{outcome}}"}]
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(role_workspace_operations_total[5m])) by (operation, outcome)",
+          "legendFormat": "{{operation}} {{outcome}}"
+        }
+      ]
     },
     {
       "type": "timeseries",
-      "title": "Run Operations by Source", 
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "targets": [{"refId": "A", "expr": "sum(rate(role_run_operations_total[5m])) by (operation, source_type, outcome)", "legendFormat": "{{operation}} {{source_type}} {{outcome}}"}]
+      "title": "Run Operations by Source",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(role_run_operations_total[5m])) by (operation, source_type, outcome)",
+          "legendFormat": "{{operation}} {{source_type}} {{outcome}}"
+        }
+      ]
     },
     {
       "type": "timeseries",
-      "title": "Import/Export Operations", 
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "targets": [{"refId": "A", "expr": "sum(rate(role_import_export_operations_total[5m])) by (operation, job_type, outcome)", "legendFormat": "{{operation}} {{job_type}} {{outcome}}"}]
+      "title": "Import/Export Operations",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(role_import_export_operations_total[5m])) by (operation, job_type, outcome)",
+          "legendFormat": "{{operation}} {{job_type}} {{outcome}}"
+        }
+      ]
     },
     {
       "type": "timeseries",
       "title": "Service Operation p95 Duration (ms)",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16},
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "targets": [{"refId": "A", "expr": "histogram_quantile(0.95, sum(rate(role_service_operation_duration_ms_bucket[5m])) by (le, service, operation))", "legendFormat": "{{service}}.{{operation}}"}]
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum(rate(role_service_operation_duration_ms_bucket[5m])) by (le, service, operation))",
+          "legendFormat": "{{service}}.{{operation}}"
+        }
+      ]
     }
   ],
   "schemaVersion": 39,
   "tags": ["role-node", "domain", "kpi"],
-  "time": {"from": "now-30m", "to": "now"},
+  "time": { "from": "now-30m", "to": "now" },
   "title": "Role Node - Domain KPIs",
   "uid": "role-node-domain-kpis",
   "version": 1
