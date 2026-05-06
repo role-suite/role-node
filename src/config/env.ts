@@ -41,6 +41,29 @@ const envSchema = z
       .enum(["true", "false"])
       .default("true")
       .transform((value) => value === "true"),
+    OTEL_ENABLED: z
+      .enum(["true", "false"])
+      .default("true")
+      .transform((value) => value === "true"),
+    OTEL_SERVICE_NAME: z.string().min(1).default("role-node"),
+    OTEL_SERVICE_VERSION: z.string().min(1).default("1.0.0"),
+    OTEL_EXPORTER_OTLP_ENDPOINT: z
+      .string()
+      .url()
+      .default("http://localhost:4318"),
+    OTEL_METRICS_EXPORT_INTERVAL_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(30000),
+    OTEL_TRACES_SAMPLER: z
+      .enum(["always_on", "always_off", "ratio"])
+      .default("always_on"),
+    OTEL_TRACES_SAMPLER_RATIO: z.coerce
+      .number()
+      .min(0)
+      .max(1)
+      .default(1),
     AUTH_ACCESS_TOKEN_SECRET: z
       .string()
       .min(16)

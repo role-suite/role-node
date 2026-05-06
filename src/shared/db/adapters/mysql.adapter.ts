@@ -15,6 +15,7 @@ import type {
   QueryRow,
 } from "../../../types/db.js";
 import { DbError } from "../../errors/db-error.js";
+import { withDbQueryTelemetry } from "../telemetry-db.js";
 
 const normalizeRows = <TRow extends QueryRow>(
   rows: RowDataPacket[] | ResultSetHeader,
@@ -41,9 +42,13 @@ const createTransactionClient = (
     params: QueryParams = [],
   ): Promise<QueryResult<TRow>> => {
     try {
-      const [rows] = await connection.execute<
-        RowDataPacket[] | ResultSetHeader
-      >(sql, [...params]);
+      const [rows] = await withDbQueryTelemetry(
+        dialect,
+        sql,
+        params.length,
+        async () =>
+          connection.execute<RowDataPacket[] | ResultSetHeader>(sql, [...params]),
+      );
       return normalizeRows<TRow>(rows);
     } catch (error) {
       throw new DbError(`${dialect} transaction query failed`, {
@@ -74,9 +79,12 @@ class MysqlDatabaseClient implements DatabaseClient {
     params: QueryParams = [],
   ): Promise<QueryResult<TRow>> {
     try {
-      const [rows] = await this.pool.execute<RowDataPacket[] | ResultSetHeader>(
+      const [rows] = await withDbQueryTelemetry(
+        this.dialect,
         sql,
-        [...params],
+        params.length,
+        async () =>
+          this.pool.execute<RowDataPacket[] | ResultSetHeader>(sql, [...params]),
       );
       return normalizeRows<TRow>(rows);
     } catch (error) {

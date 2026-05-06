@@ -1,0 +1,72 @@
+groups:
+  - name: role-node-slo-alerts
+    rules:
+      - alert: RoleNodeHighErrorRate
+        expr: |
+          (
+            sum(rate(http_server_request_duration_seconds_count{http_response_status_code=~"5.."}[5m]))
+            /
+            clamp_min(sum(rate(http_server_request_duration_seconds_count[5m])), 0.001)
+          ) > 0.01
+        for: 10m
+        labels:
+          severity: critical
+          slo: availability
+        annotations:
+          summary: "High server error rate (>1%)"
+          description: "5xx error ratio is above 1% for 10 minutes."
+          runbook: "docs/telemetry/runbooks.md#high-error-rate"
+
+      - alert: RoleNodeLatencyP95High
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum(rate(http_server_request_duration_seconds_bucket[5m])) by (le)
+          ) > 0.3
+        for: 15m
+        labels:
+          severity: warning
+          slo: latency
+        annotations:
+          summary: "High API p95 latency (>300ms)"
+          description: "Request p95 latency is above 300ms for 15 minutes."
+          runbook: "docs/telemetry/runbooks.md#high-p95-latency"
+
+      - alert: RoleNodeLowTrafficOrDown
+        expr: |
+          sum(rate(http_server_request_duration_seconds_count[5m])) < 0.01
+        for: 10m
+        labels:
+          severity: warning
+          slo: availability
+        annotations:
+          summary: "Very low or no request traffic"
+          description: "Observed request throughput is near zero for 10 minutes."
+          runbook: "docs/telemetry/runbooks.md#low-traffic-or-service-down"
+
+      - alert: RoleNodeEventLoopLagHigh
+        expr: process_runtime_nodejs_event_loop_lag_max_seconds > 0.2
+        for: 10m
+        labels:
+          severity: warning
+          slo: saturation
+        annotations:
+          summary: "Node.js event loop lag is high"
+          description: "Event loop lag max is above 200ms for 10 minutes."
+          runbook: "docs/telemetry/runbooks.md#high-event-loop-lag"
+
+      - alert: RoleNodeDbErrorRateHigh
+        expr: |
+          (
+            sum(rate(role_db_queries_total{outcome="error"}[5m]))
+            /
+            clamp_min(sum(rate(role_db_queries_total[5m])), 0.001)
+          ) > 0.02
+        for: 10m
+        labels:
+          severity: critical
+          slo: reliability
+        annotations:
+          summary: "Database query error rate is high (>2%)"
+          description: "DB query error ratio is above 2% for 10 minutes."
+          runbook: "docs/telemetry/runbooks.md#high-db-error-rate"

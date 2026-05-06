@@ -121,7 +121,7 @@ pnpm db:migrate
 ## 🚀 CI/CD
 
 - `CI` workflow (`.github/workflows/ci.yml`) runs on pull requests and pushes to `main` and `v*` tags.
-- It runs ordered quality gates as separate checks: `1. Format`, `2. Lint`, `3. Contract Check`, `4. Test`, `5. Build`, then a required `CI Status` gate.
+- It runs ordered quality gates as separate checks: `1. Format`, `2. Lint`, `3. Contract Check`, `4. Test`, `4.5 Telemetry`, `5. Build`, then a required `CI Status` gate.
 - `Contract Check` verifies both `contracts/generated/public-api.snapshot.json` and `contracts/generated/openapi.json` are regenerated and valid.
 - `Contract Check` also validates gRPC artifact drift with `pnpm grpc:check`.
 - `Security` workflow (`.github/workflows/security.yml`) runs dependency audit and gitleaks secret scanning.
@@ -131,6 +131,7 @@ pnpm db:migrate
 - CD is gated by `CI / CI Status` on the exact same commit SHA before publishing/deploying.
 - `Release` workflow (`.github/workflows/release-tag.yml`) performs semantic versioning from manual dispatch (`patch`, `minor`, `major`): it runs quality gates, bumps `package.json`, updates `CHANGELOG.md`, creates a `v*` tag, and creates the GitHub Release.
 - `Test` gate runs both `pnpm test:run` and `pnpm grpc:test` to enforce transport-level confidence.
+- `Telemetry` gate runs telemetry smoke tests and config validation (`pnpm telemetry:test` and `pnpm telemetry:validate`) and is required by `CI Status`.
 
 Release flow:
 
@@ -165,10 +166,37 @@ Validated in `src/config/env.ts` using Zod.
 - `DB_POOL_MAX`: maximum pool size (default: `10`)
 - `DB_SSL`: `true` | `false` (default: `false`)
 - `ENABLE_STARTUP_VALIDATION`: `true` | `false` (default: `true`)
+- `OTEL_ENABLED`: `true` | `false` (default: `true`)
+- `OTEL_SERVICE_NAME`: telemetry service name (default: `role-node`)
+- `OTEL_SERVICE_VERSION`: telemetry service version (default: `1.0.0`)
+- `OTEL_EXPORTER_OTLP_ENDPOINT`: OTLP HTTP base URL (default: `http://localhost:4318`)
+- `OTEL_METRICS_EXPORT_INTERVAL_MS`: metrics export interval in ms (default: `30000`)
+- `OTEL_TRACES_SAMPLER`: `always_on` | `always_off` | `ratio` (default: `always_on`)
+- `OTEL_TRACES_SAMPLER_RATIO`: head sampling ratio from 0 to 1 (default: `1`)
 
 On startup, the app validates environment values and checks database connectivity with `SELECT 1` before listening for requests.
 Set `ENABLE_STARTUP_VALIDATION=false` when running locally without a configured database.
 When `GRPC_ENABLED=true`, the app also starts a gRPC server with `HealthService/Check` on `GRPC_PORT`.
+
+## 📈 Observability Stack (Docker)
+
+Bring up telemetry infrastructure (Collector + Prometheus + Grafana + Tempo + Loki):
+
+```bash
+docker compose up -d otel-collector prometheus tempo loki grafana alertmanager
+```
+
+Endpoints:
+
+- Grafana: `http://localhost:3001` (`admin` / `admin`)
+- Prometheus: `http://localhost:9090`
+- Alertmanager: `http://localhost:9093`
+- Tempo: `http://localhost:3200`
+- Loki: `http://localhost:3100`
+- OTLP HTTP ingest: `http://localhost:4318`
+
+Provisioned configs live under `config/observability/`.
+SLO and alerting docs live under `docs/telemetry/slo-and-alerting.md` and `docs/telemetry/runbooks.md`.
 
 ## 🛰️ gRPC Services
 

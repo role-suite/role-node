@@ -6,12 +6,15 @@ import { env } from "./config/env.js";
 import { validateStartupOrThrow } from "./config/startup-validation.js";
 import { startGrpcServer } from "./grpc/server.js";
 import { logger } from "./shared/logger.js";
+import { shutdownTelemetry, startTelemetry } from "./shared/telemetry.js";
 
 let httpServer: HttpServer | null = null;
 let grpcServerHandle: Awaited<ReturnType<typeof startGrpcServer>> = null;
 
 const startServer = async (): Promise<void> => {
   try {
+    await startTelemetry();
+
     if (env.ENABLE_STARTUP_VALIDATION) {
       await validateStartupOrThrow();
     } else {
@@ -29,6 +32,7 @@ const startServer = async (): Promise<void> => {
     });
   } catch (error) {
     logger.error("Startup validation failed", error);
+    await shutdownTelemetry();
     await closeDb();
     process.exit(1);
   }
@@ -58,6 +62,7 @@ const handleShutdown = async (signal: NodeJS.Signals): Promise<void> => {
     }
 
     await closeDb();
+    await shutdownTelemetry();
   } catch (error) {
     logger.error("Error while closing database connections", error);
     process.exit(1);
