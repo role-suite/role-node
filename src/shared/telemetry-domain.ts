@@ -3,33 +3,45 @@ import { metrics, SpanStatusCode, trace } from "@opentelemetry/api";
 const tracer = trace.getTracer("role-node.domain");
 const meter = metrics.getMeter("role-node.domain");
 
-const operationDurationMs = meter.createHistogram("role_service_operation_duration_ms", {
-  description: "Duration of service-layer operations in milliseconds",
-  unit: "ms",
-});
+const operationDurationMs = meter.createHistogram(
+  "role_service_operation_duration_ms",
+  {
+    description: "Duration of service-layer operations in milliseconds",
+    unit: "ms",
+  },
+);
 
 const authOperationsTotal = meter.createCounter("role_auth_operations_total", {
   description: "Count of auth operations by type and outcome",
 });
 
-const workspaceOperationsTotal = meter.createCounter("role_workspace_operations_total", {
-  description: "Count of workspace operations by type and outcome",
-});
+const workspaceOperationsTotal = meter.createCounter(
+  "role_workspace_operations_total",
+  {
+    description: "Count of workspace operations by type and outcome",
+  },
+);
 
 const runOperationsTotal = meter.createCounter("role_run_operations_total", {
   description: "Count of run operations by type and outcome",
 });
 
-const importExportOperationsTotal = meter.createCounter("role_import_export_operations_total", {
-  description: "Count of import/export operations by type and outcome",
-});
+const importExportOperationsTotal = meter.createCounter(
+  "role_import_export_operations_total",
+  {
+    description: "Count of import/export operations by type and outcome",
+  },
+);
 
 type ServiceName = "auth" | "workspaces" | "runs" | "import_export";
 
 const OPERATION_PATTERN = /^[a-z0-9_]{1,40}$/;
 
 export const sanitizeMetricLabelValue = (value: string): string => {
-  const normalized = value.trim().toLowerCase().replace(/[^a-z0-9_]/g, "_");
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, "_");
 
   if (!OPERATION_PATTERN.test(normalized)) {
     return "other";
@@ -94,7 +106,8 @@ export const withDomainSpan = async <T>(
     try {
       const result = await callback();
       span.setStatus({ code: SpanStatusCode.OK });
-      const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
+      const durationMs =
+        Number(process.hrtime.bigint() - startedAt) / 1_000_000;
       operationDurationMs.record(durationMs, {
         service,
         operation: operationLabel,
@@ -104,7 +117,8 @@ export const withDomainSpan = async <T>(
     } catch (error) {
       span.recordException(error as Error);
       span.setStatus({ code: SpanStatusCode.ERROR });
-      const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
+      const durationMs =
+        Number(process.hrtime.bigint() - startedAt) / 1_000_000;
       operationDurationMs.record(durationMs, {
         service,
         operation: operationLabel,

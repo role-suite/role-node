@@ -124,7 +124,11 @@ export const importExportService = {
           );
           return mapJob(job);
         } catch (error) {
-          recordDomainMetric.importExport("create_export_job", "error", "export");
+          recordDomainMetric.importExport(
+            "create_export_job",
+            "error",
+            "export",
+          );
           throw error;
         }
       },
@@ -162,7 +166,11 @@ export const importExportService = {
           );
           return mapJob(job);
         } catch (error) {
-          recordDomainMetric.importExport("create_import_job", "error", "import");
+          recordDomainMetric.importExport(
+            "create_import_job",
+            "error",
+            "import",
+          );
           throw error;
         }
       },

@@ -35,7 +35,8 @@ export const withDbQueryTelemetry = async <T>(
 
     try {
       const result = await callback();
-      const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
+      const durationMs =
+        Number(process.hrtime.bigint() - startedAt) / 1_000_000;
       dbQueryDurationMs.record(durationMs, {
         dialect,
         operation,
@@ -49,7 +50,8 @@ export const withDbQueryTelemetry = async <T>(
       span.setStatus({ code: SpanStatusCode.OK });
       return result;
     } catch (error) {
-      const durationMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000;
+      const durationMs =
+        Number(process.hrtime.bigint() - startedAt) / 1_000_000;
       dbQueryDurationMs.record(durationMs, {
         dialect,
         operation,
