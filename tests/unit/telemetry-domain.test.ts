@@ -63,6 +63,15 @@ describe("telemetry-domain", () => {
     });
   });
 
+  it("maps overlong operation labels to 'other'", () => {
+    recordDomainMetric.auth(`user_session_${"x".repeat(60)}`, "error");
+
+    expect(telemetryState.counterAdd).toHaveBeenCalledWith(1, {
+      operation: "other",
+      outcome: "error",
+    });
+  });
+
   it("normalizes invalid metric label values to avoid high cardinality", () => {
     expect(sanitizeMetricLabelValue("login")).toBe("login");
     expect(sanitizeMetricLabelValue("Create Workspace")).toBe(
@@ -118,6 +127,19 @@ describe("telemetry-domain", () => {
         service: "runs",
         operation: "create",
         outcome: "error",
+      }),
+    );
+  });
+
+  it("maps empty operation labels to 'other'", async () => {
+    await withDomainSpan("auth", "   ", {}, async () => "ok");
+
+    expect(telemetryState.histogramRecord).toHaveBeenCalledWith(
+      expect.any(Number),
+      expect.objectContaining({
+        service: "auth",
+        operation: "other",
+        outcome: "success",
       }),
     );
   });

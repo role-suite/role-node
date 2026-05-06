@@ -14,6 +14,15 @@ describe("ci telemetry workflow", () => {
     expect(parsed.scripts["telemetry:test"]).toBeDefined();
     expect(parsed.scripts["telemetry:validate"]).toBeDefined();
     expect(parsed.scripts["verify:telemetry"]).toBeDefined();
+    expect(parsed.scripts["verify:telemetry"]).toContain("pnpm telemetry:test");
+    expect(parsed.scripts["verify:telemetry"]).toContain(
+      "pnpm telemetry:validate",
+    );
+    expect(parsed.scripts["telemetry:validate"]).toContain(
+      "docker compose config",
+    );
+    expect(parsed.scripts["telemetry:validate"]).toContain("promtool");
+    expect(parsed.scripts["telemetry:validate"]).toContain("amtool");
     expect(parsed.scripts.verify).toContain("pnpm verify:telemetry");
   });
 
@@ -22,11 +31,16 @@ describe("ci telemetry workflow", () => {
     const workflow = await readFile(workflowPath, "utf-8");
 
     expect(workflow).toContain("name: 4.5 Telemetry");
+    expect(workflow).toContain("needs: test");
     expect(workflow).toContain("run: pnpm telemetry:test");
     expect(workflow).toContain("run: pnpm telemetry:validate");
+    expect(workflow).toContain("needs: [test, telemetry]");
     expect(workflow).toContain(
       "needs: [format, lint, contract-check, grpc-impact, test, telemetry, build]",
     );
     expect(workflow).toContain("needs.telemetry.result");
+    expect(workflow).not.toContain(
+      "needs: [format, lint, contract-check, grpc-impact, test, build]",
+    );
   });
 });

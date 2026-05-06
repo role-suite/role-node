@@ -99,4 +99,32 @@ describe("telemetry-db", () => {
       code: "ERROR",
     });
   });
+
+  it("falls back to UNKNOWN operation for blank SQL", async () => {
+    await withDbQueryTelemetry("postgres", "   ", 0, async () => ({ ok: true }));
+
+    expect(telemetryState.span.setAttribute).toHaveBeenCalledWith(
+      "db.operation.name",
+      "UNKNOWN",
+    );
+    expect(telemetryState.counterAdd).toHaveBeenCalledWith(1, {
+      dialect: "postgres",
+      operation: "UNKNOWN",
+      outcome: "success",
+    });
+  });
+
+  it("records negative parameter counts without crashing", async () => {
+    await withDbQueryTelemetry(
+      "mysql",
+      "select 1",
+      -3,
+      async () => ({ ok: true }),
+    );
+
+    expect(telemetryState.span.setAttribute).toHaveBeenCalledWith(
+      "db.query.parameter_count",
+      -3,
+    );
+  });
 });

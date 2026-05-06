@@ -1,4 +1,4 @@
-import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   authRepo,
@@ -7,6 +7,7 @@ import {
 import { authService } from "../../src/modules/auth/auth.service.js";
 import { setImportExportRepoDbClient } from "../../src/modules/import-export/import-export.repo.js";
 import { importExportService } from "../../src/modules/import-export/import-export.service.js";
+import { recordDomainMetric } from "../../src/shared/telemetry-domain.js";
 import { workspacesService } from "../../src/modules/workspaces/workspaces.service.js";
 import { createAuthTestDb } from "../helpers/auth-test-db.js";
 
@@ -25,6 +26,7 @@ describe("import-export service", () => {
   });
 
   it("allows owners to create export and import jobs", async () => {
+    const metricSpy = vi.spyOn(recordDomainMetric, "importExport");
     const owner = await authService.register({
       name: "Owner",
       email: "owner@example.com",
@@ -61,6 +63,16 @@ describe("import-export service", () => {
     );
 
     expect(importJob.type).toBe("import");
+    expect(metricSpy).toHaveBeenCalledWith(
+      "create_export_job",
+      "success",
+      "export",
+    );
+    expect(metricSpy).toHaveBeenCalledWith(
+      "create_import_job",
+      "success",
+      "import",
+    );
 
     const jobs = await importExportService.listJobsForWorkspace(
       owner.user.id,
@@ -70,6 +82,7 @@ describe("import-export service", () => {
   });
 
   it("blocks members from creating jobs but allows read", async () => {
+    const metricSpy = vi.spyOn(recordDomainMetric, "importExport");
     const owner = await authService.register({
       name: "Owner",
       email: "owner@example.com",
@@ -112,6 +125,11 @@ describe("import-export service", () => {
       statusCode: 403,
       message: "Only workspace owners and admins can run imports and exports",
     });
+    expect(metricSpy).toHaveBeenCalledWith(
+      "create_import_job",
+      "error",
+      "import",
+    );
 
     const read = await importExportService.getJobByIdForWorkspace(
       member.user.id,

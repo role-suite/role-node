@@ -17,12 +17,18 @@ const isSensitiveKey = (key: string): boolean => {
   return SENSITIVE_KEYWORDS.some((keyword) => normalized.includes(keyword));
 };
 
-const redactValue = (value: unknown): unknown => {
+const redactValue = (value: unknown, seen: WeakSet<object>): unknown => {
   if (Array.isArray(value)) {
-    return value.map((item) => redactValue(item));
+    return value.map((item) => redactValue(item, seen));
   }
 
   if (value && typeof value === "object") {
+    if (seen.has(value)) {
+      return "[Circular]";
+    }
+
+    seen.add(value);
+
     const input = value as Record<string, unknown>;
     const output: Record<string, unknown> = {};
 
@@ -32,7 +38,7 @@ const redactValue = (value: unknown): unknown => {
         return;
       }
 
-      output[key] = redactValue(nestedValue);
+      output[key] = redactValue(nestedValue, seen);
     });
 
     return output;
@@ -42,5 +48,5 @@ const redactValue = (value: unknown): unknown => {
 };
 
 export const redactTelemetryPayload = (payload: unknown): unknown => {
-  return redactValue(payload);
+  return redactValue(payload, new WeakSet<object>());
 };
