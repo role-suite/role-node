@@ -11,6 +11,7 @@ export type ImportExportJob = {
   status: ImportExportJobStatus;
   format: "json";
   summary: Record<string, unknown>;
+  artifact: Record<string, unknown>;
   createdByUserId: number;
   createdAt: Date;
   completedAt: Date;
@@ -22,7 +23,8 @@ type ImportExportJobRow = {
   type: ImportExportJobType;
   status: ImportExportJobStatus;
   format: "json";
-  summary_json: string;
+  summary_json: unknown;
+  artifact_json: unknown;
   created_by_user_id: number;
   created_at: Date | string;
   completed_at: Date | string;
@@ -43,14 +45,20 @@ export const setImportExportRepoDbClient = (
 };
 
 const resolveToken = (index: number): string => {
-  return resolveDb().dialect === "postgres" ? `$${index}` : "?";
+  return `$${index}`;
 };
 
 const toDate = (value: Date | string): Date => {
   return value instanceof Date ? value : new Date(value);
 };
 
-const parseSummary = (value: string): Record<string, unknown> => {
+const parseSummary = (value: unknown): Record<string, unknown> => {
+  if (typeof value !== "string") {
+    return typeof value === "object" && value !== null
+      ? (value as Record<string, unknown>)
+      : {};
+  }
+
   try {
     const parsed = JSON.parse(value) as unknown;
 
@@ -64,6 +72,8 @@ const parseSummary = (value: string): Record<string, unknown> => {
   }
 };
 
+const parseArtifact = parseSummary;
+
 const mapImportExportJobRow = (row: ImportExportJobRow): ImportExportJob => {
   return {
     id: row.id,
@@ -72,6 +82,7 @@ const mapImportExportJobRow = (row: ImportExportJobRow): ImportExportJob => {
     status: row.status,
     format: row.format,
     summary: parseSummary(row.summary_json),
+    artifact: parseArtifact(row.artifact_json),
     createdByUserId: row.created_by_user_id,
     createdAt: toDate(row.created_at),
     completedAt: toDate(row.completed_at),
@@ -82,7 +93,7 @@ export const importExportRepo = {
   async listByWorkspace(workspaceId: number): Promise<ImportExportJob[]> {
     const token = resolveToken(1);
     const result = await resolveDb().query<ImportExportJobRow>(
-      `SELECT id, workspace_id, type, status, format, summary_json, created_by_user_id, created_at, completed_at FROM ${IMPORT_EXPORT_JOBS_TABLE} WHERE workspace_id = ${token} ORDER BY id DESC`,
+      `SELECT id, workspace_id, type, status, format, summary_json, artifact_json, created_by_user_id, created_at, completed_at FROM ${IMPORT_EXPORT_JOBS_TABLE} WHERE workspace_id = ${token} ORDER BY id DESC`,
       [workspaceId],
     );
 
@@ -96,7 +107,7 @@ export const importExportRepo = {
     const workspaceToken = resolveToken(1);
     const idToken = resolveToken(2);
     const result = await resolveDb().query<ImportExportJobRow>(
-      `SELECT id, workspace_id, type, status, format, summary_json, created_by_user_id, created_at, completed_at FROM ${IMPORT_EXPORT_JOBS_TABLE} WHERE workspace_id = ${workspaceToken} AND id = ${idToken}`,
+      `SELECT id, workspace_id, type, status, format, summary_json, artifact_json, created_by_user_id, created_at, completed_at FROM ${IMPORT_EXPORT_JOBS_TABLE} WHERE workspace_id = ${workspaceToken} AND id = ${idToken}`,
       [workspaceId, jobId],
     );
 
@@ -109,6 +120,7 @@ export const importExportRepo = {
     type: ImportExportJobType;
     format: "json";
     summary: Record<string, unknown>;
+    artifact: Record<string, unknown>;
     createdByUserId: number;
   }): Promise<ImportExportJob> {
     const workspaceToken = resolveToken(1);
@@ -116,49 +128,23 @@ export const importExportRepo = {
     const statusToken = resolveToken(3);
     const formatToken = resolveToken(4);
     const summaryToken = resolveToken(5);
-    const createdByToken = resolveToken(6);
-    const completedAtToken = resolveToken(7);
+    const artifactToken = resolveToken(6);
+    const createdByToken = resolveToken(7);
+    const completedAtToken = resolveToken(8);
     const db = resolveDb();
 
-    if (db.dialect === "postgres") {
-      const result = await db.query<ImportExportJobRow>(
-        `INSERT INTO ${IMPORT_EXPORT_JOBS_TABLE} (workspace_id, type, status, format, summary_json, created_by_user_id, completed_at) VALUES (${workspaceToken}, ${typeToken}, ${statusToken}, ${formatToken}, ${summaryToken}, ${createdByToken}, ${completedAtToken}) RETURNING id, workspace_id, type, status, format, summary_json, created_by_user_id, created_at, completed_at`,
-        [
-          payload.workspaceId,
-          payload.type,
-          "completed",
-          payload.format,
-          JSON.stringify(payload.summary),
-          payload.createdByUserId,
-          new Date(),
-        ],
-      );
-
-      const row = result.rows[0];
-
-      if (!row) {
-        throw new Error("Failed to create import/export job");
-      }
-
-      return mapImportExportJobRow(row);
-    }
-
-    await db.query(
-      `INSERT INTO ${IMPORT_EXPORT_JOBS_TABLE} (workspace_id, type, status, format, summary_json, created_by_user_id, completed_at) VALUES (${workspaceToken}, ${typeToken}, ${statusToken}, ${formatToken}, ${summaryToken}, ${createdByToken}, ${completedAtToken})`,
+    const result = await db.query<ImportExportJobRow>(
+      `INSERT INTO ${IMPORT_EXPORT_JOBS_TABLE} (workspace_id, type, status, format, summary_json, artifact_json, created_by_user_id, completed_at) VALUES (${workspaceToken}, ${typeToken}, ${statusToken}, ${formatToken}, ${summaryToken}, ${artifactToken}, ${createdByToken}, ${completedAtToken}) RETURNING id, workspace_id, type, status, format, summary_json, artifact_json, created_by_user_id, created_at, completed_at`,
       [
         payload.workspaceId,
         payload.type,
         "completed",
         payload.format,
         JSON.stringify(payload.summary),
+        JSON.stringify(payload.artifact),
         payload.createdByUserId,
         new Date(),
       ],
-    );
-
-    const result = await db.query<ImportExportJobRow>(
-      `SELECT id, workspace_id, type, status, format, summary_json, created_by_user_id, created_at, completed_at FROM ${IMPORT_EXPORT_JOBS_TABLE} WHERE workspace_id = ${workspaceToken} ORDER BY id DESC LIMIT 1`,
-      [payload.workspaceId],
     );
 
     const row = result.rows[0];

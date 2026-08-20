@@ -163,6 +163,7 @@ type ImportExportJobRow = {
   status: "completed";
   format: "json";
   summary_json: string;
+  artifact_json: string;
   created_by_user_id: number;
   created_at: Date;
   completed_at: Date;
@@ -494,9 +495,10 @@ export const createAuthTestDb = (): DatabaseClient => {
         status: expectParam<"completed">(params, 2),
         format: expectParam<"json">(params, 3),
         summary_json: expectParam<string>(params, 4),
-        created_by_user_id: expectParam<number>(params, 5),
+        artifact_json: expectParam<string>(params, 5),
+        created_by_user_id: expectParam<number>(params, 6),
         created_at: now,
-        completed_at: expectParam<Date>(params, 6),
+        completed_at: expectParam<Date>(params, 7),
       };
       importExportJobs.push(row);
       return { rows: castRows<TRow>([row]), rowCount: 1 };
@@ -504,7 +506,7 @@ export const createAuthTestDb = (): DatabaseClient => {
 
     if (
       normalized.startsWith(
-        "select id, workspace_id, type, status, format, summary_json, created_by_user_id, created_at, completed_at from import_export_jobs where workspace_id =",
+        "select id, workspace_id, type, status, format, summary_json, artifact_json, created_by_user_id, created_at, completed_at from import_export_jobs where workspace_id =",
       ) &&
       normalized.includes("and id =")
     ) {
@@ -519,7 +521,7 @@ export const createAuthTestDb = (): DatabaseClient => {
 
     if (
       normalized.startsWith(
-        "select id, workspace_id, type, status, format, summary_json, created_by_user_id, created_at, completed_at from import_export_jobs where workspace_id =",
+        "select id, workspace_id, type, status, format, summary_json, artifact_json, created_by_user_id, created_at, completed_at from import_export_jobs where workspace_id =",
       )
     ) {
       const workspaceId = expectParam<number>(params, 0);

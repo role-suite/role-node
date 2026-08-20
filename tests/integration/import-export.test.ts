@@ -6,6 +6,8 @@ import {
   authRepo,
   setAuthRepoDbClient,
 } from "../../src/modules/auth/auth.repo.js";
+import { setCollectionsRepoDbClient } from "../../src/modules/collections/collections.repo.js";
+import { setEnvironmentsRepoDbClient } from "../../src/modules/environments/environments.repo.js";
 import { setImportExportRepoDbClient } from "../../src/modules/import-export/import-export.repo.js";
 import { ROUTE_PATTERNS, routeBuilders } from "../../src/shared/http/routes.js";
 import { createAuthTestDb } from "../helpers/auth-test-db.js";
@@ -15,12 +17,16 @@ const testDb = createAuthTestDb();
 describe("import/export integration", () => {
   beforeEach(async () => {
     setAuthRepoDbClient(testDb);
+    setCollectionsRepoDbClient(testDb);
+    setEnvironmentsRepoDbClient(testDb);
     setImportExportRepoDbClient(testDb);
     await authRepo.clear();
   });
 
   afterAll(() => {
     setAuthRepoDbClient(null);
+    setCollectionsRepoDbClient(null);
+    setEnvironmentsRepoDbClient(null);
     setImportExportRepoDbClient(null);
   });
 
@@ -56,6 +62,8 @@ describe("import/export integration", () => {
       .send({
         format: "json",
         payload: {
+          version: 1,
+          format: "role-native",
           collections: [],
           environments: [],
         },
