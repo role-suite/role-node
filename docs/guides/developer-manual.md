@@ -15,7 +15,7 @@ Core app wiring lives in `src/app.ts`.
 
 The system follows module boundaries:
 
-- `schema` validates input contracts
+- `schema` validates input payloads
 - `controller` parses request + delegates
 - `service` enforces domain rules
 - `repo` contains all database I/O
@@ -27,7 +27,7 @@ Environment validation: `src/config/env.ts`
 
 Important values:
 
-- `DB_DIALECT`, `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_POOL_MIN`, `DB_POOL_MAX`, `DB_SSL`
+- `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_POOL_MIN`, `DB_POOL_MAX`, `DB_SSL`
 - `ENABLE_STARTUP_VALIDATION`
 - `AUTH_ACCESS_TOKEN_SECRET`, `AUTH_REFRESH_TOKEN_SECRET`
 - `AUTH_ACCESS_TOKEN_TTL_SECONDS`, `AUTH_REFRESH_TOKEN_TTL_SECONDS`
@@ -121,7 +121,7 @@ Current `HttpRequestBody` modes:
 - `binary`
 - `none`
 
-## 6. API contract style
+## 6. API behavior style
 
 Response helper: `src/shared/app-response.ts`
 
@@ -129,7 +129,7 @@ Response helper: `src/shared/app-response.ts`
 - expected error: throw `appResponse.withStatus(...)`
 - centralized fallback in `errorHandler`
 
-Contract expectation:
+Behavior expectations:
 
 - all public input validated by Zod
 - services throw domain errors (not controllers)
@@ -141,7 +141,7 @@ Test layers:
 
 - unit: schemas/services/repo policies and helpers
 - integration: endpoint behavior through express app
-- contract: API envelope and shape stability
+- API envelope and shape stability
 - security: malformed input and protective checks
 - smoke: baseline runtime health
 - e2e: full user flows
@@ -170,14 +170,14 @@ pnpm build
 - Keep SQL in repositories
 - Keep route files declarative
 - Prefer explicit status/error messages
-- Preserve backward-compatible payload parsing when evolving contracts
+- Preserve backward-compatible payload parsing when evolving API behavior
 
 ## 10. Observed backlog after current implementation
 
 - collection versioning snapshots
 - collection fork/merge workflows
 - list/filter endpoint for run history
-- CI workflow automation and OpenAPI publication
+- CI workflow automation
 
 ## 11. Where to document new features
 

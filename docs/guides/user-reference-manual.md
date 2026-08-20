@@ -2,7 +2,7 @@
 
 This is the full reference manual for using the current backend API.
 
-This document focuses on REST endpoint usage. Equivalent gRPC services are available in package `role.v1` and defined in `proto/*.proto`.
+This document focuses on REST endpoint usage.
 
 It is intended for frontend developers, API integrators, and QA automation engineers.
 

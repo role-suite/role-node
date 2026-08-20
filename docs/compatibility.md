@@ -15,4 +15,4 @@ Update this table on every release.
 
 - If your project is pinned to a release tag (for example `v1.0.0`), use the matching major/minor line.
 - If you consume unreleased changes from `main`, use `main` for `role-sdk` and `role-client` as well.
-- Backward compatibility guarantees follow `docs/api-versioning.md`.
+- Keep role-node, role-sdk, and role-client on matching major/minor versions unless a release note states otherwise.

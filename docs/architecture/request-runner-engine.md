@@ -17,7 +17,7 @@ This document defines a backend request runner engine for frontend clients with 
 
 - Support ad-hoc runs and saved collection endpoint runs.
 - Persist run metadata plus normalized request/response snapshots.
-- Keep external contracts stable while allowing internal refactors.
+- Keep external API behavior stable while allowing internal refactors.
 - Start synchronous in v1, with an async worker migration path in v2.
 - Keep the engine modular so policies/executors/stores can be swapped by config.
 
@@ -137,7 +137,7 @@ Suggested config file location:
 
 `runs.service.ts` can import only `src/internal/runner/index.ts` from the internal runner package.
 
-## Engine facade contract
+## Engine Facade
 
 ```ts
 export type ExecuteRunInput = {
@@ -171,7 +171,7 @@ export const runRequest: (input: ExecuteRunInput) => Promise<ExecuteRunResult>;
 
 ## Configuration-driven modular engine
 
-### Config contract (v1)
+### Config Shape
 
 ```ts
 type RequestRunnerEngineConfig = {
@@ -570,4 +570,4 @@ Future metrics:
 
 ## Summary
 
-The design keeps API exposure intentionally small while moving operational complexity into an internal runner engine. This version adds implementation-level defaults, state invariants, and execution contracts so teams can ship v1 quickly and migrate to async mode without breaking frontend behavior.
+The design keeps API exposure intentionally small while moving operational complexity into an internal runner engine. This version adds implementation-level defaults, state invariants, and execution behavior so teams can ship v1 quickly and migrate to async mode without breaking frontend behavior.

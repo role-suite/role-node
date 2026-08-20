@@ -214,16 +214,15 @@ Migration file:
 
 - `migrations/20260320_001_create_auth_tables.migration.ts`
 
-Dialect support details in repo implementation:
+Postgres persistence details in repo implementation:
 
-- Parameter placeholders: `$1...` for Postgres, `?` for MySQL/MariaDB
-- `RETURNING` path for Postgres inserts
-- Insert-then-select path for MySQL/MariaDB inserts
-- `clear()` uses `TRUNCATE ... RESTART IDENTITY` on Postgres and `DELETE + AUTO_INCREMENT reset` on MySQL/MariaDB
+- Parameter placeholders use `$1...`.
+- Inserts use `RETURNING`.
+- `clear()` uses `TRUNCATE ... RESTART IDENTITY`.
 
 ## Security choices
 
-- Password hashing uses `scrypt` with random salt (`src/shared/auth/password.ts`).
+- Password hashing uses Argon2id (`src/shared/auth/password.ts`).
 - Token comparison uses constant-time comparisons where applicable.
 - Refresh tokens are stored hashed (`sha256`), not in plaintext.
 - Refresh rotation invalidates previous refresh session after use.
@@ -235,7 +234,7 @@ Dialect support details in repo implementation:
 - `AUTH_REFRESH_TOKEN_SECRET`
 - `AUTH_ACCESS_TOKEN_TTL_SECONDS`
 - `AUTH_REFRESH_TOKEN_TTL_SECONDS`
-- Plus DB variables used by shared DB config (`DB_DIALECT`, `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, pool/SSL settings)
+- Plus DB variables used by shared DB config (`DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, pool/SSL settings)
 
 Defined in `src/config/env.ts`.
 
@@ -253,4 +252,4 @@ Auth tests use an in-memory DB test double via:
 - `setAuthRepoDbClient(...)` from `src/modules/auth/auth.repo.ts`
 - `tests/helpers/auth-test-db.ts`
 
-This keeps auth tests deterministic and independent from external DB availability while preserving the repository contract.
+This keeps auth tests deterministic and independent from external DB availability while preserving repository behavior.

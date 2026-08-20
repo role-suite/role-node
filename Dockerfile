@@ -22,6 +22,7 @@ ENV NODE_OPTIONS=--enable-source-maps
 RUN addgroup -S app && adduser -S app -G app
 COPY --from=prod-deps --chown=app:app /app/node_modules ./node_modules
 COPY --from=build --chown=app:app /app/dist ./dist
+COPY --chown=app:app config/request-runner.config.json ./config/request-runner.config.json
 COPY --chown=app:app package.json ./
 USER app
 EXPOSE 3000

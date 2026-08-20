@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <strong>TypeScript + Express backend with REST + gRPC transports for workspaces, collections, environments, and request runs</strong>
+  <strong>TypeScript + Express REST backend for workspaces, collections, environments, request runs, and Röle-native import/export</strong>
 </p>
 
 <p align="center">
@@ -30,7 +30,7 @@
 ## 🌟 Overview
 
 <p align="center">
-  role-node is a modular backend starter built with Express 5 and TypeScript. It provides workspace-based functionality over both REST and gRPC transports for collections, environments, and runnable HTTP requests, with strict schema validation and consistent error handling. It targets Postgres or MySQL with migration support and a tested module structure.
+  role-node is a modular backend built with Express 5 and TypeScript. It provides workspace-based REST APIs for collections, environments, runnable HTTP requests, and Röle-native import/export, with strict schema validation and consistent error handling. It targets Postgres with migration support and a tested module structure.
 </p>
 
 ## ✨ Features
@@ -44,12 +44,12 @@
 
 ### ✅ Quality
 
-- Multi-layer tests: unit, integration, contract, security, smoke, e2e
+- Multi-layer tests: unit, integration, security, smoke, e2e
 - Clean module boundaries and repo/service/controller separation
 
 ### 🧩 Platform
 
-- Postgres + MySQL support
+- Postgres support
 - Migrations with a repeatable Docker reset workflow
 
 ## ⚡ Quick Start
@@ -76,7 +76,7 @@ The server starts on `PORT` (default `3000`).
 
 ## 🐳 Local Database (Docker)
 
-Start fresh Postgres + MySQL containers from `docker-compose.yml`:
+Start a fresh Postgres container from `docker-compose.yml`:
 
 ```bash
 pnpm db:reset:docker
@@ -93,7 +93,6 @@ pnpm db:migrate
 - `pnpm dev`: run server with file watch
 - `pnpm build`: compile TypeScript to `dist/`
 - `pnpm start`: run compiled server from `dist/`
-- `pnpm create:module <name>`: scaffold a new feature module template
 - `pnpm db:migrate`: apply pending migrations
 - `pnpm db:migrate:up`: apply pending migrations (optionally with count)
 - `pnpm db:migrate:down`: rollback latest migration (optionally with count)
@@ -103,35 +102,19 @@ pnpm db:migrate
 - `pnpm test:watch`: run tests in watch mode
 - `pnpm test:run`: run tests once
 - `pnpm test:coverage`: run tests with coverage report
-- `pnpm contracts:generate`: generate the contract snapshot artifact
-- `pnpm contracts:check`: fail when contract snapshot is stale
-- `pnpm contracts:breaking-check`: fail on incompatible contract changes vs base ref
-- `pnpm contracts:docs-check`: require docs updates when contract artifacts change
-- `pnpm contracts:openapi:generate`: generate `contracts/generated/openapi.json`
-- `pnpm contracts:openapi:check`: fail when OpenAPI artifact is stale
-- `pnpm contracts:openapi:lint`: lint OpenAPI artifact governance requirements
-- `pnpm grpc:generate`: generate gRPC type artifacts from `proto/*.proto`
-- `pnpm grpc:check`: fail when generated gRPC artifacts are stale
-- `pnpm grpc:bundle`: create versioned proto bundle artifact for SDK consumers
-- `pnpm grpc:test`: run gRPC unit + integration tests
-- `pnpm grpc:test:integration`: run gRPC integration tests only
-- `pnpm verify:grpc`: run gRPC artifact + gRPC test checks
-- `pnpm verify`: run local integrity gate (format, lint, typecheck, test, build, contracts)
+- `pnpm verify`: run local integrity gate (format, lint, typecheck, test, build)
 
 ## 🚀 CI/CD
 
 - `CI` workflow (`.github/workflows/ci.yml`) runs on pull requests and pushes to `main` and `v*` tags.
-- It runs ordered quality gates as separate checks: `1. Format`, `2. Lint`, `3. Contract Check`, `4. Test`, `4.5 Telemetry`, `5. Build`, then a required `CI Status` gate.
-- `Contract Check` verifies both `contracts/generated/public-api.snapshot.json` and `contracts/generated/openapi.json` are regenerated and valid.
-- `Contract Check` also validates gRPC artifact drift with `pnpm grpc:check`.
+- It runs ordered quality gates as separate checks: `1. Format`, `2. Lint`, `3. Test`, `4. Build`, then a required `CI Status` gate.
 - `Security` workflow (`.github/workflows/security.yml`) runs dependency audit and gitleaks secret scanning.
 - `CodeQL` workflow (`.github/workflows/codeql.yml`) runs static analysis for Actions and JavaScript/TypeScript.
 - `Coverage Badge` workflow (`.github/workflows/coverage-badge.yml`) updates `badges/coverage.svg` on pushes to `main`.
 - `CD` workflow (`.github/workflows/cd.yml`) builds and publishes Docker images to GHCR and deploys production from `v*` tags or manual dispatch.
 - CD is gated by `CI / CI Status` on the exact same commit SHA before publishing/deploying.
 - `Release` workflow (`.github/workflows/release-tag.yml`) performs semantic versioning from manual dispatch (`patch`, `minor`, `major`): it runs quality gates, bumps `package.json`, updates `CHANGELOG.md`, creates a `v*` tag, and creates the GitHub Release.
-- `Test` gate runs both `pnpm test:run` and `pnpm grpc:test` to enforce transport-level confidence.
-- `Telemetry` gate runs telemetry smoke tests and config validation (`pnpm telemetry:test` and `pnpm telemetry:validate`) and is required by `CI Status`.
+- `Test` gate runs `pnpm test:run` and coverage.
 
 Release flow:
 
@@ -149,14 +132,6 @@ Validated in `src/config/env.ts` using Zod.
 
 - `NODE_ENV`: `development` | `test` | `production` (default: `development`)
 - `PORT`: positive integer (default: `3000`)
-- `GRPC_ENABLED`: `true` | `false` (default: `false`)
-- `GRPC_PORT`: positive integer (default: `50051`)
-- `GRPC_TLS_ENABLED`: `true` | `false` (default: `false`)
-- `GRPC_MTLS_ENABLED`: `true` | `false` (default: `false`)
-- `GRPC_TLS_CERT_PATH`: required when `GRPC_TLS_ENABLED=true`
-- `GRPC_TLS_KEY_PATH`: required when `GRPC_TLS_ENABLED=true`
-- `GRPC_TLS_CA_PATH`: required when `GRPC_MTLS_ENABLED=true`
-- `DB_DIALECT`: `postgres` | `mysql` | `mariadb` (default: `postgres`)
 - `DB_HOST`: database host
 - `DB_PORT`: database port
 - `DB_USER`: database user
@@ -166,61 +141,13 @@ Validated in `src/config/env.ts` using Zod.
 - `DB_POOL_MAX`: maximum pool size (default: `10`)
 - `DB_SSL`: `true` | `false` (default: `false`)
 - `ENABLE_STARTUP_VALIDATION`: `true` | `false` (default: `true`)
-- `OTEL_ENABLED`: `true` | `false` (default: `true`)
-- `OTEL_SERVICE_NAME`: telemetry service name (default: `role-node`)
-- `OTEL_SERVICE_VERSION`: telemetry service version (default: `1.0.0`)
-- `OTEL_EXPORTER_OTLP_ENDPOINT`: OTLP HTTP base URL (default: `http://localhost:4318`)
-- `OTEL_METRICS_EXPORT_INTERVAL_MS`: metrics export interval in ms (default: `30000`)
-- `OTEL_TRACES_SAMPLER`: `always_on` | `always_off` | `ratio` (default: `always_on`)
-- `OTEL_TRACES_SAMPLER_RATIO`: head sampling ratio from 0 to 1 (default: `1`)
 
 On startup, the app validates environment values and checks database connectivity with `SELECT 1` before listening for requests.
 Set `ENABLE_STARTUP_VALIDATION=false` when running locally without a configured database.
-When `GRPC_ENABLED=true`, the app also starts a gRPC server with `HealthService/Check` on `GRPC_PORT`.
-
-## 📈 Observability Stack (Docker)
-
-Bring up telemetry infrastructure (Collector + Prometheus + Grafana + Tempo + Loki):
-
-```bash
-docker compose up -d otel-collector prometheus tempo loki grafana alertmanager
-```
-
-Endpoints:
-
-- Grafana: `http://localhost:3001` (`admin` / `admin`)
-- Prometheus: `http://localhost:9090`
-- Alertmanager: `http://localhost:9093`
-- Tempo: `http://localhost:3200`
-- Loki: `http://localhost:3100`
-- OTLP HTTP ingest: `http://localhost:4318`
-
-Provisioned configs live under `config/observability/`.
-SLO and alerting docs live under `docs/telemetry/slo-and-alerting.md` and `docs/telemetry/runbooks.md`.
-
-## 🛰️ gRPC Services
-
-Current gRPC services (package `role.v1`):
-
-- `HealthService`: `Check`
-- `AuthService`: `Register`, `Login`, `Refresh`, `Logout`, `Me`
-- `WorkspacesService`: workspace/member/invitation/update operations
-- `CollectionsService`: collections/endpoints/folders/examples operations
-- `EnvironmentsService`: environments/variables operations
-- `RunsService`: `Create`, `GetById`, `Cancel`
-- `ImportExportService`: `ListJobs`, `GetJobById`, `CreateExportJob`, `CreateImportJob`
-
-Transport notes:
-
-- Rich payloads for runs and import-export currently use JSON string fields in proto messages (`payload_json`, `run_json`, `job_json`, `jobs_json`) to preserve parity with existing service DTOs.
-- Validate proto drift with `pnpm grpc:check` and run gRPC tests with `pnpm grpc:test`.
-- For hardening and compatibility policy, see `docs/guides/grpc-hardening.md`.
-- For SDK proto consumption workflow, see `docs/guides/grpc-proto-distribution.md`.
-- For SDK metadata/error contract, see `docs/guides/grpc-sdk-integration-contract.md`.
 
 ## 🧭 API Overview
 
-This section lists REST endpoints. Equivalent gRPC APIs are available in package `role.v1` and defined under `proto/*.proto`.
+This section lists REST endpoints.
 
 ### Health
 
@@ -299,14 +226,9 @@ This section lists REST endpoints. Equivalent gRPC APIs are available in package
 ## 📚 Documentation
 
 - `docs/guides/client-integration.md`: full client integration and payload reference
-- `docs/guides/grpc-proto-distribution.md`: proto tag pinning workflow for SDK consumers
-- `docs/guides/grpc-sdk-integration-contract.md`: gRPC metadata and error mapping contract for SDKs
-- `docs/guides/grpc-sdk-readiness.md`: SDK readiness checklist for gRPC adoption
-- `docs/guides/grpc-transport-parity.md`: REST/gRPC parity expectations and known differences
-- `docs/api-versioning.md`: API versioning rules and compatibility policy
+- `docs/guides/launch.md`: greenfield production launch checklist
 - `docs/compatibility.md`: role-node / role-sdk / role-client compatibility matrix
 - `docs/errors.md`: machine-readable error model and code registry
-- `docs/route-audit.md`: route registry audit and drift alignment notes
 - `docs/README.md`: documentation index
 - `docs/modules/*`: module-specific behavior
 - `migrations/README.md`: migration workflow

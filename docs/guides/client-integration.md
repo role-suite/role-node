@@ -2,17 +2,12 @@
 
 This guide is the implementation reference for SDK/client engineers.
 
-role-node exposes two public transports:
+role-node exposes one public transport:
 
 - REST (JSON/HTTP) for route-based integrations.
-- gRPC (`role.v1`) for RPC-based integrations.
 
 Source of truth:
 
-- Contracts: `contracts/**/contracts.ts`
-- Publishable OpenAPI artifact: `contracts/generated/openapi.json`
-- gRPC proto contracts: `proto/*.proto`
-- Generated gRPC typings: `src/grpc/generated/role.pb.d.ts`
 - Runtime behavior: `src/modules/**`
 - Verified examples copied from integration tests:
   - `tests/integration/auth.test.ts`
@@ -28,16 +23,6 @@ Source of truth:
 - JSON request header: `Content-Type: application/json`
 - Auth header (protected routes): `Authorization: Bearer <accessToken>`
 - Correlation header: every response includes `x-request-id`
-- OpenAPI path template style uses `{param}` (for example `/api/workspaces/{workspaceId}`)
-
-### gRPC transport
-
-- Package: `role.v1`
-- Local default endpoint when enabled: `localhost:50051`
-- Enable via environment: `GRPC_ENABLED=true`
-- Security options: TLS/mTLS via `GRPC_TLS_ENABLED` and `GRPC_MTLS_ENABLED`
-- Service and method contracts are defined in `proto/*.proto`
-- Transport hardening guide: `docs/guides/grpc-hardening.md`
 
 ### Success envelopes
 
@@ -122,7 +107,7 @@ Example request (copied from `tests/integration/auth.test.ts`):
 
 `POST /api/auth/logout` with current refresh token revokes that session.
 
-## Token refresh rules (contract-critical)
+## Token refresh rules
 
 Based on `src/modules/auth/auth.service.ts`:
 
@@ -241,7 +226,7 @@ Backoff example:
 
 ### Rate limiting
 
-- No built-in API rate limit contract is currently published (no `429` route contracts).
+- No built-in API rate limit is currently published.
 - Apply client-side throttling and exponential backoff to protect upstreams.
 
 ### Run request/response size limits
@@ -266,7 +251,7 @@ From runner defaults:
 If `options.timeoutMs` exceeds max, run fails with `RUN_VALIDATION_FAILED` (400).
 Network timeout resolves to `RUN_TIMEOUT` (408).
 
-All runner limits are configurable by deployment env (`RUNNER_*` variables), so SDKs should treat error codes as the runtime contract and not hardcode default numbers.
+All runner limits are configurable by deployment env (`RUNNER_*` variables), so SDKs should branch on error codes and not hardcode default numbers.
 
 ## Fixture-backed request examples
 

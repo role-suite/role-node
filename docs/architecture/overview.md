@@ -25,9 +25,9 @@ Current example modules: `src/modules/auth`, `src/modules/workspaces`, `src/modu
 ## Global app concerns
 
 - `src/config/env.ts`: environment schema validation.
-- `src/config/startup-validation.ts`: URL/dialect checks + DB connectivity check (`SELECT 1`).
+- `src/config/startup-validation.ts`: startup checks + DB connectivity check (`SELECT 1`).
 - `src/config/db.ts`: singleton DB client lifecycle (`getDb`, `closeDb`).
-- `src/shared/db/adapters/*`: PostgreSQL and MySQL/MariaDB client adapters.
+- `src/shared/db/adapters/postgres.adapter.ts`: PostgreSQL client adapter.
 - `src/shared/db/migrations/runner.ts`: migration table management + up/down/status operations.
 - `src/shared/middleware/request-logger.ts`: per-request logging with `x-request-id` propagation.
 - `src/shared/middleware/not-found.ts`: fallback 404 handler.
@@ -39,11 +39,10 @@ Current example modules: `src/modules/auth`, `src/modules/workspaces`, `src/modu
 
 When adding a feature module:
 
-1. Generate scaffold with `pnpm create:module <module-name>`.
-2. Implement domain schema/repo/service/controller logic.
-3. Register `<module>Router` in `src/app.ts`.
-4. Complete generated unit tests and unskip the integration test placeholder.
+1. Implement domain schema/repo/service/controller logic.
+2. Register `<module>Router` in `src/app.ts`.
+3. Add focused unit and integration tests.
 
 ## Data layer status
 
-Database infrastructure and migration tooling are in place, and auth/workspace/collections/environments/runs flows are DB-backed. Generated module templates remain in-memory by default, so migrate each new module repo to shared DB clients as features become production-ready.
+Database infrastructure and migration tooling are in place, and auth/workspace/collections/environments/runs flows are DB-backed.
