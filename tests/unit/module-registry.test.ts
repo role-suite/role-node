@@ -1,29 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import { moduleRegistry } from "../../src/internal/runner/composition/module-registry.js";
-import type { RequestRunnerEngineConfig } from "../../src/internal/runner/config/engine-config.js";
+import { requestRunnerEngineDefaults } from "../../src/internal/runner/config/engine-config.js";
 
 describe("moduleRegistry", () => {
   describe("runStore", () => {
     it("has postgres factory", () => {
-      const config: RequestRunnerEngineConfig = {
-        persistence: {
-          retentionDays: 7,
-          persistBinaryBodies: true,
-        },
-        network: {
-          assertNetwork: false,
-          maxResponseSizeBytes: 10 * 1024 * 1024,
-        },
-        limits: {
-          maxReqDurationMs: 30_000,
-          maxConcurrentRequests: 100,
-        },
-        runner: {
-          engine: "undici",
-          engineOptions: {},
-        },
-      };
+      const config = requestRunnerEngineDefaults;
 
       const factory = moduleRegistry.runStore.postgres;
 

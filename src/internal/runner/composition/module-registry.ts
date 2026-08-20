@@ -22,6 +22,7 @@ type RunStoreFactory = (
 type HttpExecutor = (
   request: HttpRequestDraft,
   options: ResolvedRunOptions,
+  validateRedirectTarget?: (url: string) => void,
 ) => Promise<{
   status: number;
   headers: Record<string, string>;
@@ -39,7 +40,7 @@ const resolveGlobalFetch = (): FetchLike => {
 const createNodeFetchExecutor = (): HttpExecutor => {
   let cachedFetch: FetchLike | null = null;
 
-  return async (request, options) => {
+  return async (request, options, validateRedirectTarget) => {
     if (!cachedFetch) {
       try {
         const imported = (await import("node-fetch" as string)) as {
@@ -56,7 +57,12 @@ const createNodeFetchExecutor = (): HttpExecutor => {
       }
     }
 
-    return executeHttpRequest(request, options, cachedFetch);
+    return executeHttpRequest(
+      request,
+      options,
+      cachedFetch,
+      validateRedirectTarget,
+    );
   };
 };
 
@@ -70,8 +76,17 @@ export const moduleRegistry = {
     }) as RunStoreFactory,
   },
   httpExecutor: {
-    undici: (request: HttpRequestDraft, options: ResolvedRunOptions) => {
-      return executeHttpRequest(request, options, resolveGlobalFetch());
+    undici: (
+      request: HttpRequestDraft,
+      options: ResolvedRunOptions,
+      validateRedirectTarget?: (url: string) => void,
+    ) => {
+      return executeHttpRequest(
+        request,
+        options,
+        resolveGlobalFetch(),
+        validateRedirectTarget,
+      );
     },
     "node-fetch": createNodeFetchExecutor(),
   },

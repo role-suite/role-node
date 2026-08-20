@@ -24,7 +24,16 @@ import type {
   ExecutedRequestSnapshot,
   ExecuteRunInput,
   ExecuteRunResult,
+  HttpExecutionResponse,
+  HttpRequestDraft,
+  ResolvedRunOptions,
 } from "./types.js";
+
+type ExecuteHttpRequest = (
+  request: HttpRequestDraft,
+  options: ResolvedRunOptions,
+  validateRedirectTarget?: (url: string) => void,
+) => Promise<HttpExecutionResponse>;
 
 export type RunnerEngine = {
   runRequest(input: ExecuteRunInput): Promise<ExecuteRunResult>;
@@ -41,17 +50,30 @@ export type RunnerEngine = {
 export const createRunnerEngine = (deps: {
   config: RequestRunnerEngineConfig;
   runStore: RunStore;
-  executeHttpRequest?: typeof executeHttpRequest;
+  executeHttpRequest?: ExecuteHttpRequest;
   resolveRunOptions?: typeof resolveRunOptions;
   assertRequestLimits?: typeof assertRequestLimits;
   assertNetworkPolicy?: typeof assertNetworkPolicy;
   redactRequestSnapshot?: typeof redactRequestSnapshot;
   redactResponseSnapshot?: typeof redactResponseSnapshot;
 }): RunnerEngine => {
+  const defaultExecuteHttpRequest: ExecuteHttpRequest = (
+    request,
+    options,
+    validateRedirectTarget,
+  ) => {
+    return executeHttpRequest(
+      request,
+      options,
+      undefined,
+      validateRedirectTarget,
+    );
+  };
+
   const {
     config,
     runStore,
-    executeHttpRequest: executeHttpRequestImpl = executeHttpRequest,
+    executeHttpRequest: executeHttpRequestImpl = defaultExecuteHttpRequest,
     resolveRunOptions: resolveRunOptionsImpl = resolveRunOptions,
     assertRequestLimits: assertRequestLimitsImpl = assertRequestLimits,
     assertNetworkPolicy: assertNetworkPolicyImpl = assertNetworkPolicy,
@@ -123,6 +145,7 @@ export const createRunnerEngine = (deps: {
             const rawResponse = await executeHttpRequestImpl(
               authResolvedDraft,
               options,
+              (url) => assertNetworkPolicyImpl(url, config),
             );
             const normalized = normalizeResponse(rawResponse, options);
             const redacted = redactResponseSnapshotImpl(normalized, config);

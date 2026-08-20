@@ -6,11 +6,16 @@ import type {
   HttpRequestDraft,
   ResolvedRunOptions,
 } from "../core/types.js";
+import { RunnerError } from "../errors/runner-errors.js";
 
 export type FetchLike = (
   input: URL | RequestInfo,
   init?: RequestInit,
 ) => Promise<Response>;
+
+type ValidateRedirectTarget = (url: string) => void;
+
+const redirectStatuses = new Set([301, 302, 303, 307, 308]);
 
 const toHeadersInit = (headers: HttpKeyValue[]): HeadersInit => {
   return headers
@@ -154,6 +159,7 @@ export const executeHttpRequest = async (
   request: HttpRequestDraft,
   options: ResolvedRunOptions,
   fetchImpl: FetchLike = globalThis.fetch.bind(globalThis),
+  validateRedirectTarget?: ValidateRedirectTarget,
 ): Promise<HttpExecutionResponse> => {
   const controller = new AbortController();
   const timeout = setTimeout(() => {
@@ -161,18 +167,47 @@ export const executeHttpRequest = async (
   }, options.timeoutMs);
 
   try {
-    const finalUrl = appendQueryParams(request.url, request.queryParams);
+    let finalUrl = appendQueryParams(request.url, request.queryParams);
     const resolved = resolveRequestBody(request);
-    const requestInit: RequestInit = {
+    let requestInit: RequestInit = {
       method: request.method,
       headers: toHeadersInit(resolved.headers),
-      redirect: options.followRedirects ? "follow" : "manual",
+      redirect: "manual",
       signal: controller.signal,
       ...(resolved.body !== undefined ? { body: resolved.body } : {}),
     };
-    const response = await fetchImpl(finalUrl, {
-      ...requestInit,
-    });
+    let response: Response;
+
+    for (let redirectCount = 0; ; redirectCount += 1) {
+      response = await fetchImpl(finalUrl, {
+        ...requestInit,
+      });
+
+      if (!options.followRedirects || !redirectStatuses.has(response.status)) {
+        break;
+      }
+
+      const location = response.headers.get("location");
+
+      if (!location) {
+        break;
+      }
+
+      if (redirectCount >= options.maxRedirects) {
+        throw new RunnerError("RUN_NETWORK_ERROR", "Too many redirects");
+      }
+
+      finalUrl = new URL(location, finalUrl).toString();
+      validateRedirectTarget?.(finalUrl);
+
+      if (response.status === 303) {
+        requestInit = {
+          ...requestInit,
+          method: "GET",
+          body: null,
+        };
+      }
+    }
 
     const responseBody = new Uint8Array(await response.arrayBuffer());
 

@@ -118,4 +118,32 @@ describe("http client request body handling", () => {
     expect(init).toBeDefined();
     expect(init?.body).toBe(undefined);
   });
+
+  it("validates redirected targets before following them", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(null, {
+        status: 302,
+        headers: {
+          location: "http://127.0.0.1/private",
+        },
+      }),
+    );
+    const validateRedirectTarget = vi.fn((url: string) => {
+      throw new Error(`blocked ${url}`);
+    });
+
+    await expect(
+      executeHttpRequest(
+        createRequest({ mode: "none" }),
+        defaultOptions,
+        globalThis.fetch.bind(globalThis),
+        validateRedirectTarget,
+      ),
+    ).rejects.toThrow("blocked http://127.0.0.1/private");
+
+    expect(validateRedirectTarget).toHaveBeenCalledWith(
+      "http://127.0.0.1/private",
+    );
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
 });

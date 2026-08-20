@@ -1,32 +1,82 @@
+import { isIP } from "node:net";
+
 import type { RequestRunnerEngineConfig } from "../config/engine-config.js";
 import { RunnerError } from "../errors/runner-errors.js";
 
-const isLocalHostname = (hostname: string): boolean => {
-  const normalized = hostname.toLowerCase();
-  return (
-    normalized === "localhost" ||
-    normalized === "127.0.0.1" ||
-    normalized === "::1"
-  );
+const normalizeHostname = (hostname: string): string => {
+  return hostname.toLowerCase().replace(/^\[(.*)\]$/u, "$1");
 };
 
-const isPrivateIpv4Host = (hostname: string): boolean => {
-  if (/^10\./u.test(hostname) || /^192\.168\./u.test(hostname)) {
-    return true;
+const ipv4ToInt = (address: string): number | null => {
+  const parts = address.split(".");
+
+  if (parts.length !== 4) {
+    return null;
   }
 
-  const match172 = hostname.match(/^172\.(\d{1,3})\./u);
-  if (match172) {
-    const second = Number(match172[1]);
-    return second >= 16 && second <= 31;
+  let value = 0;
+
+  for (const part of parts) {
+    if (!/^\d{1,3}$/u.test(part)) {
+      return null;
+    }
+
+    const octet = Number(part);
+
+    if (octet < 0 || octet > 255) {
+      return null;
+    }
+
+    value = (value << 8) + octet;
+  }
+
+  return value >>> 0;
+};
+
+const isIpv4InCidr = (address: string, cidr: string): boolean => {
+  const [rangeAddress, prefixText] = cidr.split("/");
+  const prefix = prefixText === undefined ? 32 : Number(prefixText);
+  const addressInt = ipv4ToInt(address);
+  const rangeInt = ipv4ToInt(rangeAddress ?? "");
+
+  if (
+    addressInt === null ||
+    rangeInt === null ||
+    !Number.isInteger(prefix) ||
+    prefix < 0 ||
+    prefix > 32
+  ) {
+    return false;
+  }
+
+  const mask = prefix === 0 ? 0 : (0xffffffff << (32 - prefix)) >>> 0;
+  return (addressInt & mask) === (rangeInt & mask);
+};
+
+const isIpv6InConfiguredRange = (address: string, cidr: string): boolean => {
+  const normalizedAddress = normalizeHostname(address);
+  const normalizedCidr = normalizeHostname(cidr);
+
+  if (!normalizedCidr.includes("/")) {
+    return normalizedAddress === normalizedCidr;
+  }
+
+  if (normalizedCidr === "fc00::/7") {
+    return (
+      normalizedAddress.startsWith("fc") || normalizedAddress.startsWith("fd")
+    );
   }
 
   return false;
 };
 
-const isPrivateIpv6Host = (hostname: string): boolean => {
-  const normalized = hostname.toLowerCase();
-  return normalized.startsWith("fc") || normalized.startsWith("fd");
+const isLocalHostname = (hostname: string): boolean => {
+  const normalized = normalizeHostname(hostname);
+  return (
+    normalized === "localhost" ||
+    isIpv4InCidr(normalized, "127.0.0.0/8") ||
+    normalized === "::1"
+  );
 };
 
 const isDomainAllowed = (hostname: string, allowlist: string[]): boolean => {
@@ -35,9 +85,26 @@ const isDomainAllowed = (hostname: string, allowlist: string[]): boolean => {
   }
 
   return allowlist.some((allowed) => {
-    const normalized = allowed.toLowerCase();
+    const normalized = normalizeHostname(allowed);
     return hostname === normalized || hostname.endsWith(`.${normalized}`);
   });
+};
+
+const isBlockedByConfiguredCidr = (
+  hostname: string,
+  cidrs: string[],
+): boolean => {
+  const ipVersion = isIP(hostname);
+
+  if (ipVersion === 4) {
+    return cidrs.some((cidr) => isIpv4InCidr(hostname, cidr));
+  }
+
+  if (ipVersion === 6) {
+    return cidrs.some((cidr) => isIpv6InConfiguredRange(hostname, cidr));
+  }
+
+  return false;
 };
 
 export const assertNetworkPolicy = (
@@ -67,7 +134,7 @@ export const assertNetworkPolicy = (
     );
   }
 
-  const hostname = parsed.hostname.toLowerCase();
+  const hostname = normalizeHostname(parsed.hostname);
 
   if (config.policy.blockLocalhost && isLocalHostname(hostname)) {
     throw new RunnerError(
@@ -78,7 +145,7 @@ export const assertNetworkPolicy = (
 
   if (
     config.policy.blockPrivateCidrs.length > 0 &&
-    (isPrivateIpv4Host(hostname) || isPrivateIpv6Host(hostname))
+    isBlockedByConfiguredCidr(hostname, config.policy.blockPrivateCidrs)
   ) {
     throw new RunnerError(
       "RUN_POLICY_BLOCKED",
