@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { jwtVerify, SignJWT } from "jose";
 
 type AuthTokenType = "access" | "refresh";
 
@@ -20,81 +20,49 @@ type CreateTokenInput = {
   secret: string;
 };
 
-const toBase64Url = (value: string): string => {
-  return Buffer.from(value).toString("base64url");
+const encodeSecret = (secret: string): Uint8Array => {
+  return new TextEncoder().encode(secret);
 };
 
-const fromBase64Url = (value: string): string => {
-  return Buffer.from(value, "base64url").toString("utf8");
-};
-
-const sign = (value: string, secret: string): string => {
-  return createHmac("sha256", secret).update(value).digest("base64url");
-};
-
-const safeEqual = (a: string, b: string): boolean => {
-  const aBuffer = Buffer.from(a);
-  const bBuffer = Buffer.from(b);
-
-  if (aBuffer.length !== bBuffer.length) {
-    return false;
-  }
-
-  return timingSafeEqual(aBuffer, bBuffer);
-};
-
-export const createAuthToken = ({
+export const createAuthToken = async ({
   userId,
   workspaceId,
   sessionId,
   type,
   ttlSeconds,
   secret,
-}: CreateTokenInput): string => {
+}: CreateTokenInput): Promise<string> => {
   const now = Math.floor(Date.now() / 1000);
 
-  const header = toBase64Url(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-  const payload = toBase64Url(
-    JSON.stringify({
-      sub: userId,
-      wid: workspaceId,
-      sid: sessionId,
-      typ: type,
-      iat: now,
-      exp: now + ttlSeconds,
-    } satisfies AuthTokenPayload),
-  );
-
-  const unsignedToken = `${header}.${payload}`;
-  const signature = sign(unsignedToken, secret);
-
-  return `${unsignedToken}.${signature}`;
+  return new SignJWT({
+    uid: userId,
+    wid: workspaceId,
+    sid: sessionId,
+    typ: type,
+  })
+    .setProtectedHeader({ alg: "HS256", typ: "JWT" })
+    .setIssuedAt(now)
+    .setSubject(String(userId))
+    .setExpirationTime(now + ttlSeconds)
+    .sign(encodeSecret(secret));
 };
 
-const parseAuthToken = (
+const parseAuthToken = async (
   token: string,
   secret: string,
-): AuthTokenPayload | null => {
-  const [header, payload, signature] = token.split(".");
-
-  if (!header || !payload || !signature) {
-    return null;
-  }
-
-  const unsignedToken = `${header}.${payload}`;
-  const expectedSignature = sign(unsignedToken, secret);
-
-  if (!safeEqual(signature, expectedSignature)) {
-    return null;
-  }
-
+): Promise<AuthTokenPayload | null> => {
   try {
-    const decodedPayload = JSON.parse(
-      fromBase64Url(payload),
-    ) as AuthTokenPayload;
+    const { payload } = await jwtVerify(token, encodeSecret(secret), {
+      algorithms: ["HS256"],
+      typ: "JWT",
+    });
+
+    const decodedPayload = payload as Record<string, unknown>;
 
     if (
-      typeof decodedPayload.sub !== "number" ||
+      typeof decodedPayload.sub !== "string" ||
+      decodedPayload.sub !== String(decodedPayload.uid) ||
+      typeof decodedPayload.uid !== "number" ||
       typeof decodedPayload.wid !== "number" ||
       typeof decodedPayload.sid !== "number" ||
       (decodedPayload.typ !== "access" && decodedPayload.typ !== "refresh") ||
@@ -104,21 +72,24 @@ const parseAuthToken = (
       return null;
     }
 
-    if (decodedPayload.exp <= Math.floor(Date.now() / 1000)) {
-      return null;
-    }
-
-    return decodedPayload;
+    return {
+      sub: decodedPayload.uid,
+      wid: decodedPayload.wid,
+      sid: decodedPayload.sid,
+      typ: decodedPayload.typ,
+      iat: decodedPayload.iat,
+      exp: decodedPayload.exp,
+    } as AuthTokenPayload;
   } catch {
     return null;
   }
 };
 
-export const verifyAccessToken = (
+export const verifyAccessToken = async (
   token: string,
   secret: string,
-): AuthTokenPayload | null => {
-  const payload = parseAuthToken(token, secret);
+): Promise<AuthTokenPayload | null> => {
+  const payload = await parseAuthToken(token, secret);
 
   if (!payload || payload.typ !== "access") {
     return null;
@@ -127,11 +98,11 @@ export const verifyAccessToken = (
   return payload;
 };
 
-export const verifyRefreshToken = (
+export const verifyRefreshToken = async (
   token: string,
   secret: string,
-): AuthTokenPayload | null => {
-  const payload = parseAuthToken(token, secret);
+): Promise<AuthTokenPayload | null> => {
+  const payload = await parseAuthToken(token, secret);
 
   if (!payload || payload.typ !== "refresh") {
     return null;

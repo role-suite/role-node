@@ -7,10 +7,6 @@ import {
 import { createAppError } from "../../shared/errors/app-error.js";
 import { ERROR_CODES } from "../../shared/errors/error-codes.js";
 import {
-  recordDomainMetric,
-  withDomainSpan,
-} from "../../shared/telemetry-domain.js";
-import {
   createAuthToken,
   verifyRefreshToken,
 } from "../../shared/auth/tokens.js";
@@ -108,7 +104,7 @@ const issueTokenPair = async (userId: number, workspaceId: number) => {
     expiresAt: refreshExpiry,
   });
 
-  const accessToken = createAuthToken({
+  const accessToken = await createAuthToken({
     userId,
     workspaceId,
     sessionId: session.id,
@@ -117,7 +113,7 @@ const issueTokenPair = async (userId: number, workspaceId: number) => {
     secret: env.AUTH_ACCESS_TOKEN_SECRET,
   });
 
-  const refreshToken = createAuthToken({
+  const refreshToken = await createAuthToken({
     userId,
     workspaceId,
     sessionId: session.id,
@@ -187,170 +183,137 @@ const toAuthResponse = async (
 
 export const authService = {
   async register(payload: RegisterInput): Promise<AuthResponse> {
-    return withDomainSpan(
-      "auth",
-      "register",
-      { "auth.account_type": payload.accountType },
-      async () => {
-        const existingUser = await authRepo.findUserByEmail(payload.email);
+    const existingUser = await authRepo.findUserByEmail(payload.email);
 
-        if (existingUser) {
-          recordDomainMetric.auth("register", "error");
-          throw createAppError(ERROR_CODES.auth.EMAIL_ALREADY_IN_USE);
-        }
+    if (existingUser) {
+      throw createAppError(ERROR_CODES.auth.EMAIL_ALREADY_IN_USE);
+    }
 
-        const user = await authRepo.createUser({
-          name: payload.name,
-          email: payload.email,
-          passwordHash: hashPassword(payload.password),
-        });
+    const user = await authRepo.createUser({
+      name: payload.name,
+      email: payload.email,
+      passwordHash: await hashPassword(payload.password),
+    });
 
-        const workspace = await authRepo.createWorkspace({
-          name:
-            payload.accountType === "team"
-              ? (payload.teamName ?? "Team Workspace")
-              : createWorkspaceNameForSingleAccount(payload.name),
-          type: payload.accountType === "team" ? "team" : "personal",
-          createdByUserId: user.id,
-        });
+    const workspace = await authRepo.createWorkspace({
+      name:
+        payload.accountType === "team"
+          ? (payload.teamName ?? "Team Workspace")
+          : createWorkspaceNameForSingleAccount(payload.name),
+      type: payload.accountType === "team" ? "team" : "personal",
+      createdByUserId: user.id,
+    });
 
-        const membership = await authRepo.createMembership({
-          userId: user.id,
-          workspaceId: workspace.id,
-          role: "owner",
-        });
+    const membership = await authRepo.createMembership({
+      userId: user.id,
+      workspaceId: workspace.id,
+      role: "owner",
+    });
 
-        const tokens = await issueTokenPair(user.id, workspace.id);
-        recordDomainMetric.auth("register", "success");
+    const tokens = await issueTokenPair(user.id, workspace.id);
 
-        return toAuthResponse(user, workspace, membership.role, tokens);
-      },
-    );
+    return toAuthResponse(user, workspace, membership.role, tokens);
   },
 
   async login(payload: LoginInput): Promise<AuthResponse> {
-    return withDomainSpan("auth", "login", {}, async () => {
-      const user = await authRepo.findUserByEmail(payload.email);
+    const user = await authRepo.findUserByEmail(payload.email);
 
-      if (!user || !verifyPassword(payload.password, user.passwordHash)) {
-        recordDomainMetric.auth("login", "error");
-        throw createAppError(ERROR_CODES.auth.INVALID_CREDENTIALS);
-      }
+    if (!user || !(await verifyPassword(payload.password, user.passwordHash))) {
+      throw createAppError(ERROR_CODES.auth.INVALID_CREDENTIALS);
+    }
 
-      const { workspaceId, role } = await selectWorkspaceIdForLogin(user.id);
-      const workspace = await authRepo.findWorkspaceById(workspaceId);
+    const { workspaceId, role } = await selectWorkspaceIdForLogin(user.id);
+    const workspace = await authRepo.findWorkspaceById(workspaceId);
 
-      if (!workspace) {
-        recordDomainMetric.auth("login", "error");
-        throw createAppError(ERROR_CODES.workspaces.WORKSPACE_NOT_FOUND);
-      }
+    if (!workspace) {
+      throw createAppError(ERROR_CODES.workspaces.WORKSPACE_NOT_FOUND);
+    }
 
-      const tokens = await issueTokenPair(user.id, workspace.id);
-      recordDomainMetric.auth("login", "success");
+    const tokens = await issueTokenPair(user.id, workspace.id);
 
-      return toAuthResponse(user, workspace, role, tokens);
-    });
+    return toAuthResponse(user, workspace, role, tokens);
   },
 
   async refresh(payload: RefreshTokenInput): Promise<AuthResponse> {
-    return withDomainSpan("auth", "refresh", {}, async () => {
-      const tokenPayload = verifyRefreshToken(
-        payload.refreshToken,
-        env.AUTH_REFRESH_TOKEN_SECRET,
-      );
+    const tokenPayload = await verifyRefreshToken(
+      payload.refreshToken,
+      env.AUTH_REFRESH_TOKEN_SECRET,
+    );
 
-      if (!tokenPayload) {
-        recordDomainMetric.auth("refresh", "error");
-        throw createAppError(ERROR_CODES.auth.INVALID_REFRESH_TOKEN);
-      }
+    if (!tokenPayload) {
+      throw createAppError(ERROR_CODES.auth.INVALID_REFRESH_TOKEN);
+    }
 
-      const session = await authRepo.findSessionById(tokenPayload.sid);
+    const session = await authRepo.findSessionById(tokenPayload.sid);
 
-      if (
-        !session ||
-        session.revokedAt !== null ||
-        session.expiresAt.getTime() <= Date.now() ||
-        session.userId !== tokenPayload.sub ||
-        session.workspaceId !== tokenPayload.wid ||
-        session.refreshTokenHash !== hashToken(payload.refreshToken)
-      ) {
-        recordDomainMetric.auth("refresh", "error");
-        throw createAppError(ERROR_CODES.auth.REFRESH_SESSION_INVALID);
-      }
+    if (
+      !session ||
+      session.revokedAt !== null ||
+      session.expiresAt.getTime() <= Date.now() ||
+      session.userId !== tokenPayload.sub ||
+      session.workspaceId !== tokenPayload.wid ||
+      session.refreshTokenHash !== hashToken(payload.refreshToken)
+    ) {
+      throw createAppError(ERROR_CODES.auth.REFRESH_SESSION_INVALID);
+    }
 
-      const user = await authRepo.findUserById(session.userId);
-      const workspace = await authRepo.findWorkspaceById(session.workspaceId);
-      const membership = await authRepo.findMembershipByUserAndWorkspace(
-        session.userId,
-        session.workspaceId,
-      );
+    const user = await authRepo.findUserById(session.userId);
+    const workspace = await authRepo.findWorkspaceById(session.workspaceId);
+    const membership = await authRepo.findMembershipByUserAndWorkspace(
+      session.userId,
+      session.workspaceId,
+    );
 
-      if (!user || !workspace || !membership) {
-        recordDomainMetric.auth("refresh", "error");
-        throw createAppError(ERROR_CODES.auth.REFRESH_SESSION_INVALID);
-      }
+    if (!user || !workspace || !membership) {
+      throw createAppError(ERROR_CODES.auth.REFRESH_SESSION_INVALID);
+    }
 
-      await authRepo.revokeSessionById(session.id);
-      const tokens = await issueTokenPair(user.id, workspace.id);
-      recordDomainMetric.auth("refresh", "success");
+    await authRepo.revokeSessionById(session.id);
+    const tokens = await issueTokenPair(user.id, workspace.id);
 
-      return toAuthResponse(user, workspace, membership.role, tokens);
-    });
+    return toAuthResponse(user, workspace, membership.role, tokens);
   },
 
   async logout(payload: RefreshTokenInput): Promise<void> {
-    return withDomainSpan("auth", "logout", {}, async () => {
-      const tokenPayload = verifyRefreshToken(
-        payload.refreshToken,
-        env.AUTH_REFRESH_TOKEN_SECRET,
-      );
+    const tokenPayload = await verifyRefreshToken(
+      payload.refreshToken,
+      env.AUTH_REFRESH_TOKEN_SECRET,
+    );
 
-      if (!tokenPayload) {
-        recordDomainMetric.auth("logout", "success");
-        return;
-      }
+    if (!tokenPayload) {
+      return;
+    }
 
-      await authRepo.revokeSessionById(tokenPayload.sid);
-      recordDomainMetric.auth("logout", "success");
-    });
+    await authRepo.revokeSessionById(tokenPayload.sid);
   },
 
   async getMe(context: AuthContext): Promise<Omit<AuthResponse, "tokens">> {
-    return withDomainSpan(
-      "auth",
-      "get_me",
-      {},
-      async (): Promise<Omit<AuthResponse, "tokens">> => {
-        const user = await authRepo.findUserById(context.userId);
-        const workspace = await authRepo.findWorkspaceById(context.workspaceId);
-        const membership = await authRepo.findMembershipByUserAndWorkspace(
-          context.userId,
-          context.workspaceId,
-        );
-
-        if (!user || !workspace || !membership) {
-          recordDomainMetric.auth("get_me", "error");
-          throw createAppError(ERROR_CODES.common.AUTH_CONTEXT_INVALID);
-        }
-
-        recordDomainMetric.auth("get_me", "success");
-        return {
-          user: {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-          },
-          workspace: {
-            id: workspace.id,
-            _id: workspace.id,
-            name: workspace.name,
-            slug: workspace.slug,
-            type: workspace.type,
-            role: membership.role,
-          },
-          memberships: await buildMemberships(user.id),
-        };
-      },
+    const user = await authRepo.findUserById(context.userId);
+    const workspace = await authRepo.findWorkspaceById(context.workspaceId);
+    const membership = await authRepo.findMembershipByUserAndWorkspace(
+      context.userId,
+      context.workspaceId,
     );
+
+    if (!user || !workspace || !membership) {
+      throw createAppError(ERROR_CODES.common.AUTH_CONTEXT_INVALID);
+    }
+
+    return {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      },
+      workspace: {
+        id: workspace.id,
+        _id: workspace.id,
+        name: workspace.name,
+        slug: workspace.slug,
+        type: workspace.type,
+        role: membership.role,
+      },
+      memberships: await buildMemberships(user.id),
+    };
   },
 };

@@ -31,7 +31,7 @@ export const requireAuth = async (
     throw createAppError(ERROR_CODES.common.MISSING_ACCESS_TOKEN);
   }
 
-  const payload = verifyAccessToken(token, env.AUTH_ACCESS_TOKEN_SECRET);
+  const payload = await verifyAccessToken(token, env.AUTH_ACCESS_TOKEN_SECRET);
 
   if (!payload) {
     throw createAppError(ERROR_CODES.common.INVALID_ACCESS_TOKEN);
