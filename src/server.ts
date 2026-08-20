@@ -5,15 +5,12 @@ import { closeDb } from "./config/db.js";
 import { env } from "./config/env.js";
 import { closeKyselyDb } from "./config/kysely.js";
 import { validateStartupOrThrow } from "./config/startup-validation.js";
-import { startGrpcServer } from "./grpc/server.js";
 import { logger } from "./shared/logger.js";
 
 let httpServer: HttpServer | null = null;
-let grpcServerHandle: Awaited<ReturnType<typeof startGrpcServer>> = null;
 
 const startServer = async (): Promise<void> => {
   try {
-
     if (env.ENABLE_STARTUP_VALIDATION) {
       await validateStartupOrThrow();
     } else {
@@ -21,8 +18,6 @@ const startServer = async (): Promise<void> => {
         "Startup validation is disabled by ENABLE_STARTUP_VALIDATION",
       );
     }
-
-    grpcServerHandle = await startGrpcServer();
 
     httpServer = app.listen(env.PORT, () => {
       logger.info(`REST API Server is running on port ${env.PORT}`, {
@@ -54,10 +49,6 @@ const handleShutdown = async (signal: NodeJS.Signals): Promise<void> => {
           resolve();
         });
       });
-    }
-
-    if (grpcServerHandle) {
-      await grpcServerHandle.close();
     }
 
     await closeDb();
