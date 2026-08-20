@@ -120,7 +120,7 @@ const run = async (): Promise<void> => {
     throw new Error(`Unsupported migration command: ${command}`);
   }
 
-  const db = createDatabaseClient(env.DB_DIALECT, {
+  const db = createDatabaseClient({
     host: env.DB_HOST,
     port: env.DB_PORT,
     user: env.DB_USER,
@@ -135,7 +135,7 @@ const run = async (): Promise<void> => {
     const migrations = await loadMigrations();
 
     if (command === "status") {
-      const status = await getMigrationStatus(db, env.DB_DIALECT, migrations);
+      const status = await getMigrationStatus(db, "postgres", migrations);
       console.log(JSON.stringify(status, null, 2));
       return;
     }
@@ -143,7 +143,7 @@ const run = async (): Promise<void> => {
     if (command === "down") {
       const rolledBack = await rollbackMigrations(
         db,
-        env.DB_DIALECT,
+        "postgres",
         migrations,
         count ?? 1,
       );
@@ -153,12 +153,7 @@ const run = async (): Promise<void> => {
       return;
     }
 
-    const applied = await applyMigrations(
-      db,
-      env.DB_DIALECT,
-      migrations,
-      count,
-    );
+    const applied = await applyMigrations(db, "postgres", migrations, count);
     console.log(
       `Applied migrations: ${applied.length > 0 ? applied.join(", ") : "none"}`,
     );

@@ -20,7 +20,7 @@ type RequestRunRow = {
   duration_ms: number | null;
   error_code: string | null;
   error_message: string | null;
-  error_json: string | null;
+  error_json: unknown | null;
   created_at: Date | string;
 };
 
@@ -28,18 +28,18 @@ type RequestRunRequestRow = {
   run_id: number;
   method: StoredRun["request"]["method"];
   url: string;
-  headers_json: string;
-  query_params_json: string;
+  headers_json: unknown;
+  query_params_json: unknown;
   body_text: string | null;
-  auth_json: string | null;
-  resolved_variables_json: string;
+  auth_json: unknown | null;
+  resolved_variables_json: unknown;
   timeout_ms: number;
 };
 
 type RequestRunResponseRow = {
   run_id: number;
   status_code: number;
-  headers_json: string;
+  headers_json: unknown;
   body_text: string | null;
   body_base64: string | null;
   size_bytes: number;
@@ -61,7 +61,7 @@ export const setRunsRepoDbClient = (dbClient: DatabaseClient | null): void => {
 };
 
 const resolveToken = (index: number): string => {
-  return resolveDb().dialect === "postgres" ? `$${index}` : "?";
+  return `$${index}`;
 };
 
 const toDate = (value: Date | string | null): Date | null => {
@@ -72,9 +72,13 @@ const toDate = (value: Date | string | null): Date | null => {
   return value instanceof Date ? value : new Date(value);
 };
 
-const parseJson = <T>(value: string | null, fallback: T): T => {
+const parseJson = <T>(value: unknown | null, fallback: T): T => {
   if (!value) {
     return fallback;
+  }
+
+  if (typeof value !== "string") {
+    return value as T;
   }
 
   try {
@@ -174,15 +178,15 @@ const insertRequestSnapshot = async (
     request: ExecutedRequestSnapshot;
   },
 ): Promise<void> => {
-  const runIdToken = db.dialect === "postgres" ? "$1" : "?";
-  const methodToken = db.dialect === "postgres" ? "$2" : "?";
-  const urlToken = db.dialect === "postgres" ? "$3" : "?";
-  const headersToken = db.dialect === "postgres" ? "$4" : "?";
-  const queryToken = db.dialect === "postgres" ? "$5" : "?";
-  const bodyToken = db.dialect === "postgres" ? "$6" : "?";
-  const authToken = db.dialect === "postgres" ? "$7" : "?";
-  const varsToken = db.dialect === "postgres" ? "$8" : "?";
-  const timeoutToken = db.dialect === "postgres" ? "$9" : "?";
+  const runIdToken = "$1";
+  const methodToken = "$2";
+  const urlToken = "$3";
+  const headersToken = "$4";
+  const queryToken = "$5";
+  const bodyToken = "$6";
+  const authToken = "$7";
+  const varsToken = "$8";
+  const timeoutToken = "$9";
 
   await db.query(
     `INSERT INTO ${REQUEST_RUN_REQUESTS_TABLE} (run_id, method, url, headers_json, query_params_json, body_text, auth_json, resolved_variables_json, timeout_ms) VALUES (${runIdToken}, ${methodToken}, ${urlToken}, ${headersToken}, ${queryToken}, ${bodyToken}, ${authToken}, ${varsToken}, ${timeoutToken})`,
@@ -207,19 +211,19 @@ const upsertResponseSnapshot = async (
     response: ExecutedResponseSnapshot;
   },
 ): Promise<void> => {
-  const runIdToken = db.dialect === "postgres" ? "$1" : "?";
+  const runIdToken = "$1";
 
   await db.query(
     `DELETE FROM ${REQUEST_RUN_RESPONSES_TABLE} WHERE run_id = ${runIdToken}`,
     [payload.runId],
   );
 
-  const statusToken = db.dialect === "postgres" ? "$2" : "?";
-  const headersToken = db.dialect === "postgres" ? "$3" : "?";
-  const bodyToken = db.dialect === "postgres" ? "$4" : "?";
-  const base64Token = db.dialect === "postgres" ? "$5" : "?";
-  const sizeToken = db.dialect === "postgres" ? "$6" : "?";
-  const truncatedToken = db.dialect === "postgres" ? "$7" : "?";
+  const statusToken = "$2";
+  const headersToken = "$3";
+  const bodyToken = "$4";
+  const base64Token = "$5";
+  const sizeToken = "$6";
+  const truncatedToken = "$7";
 
   await db.query(
     `INSERT INTO ${REQUEST_RUN_RESPONSES_TABLE} (run_id, status_code, headers_json, body_text, body_base64, size_bytes, truncated) VALUES (${runIdToken}, ${statusToken}, ${headersToken}, ${bodyToken}, ${base64Token}, ${sizeToken}, ${truncatedToken})`,
@@ -284,43 +288,15 @@ export const runsRepo = {
     const db = resolveDb();
 
     const runId = await db.transaction(async (tx) => {
-      const workspaceToken = tx.dialect === "postgres" ? "$1" : "?";
-      const userToken = tx.dialect === "postgres" ? "$2" : "?";
-      const sourceTypeToken = tx.dialect === "postgres" ? "$3" : "?";
-      const sourceCollectionToken = tx.dialect === "postgres" ? "$4" : "?";
-      const sourceEndpointToken = tx.dialect === "postgres" ? "$5" : "?";
-      const statusToken = tx.dialect === "postgres" ? "$6" : "?";
-      const startedAtToken = tx.dialect === "postgres" ? "$7" : "?";
-
-      if (tx.dialect === "postgres") {
-        const inserted = await tx.query<{ id: number }>(
-          `INSERT INTO ${REQUEST_RUNS_TABLE} (workspace_id, initiated_by_user_id, source_type, source_collection_id, source_endpoint_id, status, started_at) VALUES (${workspaceToken}, ${userToken}, ${sourceTypeToken}, ${sourceCollectionToken}, ${sourceEndpointToken}, ${statusToken}, ${startedAtToken}) RETURNING id`,
-          [
-            payload.workspaceId,
-            payload.initiatedByUserId,
-            payload.sourceType,
-            payload.sourceCollectionId,
-            payload.sourceEndpointId,
-            "running",
-            payload.startedAt,
-          ],
-        );
-
-        const insertedId = inserted.rows[0]?.id;
-        if (!insertedId) {
-          throw new Error("Failed to create request run");
-        }
-
-        await insertRequestSnapshot(tx, {
-          runId: insertedId,
-          request: payload.request,
-        });
-
-        return insertedId;
-      }
-
-      await tx.query(
-        `INSERT INTO ${REQUEST_RUNS_TABLE} (workspace_id, initiated_by_user_id, source_type, source_collection_id, source_endpoint_id, status, started_at) VALUES (${workspaceToken}, ${userToken}, ${sourceTypeToken}, ${sourceCollectionToken}, ${sourceEndpointToken}, ${statusToken}, ${startedAtToken})`,
+      const workspaceToken = "$1";
+      const userToken = "$2";
+      const sourceTypeToken = "$3";
+      const sourceCollectionToken = "$4";
+      const sourceEndpointToken = "$5";
+      const statusToken = "$6";
+      const startedAtToken = "$7";
+      const inserted = await tx.query<{ id: number }>(
+        `INSERT INTO ${REQUEST_RUNS_TABLE} (workspace_id, initiated_by_user_id, source_type, source_collection_id, source_endpoint_id, status, started_at) VALUES (${workspaceToken}, ${userToken}, ${sourceTypeToken}, ${sourceCollectionToken}, ${sourceEndpointToken}, ${statusToken}, ${startedAtToken}) RETURNING id`,
         [
           payload.workspaceId,
           payload.initiatedByUserId,
@@ -332,13 +308,7 @@ export const runsRepo = {
         ],
       );
 
-      const latest = await tx.query<{ id: number }>(
-        `SELECT id FROM ${REQUEST_RUNS_TABLE} WHERE workspace_id = ${workspaceToken} AND initiated_by_user_id = ${userToken} ORDER BY id DESC LIMIT 1`,
-        [payload.workspaceId, payload.initiatedByUserId],
-      );
-
-      const insertedId = latest.rows[0]?.id;
-
+      const insertedId = inserted.rows[0]?.id;
       if (!insertedId) {
         throw new Error("Failed to create request run");
       }
@@ -369,11 +339,9 @@ export const runsRepo = {
     await db.transaction(async (tx) => {
       await upsertResponseSnapshot(tx, { runId, response });
 
-      const idToken = tx.dialect === "postgres" ? "$1" : "?";
+      const idToken = "$1";
       const durationExpression =
-        tx.dialect === "postgres"
-          ? "EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - started_at)) * 1000"
-          : "TIMESTAMPDIFF(MICROSECOND, started_at, CURRENT_TIMESTAMP) DIV 1000";
+        "EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - started_at)) * 1000";
       await tx.query(
         `UPDATE ${REQUEST_RUNS_TABLE} SET status = 'completed', completed_at = CURRENT_TIMESTAMP, duration_ms = ${durationExpression} WHERE id = ${idToken}`,
         [runId],
@@ -397,14 +365,12 @@ export const runsRepo = {
     const isCancelled = error.code === "RUN_CANCELLED";
 
     await db.transaction(async (tx) => {
-      const idToken = tx.dialect === "postgres" ? "$1" : "?";
-      const codeToken = tx.dialect === "postgres" ? "$2" : "?";
-      const messageToken = tx.dialect === "postgres" ? "$3" : "?";
-      const detailsToken = tx.dialect === "postgres" ? "$4" : "?";
+      const idToken = "$1";
+      const codeToken = "$2";
+      const messageToken = "$3";
+      const detailsToken = "$4";
       const durationExpression =
-        tx.dialect === "postgres"
-          ? "EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - started_at)) * 1000"
-          : "TIMESTAMPDIFF(MICROSECOND, started_at, CURRENT_TIMESTAMP) DIV 1000";
+        "EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - started_at)) * 1000";
 
       await tx.query(
         `UPDATE ${REQUEST_RUNS_TABLE} SET status = '${isCancelled ? "cancelled" : "failed"}', completed_at = CURRENT_TIMESTAMP, duration_ms = ${durationExpression}, error_code = ${codeToken}, error_message = ${messageToken}, error_json = ${detailsToken} WHERE id = ${idToken}`,

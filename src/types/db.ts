@@ -1,4 +1,4 @@
-export type DbDialect = "postgres" | "mysql" | "mariadb";
+export type DbDialect = "postgres";
 
 export type QueryValue = string | number | boolean | Date | Buffer | null;
 

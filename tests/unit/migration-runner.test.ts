@@ -165,33 +165,4 @@ describe("migration runner", () => {
       "Cannot rollback migration '999_missing': definition file not found",
     );
   });
-
-  it("uses mysql parameter placeholders for migration records", async () => {
-    const mysqlState: FakeDbState = {
-      applied: ["001_init"],
-      ensureTableCalls: 0,
-      queryLog: [],
-    };
-    const mysqlDb = createFakeDb("mysql", mysqlState);
-    const first = createMigration("001_init");
-    const second = createMigration("002_add_users");
-
-    await applyMigrations(mysqlDb, "mysql", [first, second]);
-    await rollbackMigrations(mysqlDb, "mysql", [first, second], 0);
-
-    const normalizedLog = mysqlState.queryLog.map((sql) =>
-      sql.replace(/\s+/g, " ").trim().toLowerCase(),
-    );
-
-    expect(
-      normalizedLog.some((sql) =>
-        sql.includes("insert into app_migrations (id) values (?)"),
-      ),
-    ).toBe(true);
-    expect(
-      normalizedLog.some((sql) =>
-        sql.includes("delete from app_migrations where id = ?"),
-      ),
-    ).toBe(true);
-  });
 });

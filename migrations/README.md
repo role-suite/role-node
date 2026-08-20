@@ -22,20 +22,10 @@ Example:
 ```ts
 import type { MigrationContext } from "../src/types/db-migration.js";
 
-export const up = async ({ db, dialect }: MigrationContext): Promise<void> => {
-  if (dialect === "postgres") {
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        email VARCHAR(255) NOT NULL UNIQUE
-      )
-    `);
-    return;
-  }
-
+export const up = async ({ db }: MigrationContext): Promise<void> => {
   await db.query(`
     CREATE TABLE IF NOT EXISTS users (
-      id INT AUTO_INCREMENT PRIMARY KEY,
+      id SERIAL PRIMARY KEY,
       email VARCHAR(255) NOT NULL UNIQUE
     )
   `);
@@ -50,3 +40,4 @@ export const down = async ({ db }: MigrationContext): Promise<void> => {
 
 - Migrations run inside transactions managed by the runner.
 - Applied migrations are tracked in `app_migrations`.
+- SQL targets Postgres only.

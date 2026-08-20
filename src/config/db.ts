@@ -20,7 +20,7 @@ const resolveDatabaseConfig = (): DatabaseConfig => {
 
 export const getDb = (): DatabaseClient => {
   if (!dbClient) {
-    dbClient = createDatabaseClient(env.DB_DIALECT, resolveDatabaseConfig());
+    dbClient = createDatabaseClient(resolveDatabaseConfig());
   }
 
   return dbClient;

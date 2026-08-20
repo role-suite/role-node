@@ -69,10 +69,10 @@ type CollectionEndpointRow = {
   name: string;
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD" | "OPTIONS";
   url: string;
-  headers_json: string;
-  query_params_json: string;
-  body_json: string | null;
-  auth_json: string | null;
+  headers_json: unknown;
+  query_params_json: unknown;
+  body_json: unknown | null;
+  auth_json: unknown | null;
   position: number;
   created_by_user_id: number;
   created_at: Date | string;
@@ -95,7 +95,7 @@ type CollectionEndpointExampleRow = {
   endpoint_id: number;
   name: string;
   status_code: number;
-  headers_json: string;
+  headers_json: unknown;
   body_text: string | null;
   position: number;
   created_by_user_id: number;
@@ -121,11 +121,19 @@ export const setCollectionsRepoDbClient = (
 };
 
 const resolveToken = (index: number): string => {
-  return resolveDb().dialect === "postgres" ? `$${index}` : "?";
+  return `$${index}`;
 };
 
 const toDate = (value: Date | string): Date => {
   return value instanceof Date ? value : new Date(value);
+};
+
+const stringifyJsonColumn = (value: unknown): string => {
+  return typeof value === "string" ? value : JSON.stringify(value);
+};
+
+const stringifyNullableJsonColumn = (value: unknown | null): string | null => {
+  return value === null ? null : stringifyJsonColumn(value);
 };
 
 const mapCollectionRow = (row: CollectionRow): Collection => {
@@ -150,10 +158,10 @@ const mapCollectionEndpointRow = (
     name: row.name,
     method: row.method,
     url: row.url,
-    headers: row.headers_json,
-    queryParams: row.query_params_json,
-    body: row.body_json,
-    auth: row.auth_json,
+    headers: stringifyJsonColumn(row.headers_json),
+    queryParams: stringifyJsonColumn(row.query_params_json),
+    body: stringifyNullableJsonColumn(row.body_json),
+    auth: stringifyNullableJsonColumn(row.auth_json),
     position: row.position,
     createdByUserId: row.created_by_user_id,
     createdAt: toDate(row.created_at),
@@ -182,7 +190,7 @@ const mapCollectionEndpointExampleRow = (
     endpointId: row.endpoint_id,
     name: row.name,
     statusCode: row.status_code,
-    headers: row.headers_json,
+    headers: stringifyJsonColumn(row.headers_json),
     body: row.body_text,
     position: row.position,
     createdByUserId: row.created_by_user_id,
@@ -212,27 +220,8 @@ export const collectionsRepo = {
     const createdByToken = resolveToken(4);
     const db = resolveDb();
 
-    if (db.dialect === "postgres") {
-      const result = await db.query<CollectionRow>(
-        `INSERT INTO ${COLLECTIONS_TABLE} (workspace_id, name, description, created_by_user_id) VALUES (${workspaceToken}, ${nameToken}, ${descriptionToken}, ${createdByToken}) RETURNING id, workspace_id, name, description, created_by_user_id, created_at, updated_at`,
-        [
-          payload.workspaceId,
-          payload.name,
-          payload.description,
-          payload.createdByUserId,
-        ],
-      );
-      const row = result.rows[0];
-
-      if (!row) {
-        throw new Error("Failed to create collection");
-      }
-
-      return mapCollectionRow(row);
-    }
-
-    await db.query(
-      `INSERT INTO ${COLLECTIONS_TABLE} (workspace_id, name, description, created_by_user_id) VALUES (${workspaceToken}, ${nameToken}, ${descriptionToken}, ${createdByToken})`,
+    const result = await db.query<CollectionRow>(
+      `INSERT INTO ${COLLECTIONS_TABLE} (workspace_id, name, description, created_by_user_id) VALUES (${workspaceToken}, ${nameToken}, ${descriptionToken}, ${createdByToken}) RETURNING id, workspace_id, name, description, created_by_user_id, created_at, updated_at`,
       [
         payload.workspaceId,
         payload.name,
@@ -240,12 +229,6 @@ export const collectionsRepo = {
         payload.createdByUserId,
       ],
     );
-
-    const result = await db.query<CollectionRow>(
-      `SELECT id, workspace_id, name, description, created_by_user_id, created_at, updated_at FROM ${COLLECTIONS_TABLE} WHERE workspace_id = ${workspaceToken} ORDER BY id DESC LIMIT 1`,
-      [payload.workspaceId],
-    );
-
     const row = result.rows[0];
 
     if (!row) {
@@ -325,34 +308,8 @@ export const collectionsRepo = {
     const createdByToken = resolveToken(11);
     const db = resolveDb();
 
-    if (db.dialect === "postgres") {
-      const result = await db.query<CollectionEndpointRow>(
-        `INSERT INTO ${COLLECTION_ENDPOINTS_TABLE} (collection_id, folder_id, name, method, url, headers_json, query_params_json, body_json, auth_json, position, created_by_user_id) VALUES (${collectionToken}, ${folderToken}, ${nameToken}, ${methodToken}, ${urlToken}, ${headersToken}, ${queryToken}, ${bodyToken}, ${authToken}, ${positionToken}, ${createdByToken}) RETURNING id, collection_id, folder_id, name, method, url, headers_json, query_params_json, body_json, auth_json, position, created_by_user_id, created_at, updated_at`,
-        [
-          payload.collectionId,
-          payload.folderId,
-          payload.name,
-          payload.method,
-          payload.url,
-          payload.headers,
-          payload.queryParams,
-          payload.body,
-          payload.auth,
-          payload.position,
-          payload.createdByUserId,
-        ],
-      );
-      const row = result.rows[0];
-
-      if (!row) {
-        throw new Error("Failed to create collection endpoint");
-      }
-
-      return mapCollectionEndpointRow(row);
-    }
-
-    await db.query(
-      `INSERT INTO ${COLLECTION_ENDPOINTS_TABLE} (collection_id, folder_id, name, method, url, headers_json, query_params_json, body_json, auth_json, position, created_by_user_id) VALUES (${collectionToken}, ${folderToken}, ${nameToken}, ${methodToken}, ${urlToken}, ${headersToken}, ${queryToken}, ${bodyToken}, ${authToken}, ${positionToken}, ${createdByToken})`,
+    const result = await db.query<CollectionEndpointRow>(
+      `INSERT INTO ${COLLECTION_ENDPOINTS_TABLE} (collection_id, folder_id, name, method, url, headers_json, query_params_json, body_json, auth_json, position, created_by_user_id) VALUES (${collectionToken}, ${folderToken}, ${nameToken}, ${methodToken}, ${urlToken}, ${headersToken}, ${queryToken}, ${bodyToken}, ${authToken}, ${positionToken}, ${createdByToken}) RETURNING id, collection_id, folder_id, name, method, url, headers_json, query_params_json, body_json, auth_json, position, created_by_user_id, created_at, updated_at`,
       [
         payload.collectionId,
         payload.folderId,
@@ -367,12 +324,6 @@ export const collectionsRepo = {
         payload.createdByUserId,
       ],
     );
-
-    const result = await db.query<CollectionEndpointRow>(
-      `SELECT id, collection_id, folder_id, name, method, url, headers_json, query_params_json, body_json, auth_json, position, created_by_user_id, created_at, updated_at FROM ${COLLECTION_ENDPOINTS_TABLE} WHERE collection_id = ${collectionToken} ORDER BY id DESC LIMIT 1`,
-      [payload.collectionId],
-    );
-
     const row = result.rows[0];
 
     if (!row) {
@@ -459,29 +410,8 @@ export const collectionsRepo = {
     const createdByToken = resolveToken(5);
     const db = resolveDb();
 
-    if (db.dialect === "postgres") {
-      const result = await db.query<CollectionFolderRow>(
-        `INSERT INTO ${COLLECTION_FOLDERS_TABLE} (collection_id, parent_folder_id, name, position, created_by_user_id) VALUES (${collectionToken}, ${parentToken}, ${nameToken}, ${positionToken}, ${createdByToken}) RETURNING id, collection_id, parent_folder_id, name, position, created_by_user_id, created_at, updated_at`,
-        [
-          payload.collectionId,
-          payload.parentFolderId,
-          payload.name,
-          payload.position,
-          payload.createdByUserId,
-        ],
-      );
-
-      const row = result.rows[0];
-
-      if (!row) {
-        throw new Error("Failed to create collection folder");
-      }
-
-      return mapCollectionFolderRow(row);
-    }
-
-    await db.query(
-      `INSERT INTO ${COLLECTION_FOLDERS_TABLE} (collection_id, parent_folder_id, name, position, created_by_user_id) VALUES (${collectionToken}, ${parentToken}, ${nameToken}, ${positionToken}, ${createdByToken})`,
+    const result = await db.query<CollectionFolderRow>(
+      `INSERT INTO ${COLLECTION_FOLDERS_TABLE} (collection_id, parent_folder_id, name, position, created_by_user_id) VALUES (${collectionToken}, ${parentToken}, ${nameToken}, ${positionToken}, ${createdByToken}) RETURNING id, collection_id, parent_folder_id, name, position, created_by_user_id, created_at, updated_at`,
       [
         payload.collectionId,
         payload.parentFolderId,
@@ -490,12 +420,6 @@ export const collectionsRepo = {
         payload.createdByUserId,
       ],
     );
-
-    const result = await db.query<CollectionFolderRow>(
-      `SELECT id, collection_id, parent_folder_id, name, position, created_by_user_id, created_at, updated_at FROM ${COLLECTION_FOLDERS_TABLE} WHERE collection_id = ${collectionToken} ORDER BY id DESC LIMIT 1`,
-      [payload.collectionId],
-    );
-
     const row = result.rows[0];
 
     if (!row) {
@@ -571,31 +495,8 @@ export const collectionsRepo = {
     const createdByToken = resolveToken(7);
     const db = resolveDb();
 
-    if (db.dialect === "postgres") {
-      const result = await db.query<CollectionEndpointExampleRow>(
-        `INSERT INTO ${COLLECTION_ENDPOINT_EXAMPLES_TABLE} (endpoint_id, name, status_code, headers_json, body_text, position, created_by_user_id) VALUES (${endpointToken}, ${nameToken}, ${statusToken}, ${headersToken}, ${bodyToken}, ${positionToken}, ${createdByToken}) RETURNING id, endpoint_id, name, status_code, headers_json, body_text, position, created_by_user_id, created_at, updated_at`,
-        [
-          payload.endpointId,
-          payload.name,
-          payload.statusCode,
-          payload.headers,
-          payload.body,
-          payload.position,
-          payload.createdByUserId,
-        ],
-      );
-
-      const row = result.rows[0];
-
-      if (!row) {
-        throw new Error("Failed to create endpoint example");
-      }
-
-      return mapCollectionEndpointExampleRow(row);
-    }
-
-    await db.query(
-      `INSERT INTO ${COLLECTION_ENDPOINT_EXAMPLES_TABLE} (endpoint_id, name, status_code, headers_json, body_text, position, created_by_user_id) VALUES (${endpointToken}, ${nameToken}, ${statusToken}, ${headersToken}, ${bodyToken}, ${positionToken}, ${createdByToken})`,
+    const result = await db.query<CollectionEndpointExampleRow>(
+      `INSERT INTO ${COLLECTION_ENDPOINT_EXAMPLES_TABLE} (endpoint_id, name, status_code, headers_json, body_text, position, created_by_user_id) VALUES (${endpointToken}, ${nameToken}, ${statusToken}, ${headersToken}, ${bodyToken}, ${positionToken}, ${createdByToken}) RETURNING id, endpoint_id, name, status_code, headers_json, body_text, position, created_by_user_id, created_at, updated_at`,
       [
         payload.endpointId,
         payload.name,
@@ -606,12 +507,6 @@ export const collectionsRepo = {
         payload.createdByUserId,
       ],
     );
-
-    const result = await db.query<CollectionEndpointExampleRow>(
-      `SELECT id, endpoint_id, name, status_code, headers_json, body_text, position, created_by_user_id, created_at, updated_at FROM ${COLLECTION_ENDPOINT_EXAMPLES_TABLE} WHERE endpoint_id = ${endpointToken} ORDER BY id DESC LIMIT 1`,
-      [payload.endpointId],
-    );
-
     const row = result.rows[0];
 
     if (!row) {

@@ -16,7 +16,6 @@ describe("startup validation", () => {
       env: {
         NODE_ENV: "development",
         PORT: 3000,
-        DB_DIALECT: "postgres",
         DB_HOST: "localhost",
         DB_PORT: 5432,
         DB_USER: "db-user",
@@ -56,7 +55,6 @@ describe("startup validation", () => {
       env: {
         NODE_ENV: "development",
         PORT: 70000,
-        DB_DIALECT: "postgres",
         DB_HOST: "localhost",
         DB_PORT: 5432,
         DB_USER: "db-user",
@@ -95,7 +93,6 @@ describe("startup validation", () => {
       env: {
         NODE_ENV: "production",
         PORT: 3000,
-        DB_DIALECT: "postgres",
         DB_HOST: "localhost",
         DB_PORT: 5432,
         DB_USER: "db-user",

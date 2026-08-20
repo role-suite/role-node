@@ -37,7 +37,7 @@ export const validateStartupOrThrow = async (): Promise<void> => {
     grpcPort: env.GRPC_PORT,
     grpcTlsEnabled: env.GRPC_TLS_ENABLED,
     grpcMtlsEnabled: env.GRPC_MTLS_ENABLED,
-    dbDialect: env.DB_DIALECT,
+    dbDialect: "postgres",
     dbHost: env.DB_HOST,
   });
 };

@@ -103,7 +103,7 @@ type WorkspaceEventRow = {
   entity: string;
   action: string;
   entity_id: number | null;
-  payload_json: string | null;
+  payload_json: unknown | null;
   created_at: Date | string;
 };
 
@@ -137,11 +137,19 @@ export const setAuthRepoDbClient = (dbClient: DatabaseClient | null): void => {
 };
 
 const resolveToken = (index: number): string => {
-  return resolveDb().dialect === "postgres" ? `$${index}` : "?";
+  return `$${index}`;
 };
 
 const toDate = (value: Date | string): Date => {
   return value instanceof Date ? value : new Date(value);
+};
+
+const stringifyNullableJsonColumn = (value: unknown | null): string | null => {
+  if (value === null) {
+    return null;
+  }
+
+  return typeof value === "string" ? value : JSON.stringify(value);
 };
 
 const mapUserRow = (row: UserRow): AuthUser => {
@@ -195,7 +203,7 @@ const mapWorkspaceEventRow = (row: WorkspaceEventRow): WorkspaceEvent => {
     entity: row.entity,
     action: row.action,
     entityId: row.entity_id,
-    payloadJson: row.payload_json,
+    payloadJson: stringifyNullableJsonColumn(row.payload_json),
     createdAt: toDate(row.created_at),
   };
 };
@@ -262,28 +270,9 @@ export const authRepo = {
     const hashToken = resolveToken(3);
     const db = resolveDb();
 
-    if (db.dialect === "postgres") {
-      const result = await db.query<UserRow>(
-        `INSERT INTO ${USERS_TABLE} (name, email, password_hash) VALUES (${nameToken}, ${emailToken}, ${hashToken}) RETURNING id, name, email, password_hash, created_at`,
-        [payload.name, payload.email, payload.passwordHash],
-      );
-      const row = result.rows[0];
-
-      if (!row) {
-        throw new Error("Failed to create auth user");
-      }
-
-      return mapUserRow(row);
-    }
-
-    await db.query(
-      `INSERT INTO ${USERS_TABLE} (name, email, password_hash) VALUES (${nameToken}, ${emailToken}, ${hashToken})`,
-      [payload.name, payload.email, payload.passwordHash],
-    );
-
     const result = await db.query<UserRow>(
-      `SELECT id, name, email, password_hash, created_at FROM ${USERS_TABLE} WHERE email = ${emailToken}`,
-      [payload.email],
+      `INSERT INTO ${USERS_TABLE} (name, email, password_hash) VALUES (${nameToken}, ${emailToken}, ${hashToken}) RETURNING id, name, email, password_hash, created_at`,
+      [payload.name, payload.email, payload.passwordHash],
     );
 
     const row = result.rows[0];
@@ -329,28 +318,9 @@ export const authRepo = {
     const createdByToken = resolveToken(4);
     const db = resolveDb();
 
-    if (db.dialect === "postgres") {
-      const result = await db.query<WorkspaceRow>(
-        `INSERT INTO ${WORKSPACES_TABLE} (name, slug, type, created_by_user_id) VALUES (${nameToken}, ${slugToken}, ${typeToken}, ${createdByToken}) RETURNING id, name, slug, type, created_by_user_id, created_at`,
-        [payload.name, slug, payload.type, payload.createdByUserId],
-      );
-      const row = result.rows[0];
-
-      if (!row) {
-        throw new Error("Failed to create workspace");
-      }
-
-      return mapWorkspaceRow(row);
-    }
-
-    await db.query(
-      `INSERT INTO ${WORKSPACES_TABLE} (name, slug, type, created_by_user_id) VALUES (${nameToken}, ${slugToken}, ${typeToken}, ${createdByToken})`,
-      [payload.name, slug, payload.type, payload.createdByUserId],
-    );
-
     const result = await db.query<WorkspaceRow>(
-      `SELECT id, name, slug, type, created_by_user_id, created_at FROM ${WORKSPACES_TABLE} WHERE slug = ${slugToken}`,
-      [slug],
+      `INSERT INTO ${WORKSPACES_TABLE} (name, slug, type, created_by_user_id) VALUES (${nameToken}, ${slugToken}, ${typeToken}, ${createdByToken}) RETURNING id, name, slug, type, created_by_user_id, created_at`,
+      [payload.name, slug, payload.type, payload.createdByUserId],
     );
 
     const row = result.rows[0];
@@ -383,28 +353,9 @@ export const authRepo = {
     const roleToken = resolveToken(3);
     const db = resolveDb();
 
-    if (db.dialect === "postgres") {
-      const result = await db.query<MembershipRow>(
-        `INSERT INTO ${MEMBERSHIPS_TABLE} (user_id, workspace_id, role) VALUES (${userToken}, ${workspaceToken}, ${roleToken}) RETURNING id, user_id, workspace_id, role, created_at`,
-        [payload.userId, payload.workspaceId, payload.role],
-      );
-      const row = result.rows[0];
-
-      if (!row) {
-        throw new Error("Failed to create workspace membership");
-      }
-
-      return mapMembershipRow(row);
-    }
-
-    await db.query(
-      `INSERT INTO ${MEMBERSHIPS_TABLE} (user_id, workspace_id, role) VALUES (${userToken}, ${workspaceToken}, ${roleToken})`,
-      [payload.userId, payload.workspaceId, payload.role],
-    );
-
     const result = await db.query<MembershipRow>(
-      `SELECT id, user_id, workspace_id, role, created_at FROM ${MEMBERSHIPS_TABLE} WHERE user_id = ${userToken} AND workspace_id = ${workspaceToken}`,
-      [payload.userId, payload.workspaceId],
+      `INSERT INTO ${MEMBERSHIPS_TABLE} (user_id, workspace_id, role) VALUES (${userToken}, ${workspaceToken}, ${roleToken}) RETURNING id, user_id, workspace_id, role, created_at`,
+      [payload.userId, payload.workspaceId, payload.role],
     );
 
     const row = result.rows[0];
@@ -509,27 +460,8 @@ export const authRepo = {
     const expiryToken = resolveToken(4);
     const db = resolveDb();
 
-    if (db.dialect === "postgres") {
-      const result = await db.query<SessionRow>(
-        `INSERT INTO ${SESSIONS_TABLE} (user_id, workspace_id, refresh_token_hash, expires_at) VALUES (${userToken}, ${workspaceToken}, ${hashToken}, ${expiryToken}) RETURNING id, user_id, workspace_id, refresh_token_hash, expires_at, revoked_at, created_at`,
-        [
-          payload.userId,
-          payload.workspaceId,
-          payload.refreshTokenHash,
-          payload.expiresAt,
-        ],
-      );
-      const row = result.rows[0];
-
-      if (!row) {
-        throw new Error("Failed to create auth session");
-      }
-
-      return mapSessionRow(row);
-    }
-
-    await db.query(
-      `INSERT INTO ${SESSIONS_TABLE} (user_id, workspace_id, refresh_token_hash, expires_at) VALUES (${userToken}, ${workspaceToken}, ${hashToken}, ${expiryToken})`,
+    const result = await db.query<SessionRow>(
+      `INSERT INTO ${SESSIONS_TABLE} (user_id, workspace_id, refresh_token_hash, expires_at) VALUES (${userToken}, ${workspaceToken}, ${hashToken}, ${expiryToken}) RETURNING id, user_id, workspace_id, refresh_token_hash, expires_at, revoked_at, created_at`,
       [
         payload.userId,
         payload.workspaceId,
@@ -537,12 +469,6 @@ export const authRepo = {
         payload.expiresAt,
       ],
     );
-
-    const result = await db.query<SessionRow>(
-      `SELECT id, user_id, workspace_id, refresh_token_hash, expires_at, revoked_at, created_at FROM ${SESSIONS_TABLE} WHERE user_id = ${userToken} AND workspace_id = ${workspaceToken} ORDER BY id DESC LIMIT 1`,
-      [payload.userId, payload.workspaceId],
-    );
-
     const row = result.rows[0];
 
     if (!row) {
@@ -572,9 +498,7 @@ export const authRepo = {
     const db = resolveDb();
     await db.query(
       `UPDATE ${SESSIONS_TABLE} SET refresh_token_hash = ${hashToken} WHERE id = ${sessionToken}`,
-      db.dialect === "postgres"
-        ? [sessionId, refreshTokenHash]
-        : [refreshTokenHash, sessionId],
+      [sessionId, refreshTokenHash],
     );
   },
 
@@ -602,30 +526,8 @@ export const authRepo = {
     const payloadToken = resolveToken(6);
     const db = resolveDb();
 
-    if (db.dialect === "postgres") {
-      const result = await db.query<WorkspaceEventRow>(
-        `INSERT INTO ${WORKSPACE_EVENTS_TABLE} (workspace_id, actor_user_id, entity, action, entity_id, payload_json) VALUES (${workspaceToken}, ${actorToken}, ${entityToken}, ${actionToken}, ${entityIdToken}, ${payloadToken}) RETURNING id, workspace_id, actor_user_id, entity, action, entity_id, payload_json, created_at`,
-        [
-          payload.workspaceId,
-          payload.actorUserId,
-          payload.entity,
-          payload.action,
-          payload.entityId,
-          payload.payloadJson,
-        ],
-      );
-
-      const row = result.rows[0];
-
-      if (!row) {
-        throw new Error("Failed to create workspace event");
-      }
-
-      return mapWorkspaceEventRow(row);
-    }
-
-    await db.query(
-      `INSERT INTO ${WORKSPACE_EVENTS_TABLE} (workspace_id, actor_user_id, entity, action, entity_id, payload_json) VALUES (${workspaceToken}, ${actorToken}, ${entityToken}, ${actionToken}, ${entityIdToken}, ${payloadToken})`,
+    const result = await db.query<WorkspaceEventRow>(
+      `INSERT INTO ${WORKSPACE_EVENTS_TABLE} (workspace_id, actor_user_id, entity, action, entity_id, payload_json) VALUES (${workspaceToken}, ${actorToken}, ${entityToken}, ${actionToken}, ${entityIdToken}, ${payloadToken}) RETURNING id, workspace_id, actor_user_id, entity, action, entity_id, payload_json, created_at`,
       [
         payload.workspaceId,
         payload.actorUserId,
@@ -634,11 +536,6 @@ export const authRepo = {
         payload.entityId,
         payload.payloadJson,
       ],
-    );
-
-    const result = await db.query<WorkspaceEventRow>(
-      `SELECT id, workspace_id, actor_user_id, entity, action, entity_id, payload_json, created_at FROM ${WORKSPACE_EVENTS_TABLE} WHERE workspace_id = ${workspaceToken} ORDER BY id DESC LIMIT 1`,
-      [payload.workspaceId],
     );
 
     const row = result.rows[0];
@@ -682,29 +579,8 @@ export const authRepo = {
     const expiresToken = resolveToken(6);
     const db = resolveDb();
 
-    if (db.dialect === "postgres") {
-      const result = await db.query<WorkspaceInvitationRow>(
-        `INSERT INTO ${INVITATIONS_TABLE} (workspace_id, invited_by_user_id, email, role, token_hash, expires_at) VALUES (${workspaceToken}, ${invitedByToken}, ${emailToken}, ${roleToken}, ${tokenHashToken}, ${expiresToken}) RETURNING id, workspace_id, invited_by_user_id, email, role, token_hash, expires_at, accepted_at, created_at`,
-        [
-          payload.workspaceId,
-          payload.invitedByUserId,
-          payload.email,
-          payload.role,
-          payload.tokenHash,
-          payload.expiresAt,
-        ],
-      );
-      const row = result.rows[0];
-
-      if (!row) {
-        throw new Error("Failed to create workspace invitation");
-      }
-
-      return mapWorkspaceInvitationRow(row);
-    }
-
-    await db.query(
-      `INSERT INTO ${INVITATIONS_TABLE} (workspace_id, invited_by_user_id, email, role, token_hash, expires_at) VALUES (${workspaceToken}, ${invitedByToken}, ${emailToken}, ${roleToken}, ${tokenHashToken}, ${expiresToken})`,
+    const result = await db.query<WorkspaceInvitationRow>(
+      `INSERT INTO ${INVITATIONS_TABLE} (workspace_id, invited_by_user_id, email, role, token_hash, expires_at) VALUES (${workspaceToken}, ${invitedByToken}, ${emailToken}, ${roleToken}, ${tokenHashToken}, ${expiresToken}) RETURNING id, workspace_id, invited_by_user_id, email, role, token_hash, expires_at, accepted_at, created_at`,
       [
         payload.workspaceId,
         payload.invitedByUserId,
@@ -713,11 +589,6 @@ export const authRepo = {
         payload.tokenHash,
         payload.expiresAt,
       ],
-    );
-
-    const result = await db.query<WorkspaceInvitationRow>(
-      `SELECT id, workspace_id, invited_by_user_id, email, role, token_hash, expires_at, accepted_at, created_at FROM ${INVITATIONS_TABLE} WHERE token_hash = ${tokenHashToken}`,
-      [payload.tokenHash],
     );
     const row = result.rows[0];
 
@@ -781,24 +652,8 @@ export const authRepo = {
   async clear(): Promise<void> {
     const db = resolveDb();
 
-    if (db.dialect === "postgres") {
-      await db.query(
-        `TRUNCATE TABLE ${WORKSPACE_EVENTS_TABLE}, ${INVITATIONS_TABLE}, ${SESSIONS_TABLE}, ${MEMBERSHIPS_TABLE}, ${WORKSPACES_TABLE}, ${USERS_TABLE} RESTART IDENTITY CASCADE`,
-      );
-      return;
-    }
-
-    await db.query(`DELETE FROM ${WORKSPACE_EVENTS_TABLE}`);
-    await db.query(`DELETE FROM ${INVITATIONS_TABLE}`);
-    await db.query(`DELETE FROM ${SESSIONS_TABLE}`);
-    await db.query(`DELETE FROM ${MEMBERSHIPS_TABLE}`);
-    await db.query(`DELETE FROM ${WORKSPACES_TABLE}`);
-    await db.query(`DELETE FROM ${USERS_TABLE}`);
-    await db.query(`ALTER TABLE ${WORKSPACE_EVENTS_TABLE} AUTO_INCREMENT = 1`);
-    await db.query(`ALTER TABLE ${INVITATIONS_TABLE} AUTO_INCREMENT = 1`);
-    await db.query(`ALTER TABLE ${SESSIONS_TABLE} AUTO_INCREMENT = 1`);
-    await db.query(`ALTER TABLE ${MEMBERSHIPS_TABLE} AUTO_INCREMENT = 1`);
-    await db.query(`ALTER TABLE ${WORKSPACES_TABLE} AUTO_INCREMENT = 1`);
-    await db.query(`ALTER TABLE ${USERS_TABLE} AUTO_INCREMENT = 1`);
+    await db.query(
+      `TRUNCATE TABLE ${WORKSPACE_EVENTS_TABLE}, ${INVITATIONS_TABLE}, ${SESSIONS_TABLE}, ${MEMBERSHIPS_TABLE}, ${WORKSPACES_TABLE}, ${USERS_TABLE} RESTART IDENTITY CASCADE`,
+    );
   },
 };

@@ -6,30 +6,12 @@ import type {
 
 const MIGRATIONS_TABLE = "app_migrations";
 
-const createTableSqlByDialect: Record<DbDialect, string> = {
-  postgres: `
+const createTableSql = `
     CREATE TABLE IF NOT EXISTS ${MIGRATIONS_TABLE} (
       id VARCHAR(255) PRIMARY KEY,
       applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
-  `,
-  mysql: `
-    CREATE TABLE IF NOT EXISTS ${MIGRATIONS_TABLE} (
-      id VARCHAR(255) PRIMARY KEY,
-      applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-    )
-  `,
-  mariadb: `
-    CREATE TABLE IF NOT EXISTS ${MIGRATIONS_TABLE} (
-      id VARCHAR(255) PRIMARY KEY,
-      applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-    )
-  `,
-};
-
-const resolveParamToken = (dialect: DbDialect): string => {
-  return dialect === "postgres" ? "$1" : "?";
-};
+  `;
 
 const readAppliedIds = async (db: DatabaseClient): Promise<string[]> => {
   const result = await db.query<{ id: string }>(
@@ -41,22 +23,16 @@ const readAppliedIds = async (db: DatabaseClient): Promise<string[]> => {
 
 const insertAppliedId = async (
   db: DatabaseClient,
-  dialect: DbDialect,
   id: string,
 ): Promise<void> => {
-  const token = resolveParamToken(dialect);
-  await db.query(`INSERT INTO ${MIGRATIONS_TABLE} (id) VALUES (${token})`, [
-    id,
-  ]);
+  await db.query(`INSERT INTO ${MIGRATIONS_TABLE} (id) VALUES ($1)`, [id]);
 };
 
 const deleteAppliedId = async (
   db: DatabaseClient,
-  dialect: DbDialect,
   id: string,
 ): Promise<void> => {
-  const token = resolveParamToken(dialect);
-  await db.query(`DELETE FROM ${MIGRATIONS_TABLE} WHERE id = ${token}`, [id]);
+  await db.query(`DELETE FROM ${MIGRATIONS_TABLE} WHERE id = $1`, [id]);
 };
 
 const readLastAppliedId = async (
@@ -71,9 +47,9 @@ const readLastAppliedId = async (
 
 export const ensureMigrationsTable = async (
   db: DatabaseClient,
-  dialect: DbDialect,
+  _dialect: DbDialect,
 ): Promise<void> => {
-  await db.query(createTableSqlByDialect[dialect]);
+  await db.query(createTableSql);
 };
 
 export const getMigrationStatus = async (
@@ -114,7 +90,7 @@ export const applyMigrations = async (
   for (const migration of selected) {
     await db.transaction(async (tx) => {
       await migration.up({ db: tx, dialect });
-      await insertAppliedId(tx, dialect, migration.id);
+      await insertAppliedId(tx, migration.id);
     });
 
     appliedNow.push(migration.id);
@@ -151,7 +127,7 @@ export const rollbackMigrations = async (
 
     await db.transaction(async (tx) => {
       await migration.down({ db: tx, dialect });
-      await deleteAppliedId(tx, dialect, migration.id);
+      await deleteAppliedId(tx, migration.id);
     });
 
     rolledBack.push(migration.id);

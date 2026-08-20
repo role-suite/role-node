@@ -25,7 +25,6 @@ const envSchema = z
     GRPC_TLS_CERT_PATH: z.string().min(1).optional(),
     GRPC_TLS_KEY_PATH: z.string().min(1).optional(),
     GRPC_TLS_CA_PATH: z.string().min(1).optional(),
-    DB_DIALECT: z.enum(["postgres", "mysql", "mariadb"]).default("postgres"),
     DB_HOST: z.string().min(1),
     DB_PORT: z.coerce.number().int().positive(),
     DB_USER: z.string().min(1),

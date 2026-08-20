@@ -61,7 +61,7 @@ export const setEnvironmentsRepoDbClient = (
 };
 
 const resolveToken = (index: number): string => {
-  return resolveDb().dialect === "postgres" ? `$${index}` : "?";
+  return `$${index}`;
 };
 
 const toDate = (value: Date | string): Date => {
@@ -107,28 +107,9 @@ export const environmentsRepo = {
     const createdByToken = resolveToken(3);
     const db = resolveDb();
 
-    if (db.dialect === "postgres") {
-      const result = await db.query<EnvironmentRow>(
-        `INSERT INTO ${ENVIRONMENTS_TABLE} (workspace_id, name, created_by_user_id) VALUES (${workspaceToken}, ${nameToken}, ${createdByToken}) RETURNING id, workspace_id, name, created_by_user_id, created_at, updated_at`,
-        [payload.workspaceId, payload.name, payload.createdByUserId],
-      );
-      const row = result.rows[0];
-
-      if (!row) {
-        throw new Error("Failed to create environment");
-      }
-
-      return mapEnvironmentRow(row);
-    }
-
-    await db.query(
-      `INSERT INTO ${ENVIRONMENTS_TABLE} (workspace_id, name, created_by_user_id) VALUES (${workspaceToken}, ${nameToken}, ${createdByToken})`,
-      [payload.workspaceId, payload.name, payload.createdByUserId],
-    );
-
     const result = await db.query<EnvironmentRow>(
-      `SELECT id, workspace_id, name, created_by_user_id, created_at, updated_at FROM ${ENVIRONMENTS_TABLE} WHERE workspace_id = ${workspaceToken} ORDER BY id DESC LIMIT 1`,
-      [payload.workspaceId],
+      `INSERT INTO ${ENVIRONMENTS_TABLE} (workspace_id, name, created_by_user_id) VALUES (${workspaceToken}, ${nameToken}, ${createdByToken}) RETURNING id, workspace_id, name, created_by_user_id, created_at, updated_at`,
+      [payload.workspaceId, payload.name, payload.createdByUserId],
     );
     const row = result.rows[0];
 
@@ -213,30 +194,8 @@ export const environmentsRepo = {
     const createdByToken = resolveToken(7);
     const db = resolveDb();
 
-    if (db.dialect === "postgres") {
-      const result = await db.query<EnvironmentVariableRow>(
-        `INSERT INTO ${ENVIRONMENT_VARIABLES_TABLE} (environment_id, key_name, value_text, enabled, is_secret, position, created_by_user_id) VALUES (${environmentToken}, ${keyToken}, ${valueToken}, ${enabledToken}, ${secretToken}, ${positionToken}, ${createdByToken}) RETURNING id, environment_id, key_name, value_text, enabled, is_secret, position, created_by_user_id, created_at, updated_at`,
-        [
-          payload.environmentId,
-          payload.key,
-          payload.value,
-          payload.enabled,
-          payload.isSecret,
-          payload.position,
-          payload.createdByUserId,
-        ],
-      );
-      const row = result.rows[0];
-
-      if (!row) {
-        throw new Error("Failed to create environment variable");
-      }
-
-      return mapEnvironmentVariableRow(row);
-    }
-
-    await db.query(
-      `INSERT INTO ${ENVIRONMENT_VARIABLES_TABLE} (environment_id, key_name, value_text, enabled, is_secret, position, created_by_user_id) VALUES (${environmentToken}, ${keyToken}, ${valueToken}, ${enabledToken}, ${secretToken}, ${positionToken}, ${createdByToken})`,
+    const result = await db.query<EnvironmentVariableRow>(
+      `INSERT INTO ${ENVIRONMENT_VARIABLES_TABLE} (environment_id, key_name, value_text, enabled, is_secret, position, created_by_user_id) VALUES (${environmentToken}, ${keyToken}, ${valueToken}, ${enabledToken}, ${secretToken}, ${positionToken}, ${createdByToken}) RETURNING id, environment_id, key_name, value_text, enabled, is_secret, position, created_by_user_id, created_at, updated_at`,
       [
         payload.environmentId,
         payload.key,
@@ -246,11 +205,6 @@ export const environmentsRepo = {
         payload.position,
         payload.createdByUserId,
       ],
-    );
-
-    const result = await db.query<EnvironmentVariableRow>(
-      `SELECT id, environment_id, key_name, value_text, enabled, is_secret, position, created_by_user_id, created_at, updated_at FROM ${ENVIRONMENT_VARIABLES_TABLE} WHERE environment_id = ${environmentToken} ORDER BY id DESC LIMIT 1`,
-      [payload.environmentId],
     );
     const row = result.rows[0];
 

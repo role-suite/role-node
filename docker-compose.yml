@@ -12,19 +12,6 @@ services:
     volumes:
       - role_postgres_data:/var/lib/postgresql/data
 
-  mysql:
-    image: mysql:8.4
-    container_name: role_mysql
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: testdb
-      MYSQL_USER: role_user
-      MYSQL_PASSWORD: role_pass
-    ports:
-      - "3306:3306"
-    volumes:
-      - role_mysql_data:/var/lib/mysql
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.106.1
@@ -115,7 +102,6 @@ services:
 
 volumes:
   role_postgres_data:
-  role_mysql_data:
   role_prometheus_data:
   role_tempo_data:
   role_loki_data:
