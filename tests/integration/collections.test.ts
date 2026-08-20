@@ -258,4 +258,73 @@ describe("collections integration", () => {
 
     expect(createDenied.status).toBe(403);
   });
+
+  it("supports folder and saved example single-resource reads", async () => {
+    const owner = await request(app).post("/api/auth/register").send({
+      name: "Owner",
+      email: "owner@example.com",
+      password: "password123",
+      accountType: "single",
+    });
+    const token = owner.body.data.tokens.accessToken;
+
+    const workspace = await request(app)
+      .post("/api/workspaces")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "Read Details Team" });
+    const workspaceId = workspace.body.data.id as number;
+
+    const collection = await request(app)
+      .post(`/api/workspaces/${workspaceId}/collections`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "Details API" });
+    const collectionId = collection.body.data.id as number;
+
+    const folder = await request(app)
+      .post(
+        `/api/workspaces/${workspaceId}/collections/${collectionId}/folders`,
+      )
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "Orders" });
+    const folderId = folder.body.data.id as number;
+
+    const readFolder = await request(app)
+      .get(
+        `/api/workspaces/${workspaceId}/collections/${collectionId}/folders/${folderId}`,
+      )
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(readFolder.status).toBe(200);
+    expect(readFolder.body.data.id).toBe(folderId);
+
+    const endpoint = await request(app)
+      .post(
+        `/api/workspaces/${workspaceId}/collections/${collectionId}/endpoints`,
+      )
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        name: "Get Orders",
+        method: "GET",
+        url: "https://api.example.com/orders",
+        folderId,
+      });
+    const endpointId = endpoint.body.data.id as number;
+
+    const example = await request(app)
+      .post(
+        `/api/workspaces/${workspaceId}/collections/${collectionId}/endpoints/${endpointId}/examples`,
+      )
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "200 OK", statusCode: 200, body: "[]" });
+    const exampleId = example.body.data.id as number;
+
+    const readExample = await request(app)
+      .get(
+        `/api/workspaces/${workspaceId}/collections/${collectionId}/endpoints/${endpointId}/examples/${exampleId}`,
+      )
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(readExample.status).toBe(200);
+    expect(readExample.body.data.id).toBe(exampleId);
+  });
 });

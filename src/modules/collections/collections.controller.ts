@@ -169,6 +169,19 @@ export const collectionsController = {
     appResponse.sendList(res, 200, result);
   },
 
+  async getFolderById(req: Request, res: Response): Promise<void> {
+    const auth = requireAuthContext(req);
+    const { workspaceId, collectionId, folderId } =
+      workspaceCollectionFolderByIdParamsSchema.parse(req.params);
+    const result = await collectionsService.getFolderByIdForCollection(
+      auth.userId,
+      workspaceId,
+      collectionId,
+      folderId,
+    );
+    appResponse.sendObject(res, 200, result);
+  },
+
   async createFolder(req: Request, res: Response): Promise<void> {
     const auth = requireAuthContext(req);
     const { workspaceId, collectionId } =
@@ -222,6 +235,20 @@ export const collectionsController = {
       endpointId,
     );
     appResponse.sendList(res, 200, result);
+  },
+
+  async getEndpointExampleById(req: Request, res: Response): Promise<void> {
+    const auth = requireAuthContext(req);
+    const { workspaceId, collectionId, endpointId, exampleId } =
+      workspaceCollectionEndpointExampleByIdParamsSchema.parse(req.params);
+    const result = await collectionsService.getExampleByIdForEndpoint(
+      auth.userId,
+      workspaceId,
+      collectionId,
+      endpointId,
+      exampleId,
+    );
+    appResponse.sendObject(res, 200, result);
   },
 
   async createEndpointExample(req: Request, res: Response): Promise<void> {

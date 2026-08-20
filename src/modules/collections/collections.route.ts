@@ -49,6 +49,10 @@ collectionsRouter.get(
   ROUTE_SEGMENTS.collections.endpointExamples,
   collectionsController.listEndpointExamples,
 );
+collectionsRouter.get(
+  ROUTE_SEGMENTS.collections.endpointExampleById,
+  collectionsController.getEndpointExampleById,
+);
 collectionsRouter.post(
   ROUTE_SEGMENTS.collections.endpointExamples,
   collectionsController.createEndpointExample,
@@ -64,6 +68,10 @@ collectionsRouter.delete(
 collectionsRouter.get(
   ROUTE_SEGMENTS.collections.folders,
   collectionsController.listFolders,
+);
+collectionsRouter.get(
+  ROUTE_SEGMENTS.collections.folderById,
+  collectionsController.getFolderById,
 );
 collectionsRouter.post(
   ROUTE_SEGMENTS.collections.folders,

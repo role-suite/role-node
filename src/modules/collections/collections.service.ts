@@ -604,6 +604,18 @@ export const collectionsService = {
     return folders.map(mapFolder);
   },
 
+  async getFolderByIdForCollection(
+    userId: number,
+    workspaceId: number,
+    collectionId: number,
+    folderId: number,
+  ): Promise<CollectionFolderResponse> {
+    await requireWorkspaceMembership(userId, workspaceId);
+    await requireCollectionInWorkspace(workspaceId, collectionId);
+    const folder = await requireFolderInCollection(collectionId, folderId);
+    return mapFolder(folder);
+  },
+
   async createFolderForCollection(
     userId: number,
     workspaceId: number,
@@ -729,6 +741,30 @@ export const collectionsService = {
 
     const examples = await collectionsRepo.listExamplesByEndpoint(endpointId);
     return examples.map(mapExample);
+  },
+
+  async getExampleByIdForEndpoint(
+    userId: number,
+    workspaceId: number,
+    collectionId: number,
+    endpointId: number,
+    exampleId: number,
+  ): Promise<CollectionEndpointExampleResponse> {
+    await requireWorkspaceMembership(userId, workspaceId);
+    await requireCollectionInWorkspace(workspaceId, collectionId);
+    const endpoint = await collectionsRepo.findEndpointById(endpointId);
+
+    if (!endpoint || endpoint.collectionId !== collectionId) {
+      throw createAppError(ERROR_CODES.collections.ENDPOINT_NOT_FOUND);
+    }
+
+    const example = await collectionsRepo.findExampleById(exampleId);
+
+    if (!example || example.endpointId !== endpointId) {
+      throw createAppError(ERROR_CODES.collections.EXAMPLE_NOT_FOUND);
+    }
+
+    return mapExample(example);
   },
 
   async createExampleForEndpoint(
