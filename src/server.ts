@@ -7,14 +7,12 @@ import { closeKyselyDb } from "./config/kysely.js";
 import { validateStartupOrThrow } from "./config/startup-validation.js";
 import { startGrpcServer } from "./grpc/server.js";
 import { logger } from "./shared/logger.js";
-import { shutdownTelemetry, startTelemetry } from "./shared/telemetry.js";
 
 let httpServer: HttpServer | null = null;
 let grpcServerHandle: Awaited<ReturnType<typeof startGrpcServer>> = null;
 
 const startServer = async (): Promise<void> => {
   try {
-    await startTelemetry();
 
     if (env.ENABLE_STARTUP_VALIDATION) {
       await validateStartupOrThrow();

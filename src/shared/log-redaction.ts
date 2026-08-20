@@ -47,6 +47,6 @@ const redactValue = (value: unknown, seen: WeakSet<object>): unknown => {
   return value;
 };
 
-export const redactTelemetryPayload = (payload: unknown): unknown => {
+export const redactLogPayload = (payload: unknown): unknown => {
   return redactValue(payload, new WeakSet<object>());
 };

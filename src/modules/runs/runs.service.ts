@@ -7,10 +7,6 @@ import {
 } from "../../internal/runner/index.js";
 import { createAppError } from "../../shared/errors/app-error.js";
 import { ERROR_CODES } from "../../shared/errors/error-codes.js";
-import {
-  recordDomainMetric,
-  withDomainSpan,
-} from "../../shared/telemetry-domain.js";
 import { authRepo } from "../auth/auth.repo.js";
 import type { CreateRunInput } from "./runs.schema.js";
 
@@ -240,30 +236,15 @@ export const runsService = {
     workspaceId: number,
     payload: CreateRunInput,
   ) {
-    return withDomainSpan(
-      "runs",
-      "create",
-      {
-        "run.source_type": payload.source.type,
-      },
-      async () => {
-        await requireWorkspaceMembership(userId, workspaceId);
+    await requireWorkspaceMembership(userId, workspaceId);
 
-        const result = await runRequest(
-          toExecuteRunInput(userId, workspaceId, payload),
-        );
-
-        try {
-          throwForRunFailure(result);
-        } catch (error) {
-          recordDomainMetric.run("create", "error", payload.source.type);
-          throw error;
-        }
-
-        recordDomainMetric.run("create", "success", payload.source.type);
-        return result;
-      },
+    const result = await runRequest(
+      toExecuteRunInput(userId, workspaceId, payload),
     );
+
+    throwForRunFailure(result);
+
+    return result;
   },
 
   async getRunByIdForWorkspace(
@@ -271,18 +252,14 @@ export const runsService = {
     workspaceId: number,
     runId: number,
   ) {
-    return withDomainSpan("runs", "get_by_id", {}, async () => {
-      await requireWorkspaceMembership(userId, workspaceId);
-      const run = await getRunById(workspaceId, runId);
+    await requireWorkspaceMembership(userId, workspaceId);
+    const run = await getRunById(workspaceId, runId);
 
-      if (!run) {
-        recordDomainMetric.run("get_by_id", "error");
-        throw createAppError(ERROR_CODES.runs.RUN_NOT_FOUND);
-      }
+    if (!run) {
+      throw createAppError(ERROR_CODES.runs.RUN_NOT_FOUND);
+    }
 
-      recordDomainMetric.run("get_by_id", "success");
-      return run;
-    });
+    return run;
   },
 
   async cancelRunForWorkspace(
@@ -290,17 +267,13 @@ export const runsService = {
     workspaceId: number,
     runId: number,
   ) {
-    return withDomainSpan("runs", "cancel", {}, async () => {
-      await requireWorkspaceMembership(userId, workspaceId);
-      const run = await cancelRun(workspaceId, runId);
+    await requireWorkspaceMembership(userId, workspaceId);
+    const run = await cancelRun(workspaceId, runId);
 
-      if (!run) {
-        recordDomainMetric.run("cancel", "error");
-        throw createAppError(ERROR_CODES.runs.RUN_NOT_FOUND);
-      }
+    if (!run) {
+      throw createAppError(ERROR_CODES.runs.RUN_NOT_FOUND);
+    }
 
-      recordDomainMetric.run("cancel", "success");
-      return run;
-    });
+    return run;
   },
 };

@@ -1,11 +1,10 @@
-import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import {
   authRepo,
   setAuthRepoDbClient,
 } from "../../src/modules/auth/auth.repo.js";
 import { authService } from "../../src/modules/auth/auth.service.js";
-import { recordDomainMetric } from "../../src/shared/telemetry-domain.js";
 import { workspacesService } from "../../src/modules/workspaces/workspaces.service.js";
 import { createAuthTestDb } from "../helpers/auth-test-db.js";
 
@@ -39,7 +38,6 @@ describe("workspaces service", () => {
   });
 
   it("creates team workspace with owner role", async () => {
-    const metricSpy = vi.spyOn(recordDomainMetric, "workspace");
     const account = await authService.register({
       name: "Owner",
       email: "owner@example.com",
@@ -55,7 +53,6 @@ describe("workspaces service", () => {
     expect(created.role).toBe("owner");
     expect(created.slug).toBe("core-team");
     expect(created._id).toBe(created.id);
-    expect(metricSpy).toHaveBeenCalledWith("create", "success");
   });
 
   it("rejects access when user is not a member", async () => {
@@ -222,7 +219,6 @@ describe("workspaces service", () => {
   });
 
   it("prevents last owner from leaving workspace", async () => {
-    const metricSpy = vi.spyOn(recordDomainMetric, "workspace");
     const owner = await authService.register({
       name: "Owner",
       email: "owner@example.com",
@@ -236,6 +232,5 @@ describe("workspaces service", () => {
       statusCode: 400,
       message: "Cannot leave as the last workspace owner",
     });
-    expect(metricSpy).toHaveBeenCalledWith("leave", "error");
   });
 });

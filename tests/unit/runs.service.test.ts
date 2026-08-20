@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { authRepo } from "../../src/modules/auth/auth.repo.js";
 import type { CreateRunInput } from "../../src/modules/runs/runs.schema.js";
 import { runsService } from "../../src/modules/runs/runs.service.js";
-import { recordDomainMetric } from "../../src/shared/telemetry-domain.js";
 
 const { runRequestMock, getRunByIdMock, cancelRunMock } = vi.hoisted(() => ({
   runRequestMock: vi.fn(),
@@ -131,7 +130,6 @@ describe("runs service", () => {
 
   it("maps collection endpoint payload and omits optional fields", async () => {
     runRequestMock.mockResolvedValue(buildCompletedRun());
-    const metricSpy = vi.spyOn(recordDomainMetric, "run");
 
     await runsService.createRunForWorkspace(12, 34, {
       source: {
@@ -150,11 +148,6 @@ describe("runs service", () => {
         endpointId: 8,
       },
     });
-    expect(metricSpy).toHaveBeenCalledWith(
-      "create",
-      "success",
-      "collectionEndpoint",
-    );
   });
 
   it.each([
@@ -168,7 +161,6 @@ describe("runs service", () => {
     ["RUN_CANCELLED", 409],
     ["RUN_INTERNAL_ERROR", 500],
   ])("maps %s run error to %i", async (code, statusCode) => {
-    const metricSpy = vi.spyOn(recordDomainMetric, "run");
     runRequestMock.mockResolvedValue({
       ...buildCompletedRun(),
       status: "failed",
@@ -192,11 +184,6 @@ describe("runs service", () => {
       message: "Run failed",
       code,
     });
-    expect(metricSpy).toHaveBeenCalledWith(
-      "create",
-      "error",
-      "collectionEndpoint",
-    );
   });
 
   it("throws not found for missing run lookups and cancels", async () => {

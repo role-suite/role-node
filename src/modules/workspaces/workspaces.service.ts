@@ -3,10 +3,6 @@ import { randomBytes } from "node:crypto";
 import { hashToken } from "../../shared/auth/password.js";
 import { createAppError } from "../../shared/errors/app-error.js";
 import { ERROR_CODES } from "../../shared/errors/error-codes.js";
-import {
-  recordDomainMetric,
-  withDomainSpan,
-} from "../../shared/telemetry-domain.js";
 import type { z } from "zod";
 
 import { workspacesRepo, type WorkspaceRole } from "./workspaces.repo.js";
@@ -168,46 +164,38 @@ export const workspacesService = {
     userId: number,
     payload: CreateWorkspaceInput,
   ): Promise<WorkspaceSummary> {
-    return withDomainSpan(
-      "workspaces",
-      "create",
-      { "workspace.operation": "create" },
-      async () => {
-        const workspace = await workspacesRepo.createWorkspace({
-          name: payload.name,
-          type: "team",
-          createdByUserId: userId,
-        });
+    const workspace = await workspacesRepo.createWorkspace({
+      name: payload.name,
+      type: "team",
+      createdByUserId: userId,
+    });
 
-        const membership = await workspacesRepo.createMembership({
-          userId,
-          workspaceId: workspace.id,
-          role: "owner",
-        });
+    const membership = await workspacesRepo.createMembership({
+      userId,
+      workspaceId: workspace.id,
+      role: "owner",
+    });
 
-        await workspaceEventsService.publish({
-          workspaceId: workspace.id,
-          actorUserId: userId,
-          entity: "workspace",
-          action: "created",
-          entityId: workspace.id,
-          payload: {
-            type: workspace.type,
-            name: workspace.name,
-          },
-        });
-
-        recordDomainMetric.workspace("create", "success");
-        return {
-          id: workspace.id,
-          _id: workspace.id,
-          name: workspace.name,
-          slug: workspace.slug,
-          type: workspace.type,
-          role: membership.role,
-        };
+    await workspaceEventsService.publish({
+      workspaceId: workspace.id,
+      actorUserId: userId,
+      entity: "workspace",
+      action: "created",
+      entityId: workspace.id,
+      payload: {
+        type: workspace.type,
+        name: workspace.name,
       },
-    );
+    });
+
+    return {
+      id: workspace.id,
+      _id: workspace.id,
+      name: workspace.name,
+      slug: workspace.slug,
+      type: workspace.type,
+      role: membership.role,
+    };
   },
 
   async listMembersForUser(
@@ -364,114 +352,94 @@ export const workspacesService = {
     userId: number,
     payload: AcceptWorkspaceInvitationInput,
   ): Promise<WorkspaceSummary> {
-    return withDomainSpan(
-      "workspaces",
-      "join",
-      { "workspace.operation": "join" },
-      async () => {
-        const tokenHash = hashToken(payload.token);
-        const invitation =
-          await workspacesRepo.findWorkspaceInvitationByTokenHash(tokenHash);
+    const tokenHash = hashToken(payload.token);
+    const invitation =
+      await workspacesRepo.findWorkspaceInvitationByTokenHash(tokenHash);
 
-        if (!invitation) {
-          recordDomainMetric.workspace("join", "error");
-          throw createAppError(ERROR_CODES.workspaces.INVITATION_NOT_FOUND);
-        }
+    if (!invitation) {
+      throw createAppError(ERROR_CODES.workspaces.INVITATION_NOT_FOUND);
+    }
 
-        if (invitation.acceptedAt) {
-          recordDomainMetric.workspace("join", "error");
-          throw createAppError(ERROR_CODES.workspaces.INVITATION_ALREADY_USED);
-        }
+    if (invitation.acceptedAt) {
+      throw createAppError(ERROR_CODES.workspaces.INVITATION_ALREADY_USED);
+    }
 
-        if (invitation.expiresAt <= new Date()) {
-          recordDomainMetric.workspace("join", "error");
-          throw createAppError(ERROR_CODES.workspaces.INVITATION_EXPIRED);
-        }
+    if (invitation.expiresAt <= new Date()) {
+      throw createAppError(ERROR_CODES.workspaces.INVITATION_EXPIRED);
+    }
 
-        const user = await workspacesRepo.findUserById(userId);
+    const user = await workspacesRepo.findUserById(userId);
 
-        if (!user) {
-          recordDomainMetric.workspace("join", "error");
-          throw createAppError(ERROR_CODES.common.USER_NOT_FOUND);
-        }
+    if (!user) {
+      throw createAppError(ERROR_CODES.common.USER_NOT_FOUND);
+    }
 
-        if (normalizeEmail(user.email) !== invitation.email) {
-          recordDomainMetric.workspace("join", "error");
-          throw createAppError(
-            ERROR_CODES.workspaces.INVITATION_EMAIL_MISMATCH,
-          );
-        }
+    if (normalizeEmail(user.email) !== invitation.email) {
+      throw createAppError(ERROR_CODES.workspaces.INVITATION_EMAIL_MISMATCH);
+    }
 
-        const workspace = await workspacesRepo.findWorkspaceById(
-          invitation.workspaceId,
-        );
-
-        if (!workspace) {
-          recordDomainMetric.workspace("join", "error");
-          throw createAppError(ERROR_CODES.workspaces.WORKSPACE_NOT_FOUND);
-        }
-
-        if (workspace.type === "personal") {
-          recordDomainMetric.workspace("join", "error");
-          throw createAppError(ERROR_CODES.workspaces.DOES_NOT_ACCEPT_MEMBERS);
-        }
-
-        const existingMembership =
-          await workspacesRepo.findMembershipByUserAndWorkspace(
-            userId,
-            invitation.workspaceId,
-          );
-
-        if (existingMembership) {
-          recordDomainMetric.workspace("join", "error");
-          throw createAppError(
-            ERROR_CODES.workspaces.MEMBERSHIP_ALREADY_EXISTS,
-          );
-        }
-
-        const membership = await workspacesRepo.createMembership({
-          userId,
-          workspaceId: invitation.workspaceId,
-          role: invitation.role,
-        });
-
-        await workspacesRepo.markWorkspaceInvitationAccepted(invitation.id);
-
-        await workspaceEventsService.publish({
-          workspaceId: invitation.workspaceId,
-          actorUserId: userId,
-          entity: "workspace_invitation",
-          action: "accepted",
-          entityId: invitation.id,
-          payload: {
-            email: invitation.email,
-            role: invitation.role,
-          },
-        });
-
-        await workspaceEventsService.publish({
-          workspaceId: invitation.workspaceId,
-          actorUserId: userId,
-          entity: "workspace_member",
-          action: "joined",
-          entityId: userId,
-          payload: {
-            userId,
-            role: membership.role,
-          },
-        });
-
-        recordDomainMetric.workspace("join", "success");
-        return {
-          id: workspace.id,
-          _id: workspace.id,
-          name: workspace.name,
-          slug: workspace.slug,
-          type: workspace.type,
-          role: membership.role,
-        };
-      },
+    const workspace = await workspacesRepo.findWorkspaceById(
+      invitation.workspaceId,
     );
+
+    if (!workspace) {
+      throw createAppError(ERROR_CODES.workspaces.WORKSPACE_NOT_FOUND);
+    }
+
+    if (workspace.type === "personal") {
+      throw createAppError(ERROR_CODES.workspaces.DOES_NOT_ACCEPT_MEMBERS);
+    }
+
+    const existingMembership =
+      await workspacesRepo.findMembershipByUserAndWorkspace(
+        userId,
+        invitation.workspaceId,
+      );
+
+    if (existingMembership) {
+      throw createAppError(ERROR_CODES.workspaces.MEMBERSHIP_ALREADY_EXISTS);
+    }
+
+    const membership = await workspacesRepo.createMembership({
+      userId,
+      workspaceId: invitation.workspaceId,
+      role: invitation.role,
+    });
+
+    await workspacesRepo.markWorkspaceInvitationAccepted(invitation.id);
+
+    await workspaceEventsService.publish({
+      workspaceId: invitation.workspaceId,
+      actorUserId: userId,
+      entity: "workspace_invitation",
+      action: "accepted",
+      entityId: invitation.id,
+      payload: {
+        email: invitation.email,
+        role: invitation.role,
+      },
+    });
+
+    await workspaceEventsService.publish({
+      workspaceId: invitation.workspaceId,
+      actorUserId: userId,
+      entity: "workspace_member",
+      action: "joined",
+      entityId: userId,
+      payload: {
+        userId,
+        role: membership.role,
+      },
+    });
+
+    return {
+      id: workspace.id,
+      _id: workspace.id,
+      name: workspace.name,
+      slug: workspace.slug,
+      type: workspace.type,
+      role: membership.role,
+    };
   },
 
   async updateMemberRoleForUser(
@@ -578,48 +546,34 @@ export const workspacesService = {
   },
 
   async leaveForUser(userId: number, workspaceId: number): Promise<void> {
-    return withDomainSpan(
-      "workspaces",
-      "leave",
-      { "workspace.operation": "leave" },
-      async () => {
-        const membership = await requireWorkspaceMembership(
-          userId,
-          workspaceId,
-        );
+    const membership = await requireWorkspaceMembership(userId, workspaceId);
 
-        if (membership.role === "owner") {
-          const owners = await workspacesRepo.countMembershipsByRole(
-            workspaceId,
-            "owner",
-          );
+    if (membership.role === "owner") {
+      const owners = await workspacesRepo.countMembershipsByRole(
+        workspaceId,
+        "owner",
+      );
 
-          if (owners <= 1) {
-            recordDomainMetric.workspace("leave", "error");
-            throw createAppError(
-              ERROR_CODES.workspaces.LAST_OWNER_LEAVE_FORBIDDEN,
-            );
-          }
-        }
+      if (owners <= 1) {
+        throw createAppError(ERROR_CODES.workspaces.LAST_OWNER_LEAVE_FORBIDDEN);
+      }
+    }
 
-        await workspacesRepo.deleteMembershipByUserAndWorkspace(
-          userId,
-          workspaceId,
-        );
-
-        await workspaceEventsService.publish({
-          workspaceId,
-          actorUserId: userId,
-          entity: "workspace_member",
-          action: "left",
-          entityId: userId,
-          payload: {
-            userId,
-          },
-        });
-        recordDomainMetric.workspace("leave", "success");
-      },
+    await workspacesRepo.deleteMembershipByUserAndWorkspace(
+      userId,
+      workspaceId,
     );
+
+    await workspaceEventsService.publish({
+      workspaceId,
+      actorUserId: userId,
+      entity: "workspace_member",
+      action: "left",
+      entityId: userId,
+      payload: {
+        userId,
+      },
+    });
   },
 
   async convertToTeamForUser(

@@ -8,7 +8,6 @@ import type {
   QueryRow,
 } from "../../../types/db.js";
 import { DbError } from "../../errors/db-error.js";
-import { withDbQueryTelemetry } from "../telemetry-db.js";
 
 const normalizeResult = <TRow extends QueryRow>(result: {
   rows: TRow[];
@@ -26,12 +25,7 @@ const createTransactionClient = (client: PoolClient): DatabaseClient => {
     params: QueryParams = [],
   ): Promise<QueryResult<TRow>> => {
     try {
-      const result = await withDbQueryTelemetry(
-        "postgres",
-        sql,
-        params.length,
-        async () => client.query<TRow>(sql, [...params]),
-      );
+      const result = await client.query<TRow>(sql, [...params]);
       return normalizeResult(result);
     } catch (error) {
       throw new DbError("PostgreSQL transaction query failed", {
@@ -61,12 +55,7 @@ class PostgresDatabaseClient implements DatabaseClient {
     params: QueryParams = [],
   ): Promise<QueryResult<TRow>> {
     try {
-      const result = await withDbQueryTelemetry(
-        this.dialect,
-        sql,
-        params.length,
-        async () => this.pool.query<TRow>(sql, [...params]),
-      );
+      const result = await this.pool.query<TRow>(sql, [...params]);
       return normalizeResult(result);
     } catch (error) {
       throw new DbError("PostgreSQL query failed", {
