@@ -194,7 +194,7 @@ All responses use shared envelope from `src/shared/app-response.ts`:
    - `wid` workspace id
    - `sid` session id
    - `typ` token type (`access` or `refresh`)
-   Access and refresh tokens are signed concurrently (`Promise.all`), not sequentially.
+     Access and refresh tokens are signed concurrently (`Promise.all`), not sequentially.
 4. Refresh token hash is persisted in session (`sha256`) and plaintext token is returned only to client.
 5. Refresh validates token signature/type/expiry and compares hashed token to persisted `refresh_token_hash`.
 6. On successful refresh, old session is revoked and a new session/token pair is issued (rotation).

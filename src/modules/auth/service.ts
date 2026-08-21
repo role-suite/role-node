@@ -12,11 +12,7 @@ import {
 } from "../../shared/auth/tokens.js";
 
 import { authRepo, withAuthTransaction } from "./repo.js";
-import type {
-  AuthUser,
-  MembershipWithWorkspace,
-  Workspace,
-} from "./repo.js";
+import type { AuthUser, MembershipWithWorkspace, Workspace } from "./repo.js";
 import type { LoginInput, RefreshTokenInput, RegisterInput } from "./schema.js";
 
 type AuthRole = "owner" | "admin" | "member";
