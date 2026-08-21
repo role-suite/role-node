@@ -1,27 +1,36 @@
 import { z } from "zod";
 
-export const registerSchema = z
-  .object({
-    name: z.string().trim().min(2).max(120),
-    email: z.email(),
-    password: z.string().min(8).max(72),
-    accountType: z.enum(["single", "team"]),
-    teamName: z.string().trim().min(2).max(120).optional(),
-  })
-  .superRefine((payload, context) => {
-    if (payload.accountType === "team" && !payload.teamName) {
-      context.addIssue({
-        code: "custom",
-        path: ["teamName"],
-        message: "teamName is required when accountType is 'team'",
-      });
-    }
-  });
+const nameSchema = z.string().trim().min(2).max(120);
+// Lowercased so lookups, the DB unique constraint, and login all treat email case-insensitively.
+const emailSchema = z.email().toLowerCase();
+// Capped well above any real password to bound argon2's hashing cost per request, not because
+// the algorithm has bcrypt's 72-byte truncation limit.
+const passwordSchema = z.string().min(8).max(128);
+
+const singleAccountRegisterSchema = z.object({
+  accountType: z.literal("single"),
+  name: nameSchema,
+  email: emailSchema,
+  password: passwordSchema,
+});
+
+const teamAccountRegisterSchema = z.object({
+  accountType: z.literal("team"),
+  name: nameSchema,
+  email: emailSchema,
+  password: passwordSchema,
+  teamName: z.string().trim().min(2).max(120),
+});
+
+export const registerSchema = z.discriminatedUnion("accountType", [
+  singleAccountRegisterSchema,
+  teamAccountRegisterSchema,
+]);
 
 export const loginSchema = z
   .object({
-    email: z.email(),
-    password: z.string().min(8).max(72),
+    email: emailSchema,
+    password: passwordSchema,
   })
   .strict();
 

@@ -38,6 +38,22 @@ describe("auth schema", () => {
     expect(parsed.email).toBe("member@example.com");
   });
 
+  it("lowercases email on register and login", () => {
+    const registered = registerSchema.parse({
+      name: "Altay",
+      email: "Altay@Example.COM",
+      password: "password123",
+      accountType: "single",
+    });
+    const loggedIn = loginSchema.parse({
+      email: "Altay@Example.COM",
+      password: "password123",
+    });
+
+    expect(registered.email).toBe("altay@example.com");
+    expect(loggedIn.email).toBe("altay@example.com");
+  });
+
   it("rejects extra fields in login payload", () => {
     const result = loginSchema.safeParse({
       email: "member@example.com",

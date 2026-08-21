@@ -31,6 +31,39 @@ describe("auth integration", () => {
     expect(response.body.data.tokens.accessToken).toBeTypeOf("string");
   });
 
+  it("treats email as case-insensitive across register, duplicate check, and login", async () => {
+    const registerResponse = await request(app)
+      .post("/api/auth/register")
+      .send({
+        name: "Altay",
+        email: "Altay@Example.COM",
+        password: "password123",
+        accountType: "single",
+      });
+
+    expect(registerResponse.status).toBe(201);
+    expect(registerResponse.body.data.user.email).toBe("altay@example.com");
+
+    const duplicateResponse = await request(app)
+      .post("/api/auth/register")
+      .send({
+        name: "Altay",
+        email: "altay@example.com",
+        password: "password123",
+        accountType: "single",
+      });
+
+    expect(duplicateResponse.status).toBe(409);
+
+    const loginResponse = await request(app).post("/api/auth/login").send({
+      email: "ALTAY@EXAMPLE.COM",
+      password: "password123",
+    });
+
+    expect(loginResponse.status).toBe(200);
+    expect(loginResponse.body.data.user.email).toBe("altay@example.com");
+  });
+
   it("returns current authenticated profile with /me", async () => {
     const registerResponse = await request(app)
       .post("/api/auth/register")
