@@ -1,9 +1,16 @@
+import { DbError } from "../../src/shared/errors/db-error.js";
 import type {
   DatabaseClient,
   QueryParams,
   QueryResult,
   QueryRow,
 } from "../../src/types/db.js";
+
+const uniqueViolation = (constraint: string): DbError => {
+  return new DbError("duplicate key value violates unique constraint", {
+    cause: { code: "23505", constraint },
+  });
+};
 
 type AuthUserRow = {
   id: number;
@@ -476,11 +483,24 @@ export const createAuthTestDb = (): DatabaseClient => {
       normalized.startsWith("insert into workspace_memberships") &&
       normalized.includes("returning")
     ) {
+      const userIdParam = expectParam<number>(params, 0);
+      const workspaceIdParam = expectParam<number>(params, 1);
+
+      if (
+        memberships.some(
+          (item) =>
+            item.user_id === userIdParam &&
+            item.workspace_id === workspaceIdParam,
+        )
+      ) {
+        throw uniqueViolation("workspace_memberships_user_id_workspace_id_key");
+      }
+
       const now = new Date();
       const row: MembershipRow = {
         id: membershipId++,
-        user_id: expectParam<number>(params, 0),
-        workspace_id: expectParam<number>(params, 1),
+        user_id: userIdParam,
+        workspace_id: workspaceIdParam,
         role: expectParam<"owner" | "admin" | "member">(params, 2),
         created_at: now,
       };
@@ -1036,11 +1056,22 @@ export const createAuthTestDb = (): DatabaseClient => {
       normalized.startsWith("insert into environments") &&
       normalized.includes("returning")
     ) {
+      const workspaceId = expectParam<number>(params, 0);
+      const name = expectParam<string>(params, 1);
+
+      if (
+        environments.some(
+          (item) => item.workspace_id === workspaceId && item.name === name,
+        )
+      ) {
+        throw uniqueViolation("environments_workspace_id_name_key");
+      }
+
       const now = new Date();
       const row: EnvironmentRow = {
         id: environmentId++,
-        workspace_id: expectParam<number>(params, 0),
-        name: expectParam<string>(params, 1),
+        workspace_id: workspaceId,
+        name,
         created_by_user_id: expectParam<number>(params, 2),
         created_at: now,
         updated_at: now,
@@ -1097,7 +1128,8 @@ export const createAuthTestDb = (): DatabaseClient => {
         row.updated_at = new Date();
       }
 
-      return { rows: [] as TRow[], rowCount: row ? 1 : 0 };
+      const rows = row ? castRows<TRow>([row]) : [];
+      return { rows, rowCount: rows.length };
     }
 
     if (normalized.startsWith("delete from environments where id =")) {
@@ -1114,11 +1146,25 @@ export const createAuthTestDb = (): DatabaseClient => {
       normalized.startsWith("insert into environment_variables") &&
       normalized.includes("returning")
     ) {
+      const environmentId = expectParam<number>(params, 0);
+      const keyName = expectParam<string>(params, 1);
+
+      if (
+        environmentVariables.some(
+          (item) =>
+            item.environment_id === environmentId && item.key_name === keyName,
+        )
+      ) {
+        throw uniqueViolation(
+          "environment_variables_environment_id_key_name_key",
+        );
+      }
+
       const now = new Date();
       const row: EnvironmentVariableRow = {
         id: environmentVariableId++,
-        environment_id: expectParam<number>(params, 0),
-        key_name: expectParam<string>(params, 1),
+        environment_id: environmentId,
+        key_name: keyName,
         value_text: expectParam<string>(params, 2),
         enabled: expectParam<boolean>(params, 3),
         is_secret: expectParam<boolean>(params, 4),
@@ -1184,7 +1230,8 @@ export const createAuthTestDb = (): DatabaseClient => {
         row.updated_at = new Date();
       }
 
-      return { rows: [] as TRow[], rowCount: row ? 1 : 0 };
+      const rows = row ? castRows<TRow>([row]) : [];
+      return { rows, rowCount: rows.length };
     }
 
     if (normalized.startsWith("delete from environment_variables where id =")) {
@@ -1264,8 +1311,72 @@ export const createAuthTestDb = (): DatabaseClient => {
 
   const db: DatabaseClient = {
     query,
+    // Snapshot every mutable table/counter and restore them on failure, so a transaction that
+    // throws partway through actually rolls back - matching real Postgres semantics closely
+    // enough to test atomicity (e.g. the import-export "all or nothing" import).
     transaction: async <T>(callback: (tx: DatabaseClient) => Promise<T>) => {
-      return callback(db);
+      const snapshot = {
+        userId,
+        workspaceId,
+        membershipId,
+        sessionId,
+        collectionId,
+        collectionEndpointId,
+        collectionFolderId,
+        collectionEndpointExampleId,
+        environmentId,
+        environmentVariableId,
+        importExportJobId,
+        workspaceEventId,
+        workspaceInvitationId,
+        users: [...users],
+        workspaces: [...workspaces],
+        memberships: [...memberships],
+        sessions: [...sessions],
+        collections: [...collections],
+        collectionEndpoints: [...collectionEndpoints],
+        collectionFolders: [...collectionFolders],
+        collectionEndpointExamples: [...collectionEndpointExamples],
+        environments: [...environments],
+        environmentVariables: [...environmentVariables],
+        importExportJobs: [...importExportJobs],
+        workspaceEvents: [...workspaceEvents],
+        workspaceInvitations: [...workspaceInvitations],
+      };
+
+      try {
+        return await callback(db);
+      } catch (error) {
+        ({
+          userId,
+          workspaceId,
+          membershipId,
+          sessionId,
+          collectionId,
+          collectionEndpointId,
+          collectionFolderId,
+          collectionEndpointExampleId,
+          environmentId,
+          environmentVariableId,
+          importExportJobId,
+          workspaceEventId,
+          workspaceInvitationId,
+          users,
+          workspaces,
+          memberships,
+          sessions,
+          collections,
+          collectionEndpoints,
+          collectionFolders,
+          collectionEndpointExamples,
+          environments,
+          environmentVariables,
+          importExportJobs,
+          workspaceEvents,
+          workspaceInvitations,
+        } = snapshot);
+        throw error;
+      }
     },
     close: async () => Promise.resolve(),
   };

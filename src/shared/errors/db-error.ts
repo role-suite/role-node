@@ -14,3 +14,20 @@ export class DbError extends Error {
     this.cause = options?.cause;
   }
 }
+
+// Postgres unique-violation errors surface here wrapped as `DbError.cause`. Matching on the
+// constraint name (not just the 23505 code) lets callers distinguish which UNIQUE index was hit
+// when a table has more than one.
+export const isUniqueViolation = (
+  error: unknown,
+  constraint: string,
+): boolean => {
+  if (!(error instanceof DbError)) {
+    return false;
+  }
+
+  const cause = error.cause as
+    { code?: string; constraint?: string } | undefined;
+
+  return cause?.code === "23505" && cause?.constraint === constraint;
+};

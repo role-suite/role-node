@@ -7,6 +7,7 @@ import type {
   QueryResult,
   QueryRow,
 } from "../../types/db.js";
+import { AppError } from "../errors/app-error.js";
 import { DbError } from "../errors/db-error.js";
 
 const normalizeResult = <TRow extends QueryRow>(result: {
@@ -73,7 +74,10 @@ class PostgresDatabaseClient implements DatabaseClient {
     } catch (error) {
       await client.query("ROLLBACK");
 
-      if (error instanceof DbError) {
+      // AppError is a deliberate, already-translated domain error (e.g. a transaction callback
+      // catching a unique-violation and re-throwing a friendly 409) - it must pass through
+      // unchanged. Only truly unexpected errors get wrapped as a generic DbError.
+      if (error instanceof DbError || error instanceof AppError) {
         throw error;
       }
 
