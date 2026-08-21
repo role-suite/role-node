@@ -65,10 +65,10 @@ jobs:
           label: coverage
           status: ${{ steps.coverage.outputs.pct }}%
           color: ${{ steps.coverage.outputs.color }}
-          path: badges/coverage.svg
+          path: docs/badges/coverage.svg
 
       - name: Commit updated coverage badge
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore(ci): update coverage badge"
-          file_pattern: badges/coverage.svg
+          file_pattern: docs/badges/coverage.svg
