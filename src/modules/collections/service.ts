@@ -1,7 +1,7 @@
-import { authRepo } from "../auth/auth.repo.js";
+import { authRepo } from "../auth/repo.js";
 import { createAppError } from "../../shared/errors/app-error.js";
 import { ERROR_CODES } from "../../shared/errors/error-codes.js";
-import { workspaceEventsService } from "../workspaces/workspace-events.service.js";
+import { workspaceEventsService } from "../workspaces/events.service.js";
 
 import {
   collectionsRepo,
@@ -9,7 +9,7 @@ import {
   type CollectionEndpoint,
   type CollectionEndpointExample,
   type CollectionFolder,
-} from "./collections.repo.js";
+} from "./repo.js";
 import type {
   CreateCollectionEndpointExampleInput,
   CreateCollectionEndpointInput,
@@ -19,7 +19,7 @@ import type {
   UpdateCollectionEndpointInput,
   UpdateCollectionFolderInput,
   UpdateCollectionInput,
-} from "./collections.schema.js";
+} from "./schema.js";
 
 type WorkspaceRole = "owner" | "admin" | "member";
 
@@ -254,14 +254,6 @@ const requireWorkspaceWriterRole = async (
   }
 };
 
-const requireWorkspaceExists = async (workspaceId: number): Promise<void> => {
-  const workspace = await authRepo.findWorkspaceById(workspaceId);
-
-  if (!workspace) {
-    throw createAppError(ERROR_CODES.workspaces.WORKSPACE_NOT_FOUND);
-  }
-};
-
 const requireCollectionInWorkspace = async (
   workspaceId: number,
   collectionId: number,
@@ -310,7 +302,6 @@ export const collectionsService = {
     workspaceId: number,
   ): Promise<CollectionResponse[]> {
     await requireWorkspaceMembership(userId, workspaceId);
-    await requireWorkspaceExists(workspaceId);
 
     const collections = await collectionsRepo.listByWorkspace(workspaceId);
     return collections.map(mapCollection);
@@ -335,7 +326,6 @@ export const collectionsService = {
     payload: CreateCollectionInput,
   ): Promise<CollectionResponse> {
     await requireWorkspaceWriterRole(userId, workspaceId);
-    await requireWorkspaceExists(workspaceId);
 
     const created = await collectionsRepo.create({
       workspaceId,

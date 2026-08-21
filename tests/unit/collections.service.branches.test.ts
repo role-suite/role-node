@@ -36,14 +36,14 @@ const {
   publishMock: vi.fn(),
 }));
 
-vi.mock("../../src/modules/auth/auth.repo.js", () => ({
+vi.mock("../../src/modules/auth/repo.js", () => ({
   authRepo: {
     findMembershipByUserAndWorkspace: findMembershipByUserAndWorkspaceMock,
     findWorkspaceById: findWorkspaceByIdMock,
   },
 }));
 
-vi.mock("../../src/modules/collections/collections.repo.js", () => ({
+vi.mock("../../src/modules/collections/repo.js", () => ({
   collectionsRepo: {
     findById: findByIdMock,
     findEndpointById: findEndpointByIdMock,
@@ -61,13 +61,13 @@ vi.mock("../../src/modules/collections/collections.repo.js", () => ({
   },
 }));
 
-vi.mock("../../src/modules/workspaces/workspace-events.service.js", () => ({
+vi.mock("../../src/modules/workspaces/events.service.js", () => ({
   workspaceEventsService: {
     publish: publishMock,
   },
 }));
 
-import { collectionsService } from "../../src/modules/collections/collections.service.js";
+import { collectionsService } from "../../src/modules/collections/service.js";
 
 const now = new Date("2026-01-01T00:00:00.000Z");
 
