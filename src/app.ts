@@ -1,10 +1,10 @@
 import express from "express";
 
-import { authRouter } from "./modules/auth/auth.route.js";
-import { workspacesRouter } from "./modules/workspaces/workspaces.route.js";
+import { authRouter } from "./modules/auth/route.js";
+import { workspacesRouter } from "./modules/workspaces/route.js";
 import { appResponse } from "./shared/app-response.js";
 import { errorHandler } from "./shared/errors/error-handler.js";
-import { API_MOUNTS, ROUTE_SEGMENTS } from "./shared/http/routes.js";
+import { API_MOUNTS, ROUTE_SEGMENTS } from "./shared/routes.js";
 import { notFoundHandler } from "./shared/middleware/not-found.js";
 import { requestIdMiddleware } from "./shared/middleware/request-id.js";
 import { requestLogger } from "./shared/middleware/request-logger.js";

@@ -1,4 +1,4 @@
-import { authRepo, type WorkspaceEvent } from "../auth/auth.repo.js";
+import { authRepo, type WorkspaceEvent } from "../auth/repo.js";
 
 type WorkspaceEventPayload = Record<string, unknown> | null;
 

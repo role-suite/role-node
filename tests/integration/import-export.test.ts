@@ -2,14 +2,11 @@ import request from "supertest";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { app } from "../../src/app.js";
-import {
-  authRepo,
-  setAuthRepoDbClient,
-} from "../../src/modules/auth/auth.repo.js";
-import { setCollectionsRepoDbClient } from "../../src/modules/collections/collections.repo.js";
-import { setEnvironmentsRepoDbClient } from "../../src/modules/environments/environments.repo.js";
-import { setImportExportRepoDbClient } from "../../src/modules/import-export/import-export.repo.js";
-import { ROUTE_PATTERNS, routeBuilders } from "../../src/shared/http/routes.js";
+import { authRepo, setAuthRepoDbClient } from "../../src/modules/auth/repo.js";
+import { setCollectionsRepoDbClient } from "../../src/modules/collections/repo.js";
+import { setEnvironmentsRepoDbClient } from "../../src/modules/environments/repo.js";
+import { setImportExportRepoDbClient } from "../../src/modules/import-export/repo.js";
+import { ROUTE_PATTERNS, routeBuilders } from "../../src/shared/routes.js";
 import { createAuthTestDb } from "../helpers/auth-test-db.js";
 
 const testDb = createAuthTestDb();
@@ -50,11 +47,10 @@ describe("import/export integration", () => {
     const createExport = await request(app)
       .post(routeBuilders.workspaceImportExportExports(workspaceId))
       .set("Authorization", `Bearer ${token}`)
-      .send({ format: "json", includeRuns: true });
+      .send({ format: "json" });
 
     expect(createExport.status).toBe(201);
     expect(createExport.body.data.type).toBe("export");
-    expect(createExport.body.data.summary.includeRuns).toBe(true);
 
     const createImport = await request(app)
       .post(routeBuilders.workspaceImportExportImports(workspaceId))

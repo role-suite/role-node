@@ -12,7 +12,7 @@ const {
   createImportJobForWorkspaceMock: vi.fn(),
 }));
 
-vi.mock("../../src/modules/import-export/import-export.service.js", () => ({
+vi.mock("../../src/modules/import-export/service.js", () => ({
   importExportService: {
     listJobsForWorkspace: listJobsForWorkspaceMock,
     getJobByIdForWorkspace: getJobByIdForWorkspaceMock,
@@ -21,7 +21,7 @@ vi.mock("../../src/modules/import-export/import-export.service.js", () => ({
   },
 }));
 
-import { importExportController } from "../../src/modules/import-export/import-export.controller.js";
+import { importExportController } from "../../src/modules/import-export/controller.js";
 
 const createResponse = () => ({
   status: vi.fn().mockReturnThis(),

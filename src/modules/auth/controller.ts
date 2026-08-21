@@ -3,12 +3,8 @@ import type { Request, Response } from "express";
 import { appResponse } from "../../shared/app-response.js";
 import { createAppError } from "../../shared/errors/app-error.js";
 import { ERROR_CODES } from "../../shared/errors/error-codes.js";
-import {
-  loginSchema,
-  refreshTokenSchema,
-  registerSchema,
-} from "./auth.schema.js";
-import { authService } from "./auth.service.js";
+import { loginSchema, refreshTokenSchema, registerSchema } from "./schema.js";
+import { authService } from "./service.js";
 
 export const authController = {
   async register(req: Request, res: Response): Promise<void> {

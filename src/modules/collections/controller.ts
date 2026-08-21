@@ -18,8 +18,8 @@ import {
   workspaceCollectionEndpointByIdParamsSchema,
   workspaceCollectionFolderByIdParamsSchema,
   workspaceCollectionParamsSchema,
-} from "./collections.schema.js";
-import { collectionsService } from "./collections.service.js";
+} from "./schema.js";
+import { collectionsService } from "./service.js";
 
 const requireAuthContext = (req: Request): NonNullable<Request["auth"]> => {
   if (!req.auth) {

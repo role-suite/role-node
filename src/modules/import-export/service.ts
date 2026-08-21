@@ -1,17 +1,14 @@
 import { createAppError } from "../../shared/errors/app-error.js";
 import { ERROR_CODES } from "../../shared/errors/error-codes.js";
-import { authRepo } from "../auth/auth.repo.js";
-import { collectionsRepo } from "../collections/collections.repo.js";
-import { environmentsRepo } from "../environments/environments.repo.js";
-import {
-  importExportRepo,
-  type ImportExportJob,
-} from "./import-export.repo.js";
+import { authRepo } from "../auth/repo.js";
+import { collectionsRepo } from "../collections/repo.js";
+import { environmentsRepo } from "../environments/repo.js";
+import { importExportRepo, type ImportExportJob } from "./repo.js";
 import type {
   CreateWorkspaceExportInput,
   CreateWorkspaceImportInput,
   RoleNativeImportPayload,
-} from "./import-export.schema.js";
+} from "./schema.js";
 
 type WorkspaceRole = "owner" | "admin" | "member";
 
@@ -343,7 +340,6 @@ export const importExportService = {
       summary: {
         includeCollections: payload.includeCollections ?? true,
         includeEnvironments: payload.includeEnvironments ?? true,
-        includeRuns: payload.includeRuns ?? false,
         collectionCount: artifact.collections?.length ?? 0,
         environmentCount: artifact.environments?.length ?? 0,
       },

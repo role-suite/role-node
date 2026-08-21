@@ -2,7 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 
 import { env } from "../../config/env.js";
 import { verifyAccessToken } from "../auth/tokens.js";
-import { authRepo } from "../../modules/auth/auth.repo.js";
+import { authRepo } from "../../modules/auth/repo.js";
 import { createAppError } from "../errors/app-error.js";
 import { ERROR_CODES } from "../errors/error-codes.js";
 

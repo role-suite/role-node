@@ -14,8 +14,8 @@ import {
   updateWorkspaceMemberRoleSchema,
   workspaceMemberParamsSchema,
   workspaceIdSchema,
-} from "./workspaces.schema.js";
-import { workspacesService } from "./workspaces.service.js";
+} from "./schema.js";
+import { workspacesService } from "./service.js";
 
 const requireAuthContext = (req: Request): NonNullable<Request["auth"]> => {
   if (!req.auth) {

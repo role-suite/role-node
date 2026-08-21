@@ -4,7 +4,7 @@ import {
   loginSchema,
   refreshTokenSchema,
   registerSchema,
-} from "../../src/modules/auth/auth.schema.js";
+} from "../../src/modules/auth/schema.js";
 
 describe("auth schema", () => {
   it("parses valid single-account register payload", () => {

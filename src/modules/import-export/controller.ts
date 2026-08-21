@@ -8,8 +8,8 @@ import {
   createWorkspaceImportSchema,
   workspaceImportExportJobByIdParamsSchema,
   workspaceImportExportParamsSchema,
-} from "./import-export.schema.js";
-import { importExportService } from "./import-export.service.js";
+} from "./schema.js";
+import { importExportService } from "./service.js";
 
 const requireAuthContext = (req: Request): NonNullable<Request["auth"]> => {
   if (!req.auth) {

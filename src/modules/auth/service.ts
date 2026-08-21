@@ -11,12 +11,8 @@ import {
   verifyRefreshToken,
 } from "../../shared/auth/tokens.js";
 
-import { authRepo, type AuthUser, type Workspace } from "./auth.repo.js";
-import type {
-  LoginInput,
-  RefreshTokenInput,
-  RegisterInput,
-} from "./auth.schema.js";
+import { authRepo, type AuthUser, type Workspace } from "./repo.js";
+import type { LoginInput, RefreshTokenInput, RegisterInput } from "./schema.js";
 
 type AuthRole = "owner" | "admin" | "member";
 

@@ -1,8 +1,8 @@
 import { Router } from "express";
 
-import { ROUTE_SEGMENTS } from "../../shared/http/routes.js";
+import { ROUTE_SEGMENTS } from "../../shared/routes.js";
 import { requireAuth } from "../../shared/middleware/require-auth.js";
-import { authController } from "./auth.controller.js";
+import { authController } from "./controller.js";
 
 export const authRouter = Router();
 

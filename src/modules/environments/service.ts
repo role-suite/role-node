@@ -1,18 +1,18 @@
 import { createAppError } from "../../shared/errors/app-error.js";
 import { ERROR_CODES } from "../../shared/errors/error-codes.js";
-import { authRepo } from "../auth/auth.repo.js";
-import { workspaceEventsService } from "../workspaces/workspace-events.service.js";
+import { authRepo } from "../auth/repo.js";
+import { workspaceEventsService } from "../workspaces/events.service.js";
 import {
   environmentsRepo,
   type Environment,
   type EnvironmentVariable,
-} from "./environments.repo.js";
+} from "./repo.js";
 import type {
   CreateEnvironmentInput,
   CreateEnvironmentVariableInput,
   UpdateEnvironmentInput,
   UpdateEnvironmentVariableInput,
-} from "./environments.schema.js";
+} from "./schema.js";
 
 type WorkspaceRole = "owner" | "admin" | "member";
 

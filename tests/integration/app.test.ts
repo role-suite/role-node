@@ -2,12 +2,9 @@ import request from "supertest";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { app } from "../../src/app.js";
-import {
-  authRepo,
-  setAuthRepoDbClient,
-} from "../../src/modules/auth/auth.repo.js";
+import { authRepo, setAuthRepoDbClient } from "../../src/modules/auth/repo.js";
 import { createAuthTestDb } from "../helpers/auth-test-db.js";
-import { ROUTE_PATTERNS } from "../../src/shared/http/routes.js";
+import { ROUTE_PATTERNS } from "../../src/shared/routes.js";
 
 const testDb = createAuthTestDb();
 

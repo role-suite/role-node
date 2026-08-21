@@ -1,7 +1,7 @@
 import { Router } from "express";
 
-import { ROUTE_SEGMENTS } from "../../shared/http/routes.js";
-import { importExportController } from "./import-export.controller.js";
+import { ROUTE_SEGMENTS } from "../../shared/routes.js";
+import { importExportController } from "./controller.js";
 
 export const importExportRouter = Router({ mergeParams: true });
 

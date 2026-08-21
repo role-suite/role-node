@@ -11,8 +11,8 @@ import {
   workspaceEnvironmentByIdParamsSchema,
   workspaceEnvironmentParamsSchema,
   workspaceEnvironmentVariableByIdParamsSchema,
-} from "./environments.schema.js";
-import { environmentsService } from "./environments.service.js";
+} from "./schema.js";
+import { environmentsService } from "./service.js";
 
 const requireAuthContext = (req: Request): NonNullable<Request["auth"]> => {
   if (!req.auth) {

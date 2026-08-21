@@ -1,7 +1,7 @@
 import { Router } from "express";
 
-import { ROUTE_SEGMENTS } from "../../shared/http/routes.js";
-import { collectionsController } from "./collections.controller.js";
+import { ROUTE_SEGMENTS } from "../../shared/routes.js";
+import { collectionsController } from "./controller.js";
 
 export const collectionsRouter = Router({ mergeParams: true });
 

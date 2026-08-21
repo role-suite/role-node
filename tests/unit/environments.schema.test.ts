@@ -8,7 +8,7 @@ import {
   workspaceEnvironmentByIdParamsSchema,
   workspaceEnvironmentParamsSchema,
   workspaceEnvironmentVariableByIdParamsSchema,
-} from "../../src/modules/environments/environments.schema.js";
+} from "../../src/modules/environments/schema.js";
 
 describe("environments schema", () => {
   it("parses create payload", () => {

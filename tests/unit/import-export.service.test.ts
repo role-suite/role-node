@@ -1,15 +1,12 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  authRepo,
-  setAuthRepoDbClient,
-} from "../../src/modules/auth/auth.repo.js";
-import { authService } from "../../src/modules/auth/auth.service.js";
-import { setCollectionsRepoDbClient } from "../../src/modules/collections/collections.repo.js";
-import { setEnvironmentsRepoDbClient } from "../../src/modules/environments/environments.repo.js";
-import { setImportExportRepoDbClient } from "../../src/modules/import-export/import-export.repo.js";
-import { importExportService } from "../../src/modules/import-export/import-export.service.js";
-import { workspacesService } from "../../src/modules/workspaces/workspaces.service.js";
+import { authRepo, setAuthRepoDbClient } from "../../src/modules/auth/repo.js";
+import { authService } from "../../src/modules/auth/service.js";
+import { setCollectionsRepoDbClient } from "../../src/modules/collections/repo.js";
+import { setEnvironmentsRepoDbClient } from "../../src/modules/environments/repo.js";
+import { setImportExportRepoDbClient } from "../../src/modules/import-export/repo.js";
+import { importExportService } from "../../src/modules/import-export/service.js";
+import { workspacesService } from "../../src/modules/workspaces/service.js";
 import { createAuthTestDb } from "../helpers/auth-test-db.js";
 
 const testDb = createAuthTestDb();
