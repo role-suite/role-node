@@ -53,18 +53,6 @@ export const ERROR_CODES = {
     NAME_ALREADY_EXISTS: "ENVIRONMENT_NAME_ALREADY_EXISTS",
     VARIABLE_KEY_ALREADY_EXISTS: "ENVIRONMENT_VARIABLE_KEY_ALREADY_EXISTS",
   },
-  runs: {
-    RUN_NOT_FOUND: "RUN_NOT_FOUND",
-    RUN_VALIDATION_FAILED: "RUN_VALIDATION_FAILED",
-    RUN_ACCESS_DENIED: "RUN_ACCESS_DENIED",
-    RUN_SOURCE_NOT_FOUND: "RUN_SOURCE_NOT_FOUND",
-    RUN_POLICY_BLOCKED: "RUN_POLICY_BLOCKED",
-    RUN_TIMEOUT: "RUN_TIMEOUT",
-    RUN_NETWORK_ERROR: "RUN_NETWORK_ERROR",
-    RUN_RESPONSE_TOO_LARGE: "RUN_RESPONSE_TOO_LARGE",
-    RUN_CANCELLED: "RUN_CANCELLED",
-    RUN_INTERNAL_ERROR: "RUN_INTERNAL_ERROR",
-  },
   importExport: {
     RUN_FORBIDDEN: "IMPORT_EXPORT_RUN_FORBIDDEN",
     JOB_NOT_FOUND: "IMPORT_EXPORT_JOB_NOT_FOUND",
@@ -262,46 +250,6 @@ export const ERROR_CODE_DEFINITIONS: Record<ErrorCode, ErrorCodeDefinition> = {
   ENVIRONMENT_VARIABLE_KEY_ALREADY_EXISTS: {
     status: 409,
     message: "Environment variable key already exists",
-  },
-  RUN_NOT_FOUND: {
-    status: 404,
-    message: "Run not found",
-  },
-  RUN_VALIDATION_FAILED: {
-    status: 400,
-    message: "Run validation failed",
-  },
-  RUN_ACCESS_DENIED: {
-    status: 403,
-    message: "Run access denied",
-  },
-  RUN_SOURCE_NOT_FOUND: {
-    status: 404,
-    message: "Run source not found",
-  },
-  RUN_POLICY_BLOCKED: {
-    status: 422,
-    message: "Run blocked by policy",
-  },
-  RUN_TIMEOUT: {
-    status: 408,
-    message: "Run timeout",
-  },
-  RUN_NETWORK_ERROR: {
-    status: 502,
-    message: "Run network error",
-  },
-  RUN_RESPONSE_TOO_LARGE: {
-    status: 413,
-    message: "Run response too large",
-  },
-  RUN_CANCELLED: {
-    status: 409,
-    message: "Run cancelled",
-  },
-  RUN_INTERNAL_ERROR: {
-    status: 500,
-    message: "Run internal error",
   },
   IMPORT_EXPORT_RUN_FORBIDDEN: {
     status: 403,

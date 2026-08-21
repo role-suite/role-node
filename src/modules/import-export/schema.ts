@@ -14,7 +14,6 @@ export const createWorkspaceExportSchema = z
     format: z.enum(["json"]).default("json"),
     includeCollections: z.boolean().optional(),
     includeEnvironments: z.boolean().optional(),
-    includeRuns: z.boolean().optional(),
   })
   .strict();
 

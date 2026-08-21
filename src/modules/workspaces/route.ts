@@ -1,12 +1,11 @@
 import { Router } from "express";
 
-import { ROUTE_SEGMENTS } from "../../shared/http/routes.js";
+import { ROUTE_SEGMENTS } from "../../shared/routes.js";
 import { requireAuth } from "../../shared/middleware/require-auth.js";
-import { collectionsRouter } from "../collections/collections.route.js";
-import { environmentsRouter } from "../environments/environments.route.js";
-import { importExportRouter } from "../import-export/import-export.route.js";
-import { runsRouter } from "../runs/runs.route.js";
-import { workspacesController } from "./workspaces.controller.js";
+import { collectionsRouter } from "../collections/route.js";
+import { environmentsRouter } from "../environments/route.js";
+import { importExportRouter } from "../import-export/route.js";
+import { workspacesController } from "./controller.js";
 
 export const workspacesRouter = Router();
 
@@ -69,4 +68,3 @@ workspacesRouter.use(
   ROUTE_SEGMENTS.workspaces.nested.importExport,
   importExportRouter,
 );
-workspacesRouter.use(ROUTE_SEGMENTS.workspaces.nested.runs, runsRouter);

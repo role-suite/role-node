@@ -10,7 +10,6 @@ const EXAMPLE_ID_PARAM = ":exampleId" as const;
 const FOLDER_ID_PARAM = ":folderId" as const;
 const ENVIRONMENT_ID_PARAM = ":environmentId" as const;
 const VARIABLE_ID_PARAM = ":variableId" as const;
-const RUN_ID_PARAM = ":runId" as const;
 const JOB_ID_PARAM = ":jobId" as const;
 const MEMBER_USER_ID_PARAM = ":memberUserId" as const;
 
@@ -43,7 +42,6 @@ export const ROUTE_SEGMENTS = {
       environments: `/${WORKSPACE_ID_PARAM}/environments`,
       collections: `/${WORKSPACE_ID_PARAM}/collections`,
       importExport: `/${WORKSPACE_ID_PARAM}/import-export`,
-      runs: `/${WORKSPACE_ID_PARAM}/runs`,
     },
   },
   collections: {
@@ -63,11 +61,6 @@ export const ROUTE_SEGMENTS = {
     byId: `/${ENVIRONMENT_ID_PARAM}`,
     variables: `/${ENVIRONMENT_ID_PARAM}/variables`,
     variableById: `/${ENVIRONMENT_ID_PARAM}/variables/${VARIABLE_ID_PARAM}`,
-  },
-  runs: {
-    create: "/",
-    byId: `/${RUN_ID_PARAM}`,
-    cancel: `/${RUN_ID_PARAM}/cancel`,
   },
   importExport: {
     jobs: "/jobs",
@@ -101,7 +94,6 @@ export const ROUTE_PATTERNS = {
       environments: `${WORKSPACES_BASE}${ROUTE_SEGMENTS.workspaces.nested.environments}`,
       collections: `${WORKSPACES_BASE}${ROUTE_SEGMENTS.workspaces.nested.collections}`,
       importExport: `${WORKSPACES_BASE}${ROUTE_SEGMENTS.workspaces.nested.importExport}`,
-      runs: `${WORKSPACES_BASE}${ROUTE_SEGMENTS.workspaces.nested.runs}`,
     },
   },
   collections: {
@@ -119,11 +111,6 @@ export const ROUTE_PATTERNS = {
     byId: `${WORKSPACES_BASE}${ROUTE_SEGMENTS.workspaces.nested.environments}${ROUTE_SEGMENTS.environments.byId}`,
     variables: `${WORKSPACES_BASE}${ROUTE_SEGMENTS.workspaces.nested.environments}${ROUTE_SEGMENTS.environments.variables}`,
     variableById: `${WORKSPACES_BASE}${ROUTE_SEGMENTS.workspaces.nested.environments}${ROUTE_SEGMENTS.environments.variableById}`,
-  },
-  runs: {
-    create: `${WORKSPACES_BASE}${ROUTE_SEGMENTS.workspaces.nested.runs}`,
-    byId: `${WORKSPACES_BASE}${ROUTE_SEGMENTS.workspaces.nested.runs}${ROUTE_SEGMENTS.runs.byId}`,
-    cancel: `${WORKSPACES_BASE}${ROUTE_SEGMENTS.workspaces.nested.runs}${ROUTE_SEGMENTS.runs.cancel}`,
   },
   importExport: {
     jobs: `${WORKSPACES_BASE}${ROUTE_SEGMENTS.workspaces.nested.importExport}${ROUTE_SEGMENTS.importExport.jobs}`,
