@@ -34,14 +34,23 @@ const IMPORT_EXPORT_JOBS_TABLE = "import_export_jobs";
 
 let dbOverride: DatabaseClient | null = null;
 
-const resolveDb = (): DatabaseClient => {
-  return dbOverride ?? getDb();
+const resolveDb = (dbClient?: DatabaseClient): DatabaseClient => {
+  return dbClient ?? dbOverride ?? getDb();
 };
 
 export const setImportExportRepoDbClient = (
   dbClient: DatabaseClient | null,
 ): void => {
   dbOverride = dbClient;
+};
+
+// Imports write across the collections/environments/import-export repos in one go; running them
+// under a single transaction means a failure partway through (e.g. a duplicate environment name)
+// rolls back everything instead of leaving orphaned collections/environments with no job record.
+export const withImportExportTransaction = <T>(
+  callback: (tx: DatabaseClient) => Promise<T>,
+): Promise<T> => {
+  return resolveDb().transaction(callback);
 };
 
 const resolveToken = (index: number): string => {
@@ -115,14 +124,17 @@ export const importExportRepo = {
     return row ? mapImportExportJobRow(row) : undefined;
   },
 
-  async createJob(payload: {
-    workspaceId: number;
-    type: ImportExportJobType;
-    format: "json";
-    summary: Record<string, unknown>;
-    artifact: Record<string, unknown>;
-    createdByUserId: number;
-  }): Promise<ImportExportJob> {
+  async createJob(
+    payload: {
+      workspaceId: number;
+      type: ImportExportJobType;
+      format: "json";
+      summary: Record<string, unknown>;
+      artifact: Record<string, unknown>;
+      createdByUserId: number;
+    },
+    dbClient?: DatabaseClient,
+  ): Promise<ImportExportJob> {
     const workspaceToken = resolveToken(1);
     const typeToken = resolveToken(2);
     const statusToken = resolveToken(3);
@@ -131,7 +143,7 @@ export const importExportRepo = {
     const artifactToken = resolveToken(6);
     const createdByToken = resolveToken(7);
     const completedAtToken = resolveToken(8);
-    const db = resolveDb();
+    const db = resolveDb(dbClient);
 
     const result = await db.query<ImportExportJobRow>(
       `INSERT INTO ${IMPORT_EXPORT_JOBS_TABLE} (workspace_id, type, status, format, summary_json, artifact_json, created_by_user_id, completed_at) VALUES (${workspaceToken}, ${typeToken}, ${statusToken}, ${formatToken}, ${summaryToken}, ${artifactToken}, ${createdByToken}, ${completedAtToken}) RETURNING id, workspace_id, type, status, format, summary_json, artifact_json, created_by_user_id, created_at, completed_at`,

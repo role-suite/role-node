@@ -56,6 +56,7 @@ export const ERROR_CODES = {
   importExport: {
     RUN_FORBIDDEN: "IMPORT_EXPORT_RUN_FORBIDDEN",
     JOB_NOT_FOUND: "IMPORT_EXPORT_JOB_NOT_FOUND",
+    INVALID_SOURCE_REFERENCE: "IMPORT_EXPORT_INVALID_SOURCE_REFERENCE",
   },
   system: {
     DATABASE_ERROR: "DATABASE_ERROR",
@@ -258,6 +259,10 @@ export const ERROR_CODE_DEFINITIONS: Record<ErrorCode, ErrorCodeDefinition> = {
   IMPORT_EXPORT_JOB_NOT_FOUND: {
     status: 404,
     message: "Import/export job not found",
+  },
+  IMPORT_EXPORT_INVALID_SOURCE_REFERENCE: {
+    status: 400,
+    message: "Import payload references an unknown sourceId",
   },
   DATABASE_ERROR: {
     status: 500,

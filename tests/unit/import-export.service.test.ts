@@ -2,7 +2,10 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { authRepo, setAuthRepoDbClient } from "../../src/modules/auth/repo.js";
 import { authService } from "../../src/modules/auth/service.js";
-import { setCollectionsRepoDbClient } from "../../src/modules/collections/repo.js";
+import {
+  collectionsRepo,
+  setCollectionsRepoDbClient,
+} from "../../src/modules/collections/repo.js";
 import { setEnvironmentsRepoDbClient } from "../../src/modules/environments/repo.js";
 import { setImportExportRepoDbClient } from "../../src/modules/import-export/repo.js";
 import { importExportService } from "../../src/modules/import-export/service.js";
@@ -202,5 +205,99 @@ describe("import-export service", () => {
     );
 
     expect(read.id).toBe(ownerJob.id);
+  });
+
+  it("rolls back the whole import when a later item conflicts, instead of leaving orphans", async () => {
+    const owner = await authService.register({
+      name: "Owner",
+      email: "atomic-owner@example.com",
+      password: "password123",
+      accountType: "single",
+    });
+    const workspace = await workspacesService.createForUser(owner.user.id, {
+      name: "Atomic Import Team",
+    });
+
+    await expect(
+      importExportService.createImportJobForWorkspace(
+        owner.user.id,
+        workspace.id,
+        {
+          format: "json",
+          payload: {
+            version: 1,
+            format: "role-native",
+            collections: [{ name: "Should Not Persist" }],
+            environments: [
+              { name: "Dup" },
+              // Same name within one payload triggers the DB's UNIQUE(workspace_id, name)
+              // constraint on the second insert, after the first collection/environment above
+              // have already been written inside the transaction.
+              { name: "Dup" },
+            ],
+          },
+        },
+      ),
+    ).rejects.toMatchObject({
+      statusCode: 409,
+      message: 'Environment name "Dup" already exists in this workspace',
+    });
+
+    const collections = await collectionsRepo.listByWorkspace(workspace.id);
+    expect(collections).toHaveLength(0);
+
+    const jobs = await importExportService.listJobsForWorkspace(
+      owner.user.id,
+      workspace.id,
+    );
+    expect(jobs).toHaveLength(0);
+  });
+
+  it("rejects an import payload with a dangling folder/endpoint source reference", async () => {
+    const owner = await authService.register({
+      name: "Owner",
+      email: "dangling-owner@example.com",
+      password: "password123",
+      accountType: "single",
+    });
+    const workspace = await workspacesService.createForUser(owner.user.id, {
+      name: "Dangling Reference Team",
+    });
+
+    await expect(
+      importExportService.createImportJobForWorkspace(
+        owner.user.id,
+        workspace.id,
+        {
+          format: "json",
+          payload: {
+            version: 1,
+            format: "role-native",
+            collections: [
+              {
+                name: "Bad Refs",
+                folders: [{ sourceId: 1, name: "Real Folder" }],
+                endpoints: [
+                  {
+                    name: "Orphan Endpoint",
+                    method: "GET",
+                    url: "https://api.example.com/x",
+                    // 999 was never declared as a folder sourceId above.
+                    folderSourceId: 999,
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      ),
+    ).rejects.toMatchObject({
+      statusCode: 400,
+      message:
+        'Endpoint "Orphan Endpoint" references unknown folderSourceId 999',
+    });
+
+    const collections = await collectionsRepo.listByWorkspace(workspace.id);
+    expect(collections).toHaveLength(0);
   });
 });
