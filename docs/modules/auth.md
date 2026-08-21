@@ -27,7 +27,9 @@ Base route: `/api/auth`
 
 ### `POST /api/auth/register`
 
-Creates a user account, creates a workspace, creates owner membership, and returns auth payload with token pair.
+Creates a user account, creates a workspace, and creates an owner membership in a single DB
+transaction, then returns an auth payload with a token pair. If any of the three inserts fail,
+the whole registration rolls back — there is no path to an orphaned user without a workspace.
 
 Request body:
 
@@ -55,10 +57,12 @@ Team account example:
 Validation rules:
 
 - `name`: string, trimmed, min 2, max 120
-- `email`: valid email
-- `password`: string, min 8, max 72
+- `email`: valid email, lowercased before it's checked/stored (case-insensitive)
+- `password`: string, min 8, max 128 (the cap bounds argon2 hashing cost per request, not an
+  algorithm limit)
 - `accountType`: `single` or `team`
-- `teamName`: required when `accountType` is `team`, min 2, max 120
+- `teamName`: required when `accountType` is `team`, min 2, max 120 (enforced at the type level
+  via a discriminated union on `accountType`, not a runtime-only refinement)
 
 Success:
 
@@ -84,8 +88,10 @@ Request body:
 
 Notes:
 
+- `email` is lowercased before lookup (case-insensitive, same as register).
 - `workspaceId` is not accepted on login payload.
-- Login uses the first available membership as active workspace context.
+- Login uses the earliest-created membership (lowest membership id) as active workspace context.
+  There is no explicit "default workspace" flag on a membership.
 
 Success:
 
@@ -165,9 +171,12 @@ Domain errors:
 `AuthResponse` returned from register/login/refresh:
 
 - `user`: `{ id, name, email }`
-- `workspace`: `{ id, name, slug, type, role }`
-- `memberships`: list of workspace memberships for user
+- `workspace`: `{ id, _id, name, slug, type, role }`
+- `memberships`: list of `{ workspaceId, _id, name, slug, type, role }` for the user
 - `tokens`: `{ accessToken, refreshToken, accessTokenTtlSeconds, refreshTokenTtlSeconds }`
+
+`_id` duplicates `id`/`workspaceId` for legacy Mongo-style API clients; new consumers should use
+the plain numeric field.
 
 All responses use shared envelope from `src/shared/app-response.ts`:
 
@@ -176,16 +185,21 @@ All responses use shared envelope from `src/shared/app-response.ts`:
 
 ## Auth and session lifecycle
 
-1. Register/Login picks active workspace context.
+1. Register creates the user, workspace, and owner membership inside one DB transaction
+   (`authRepo.withAuthTransaction`), then picks that workspace as active context. Login picks
+   active workspace context per the rule above.
 2. Service creates an `auth_sessions` row first with expiry.
 3. Access + refresh tokens are signed with payload fields:
    - `sub` user id
    - `wid` workspace id
    - `sid` session id
    - `typ` token type (`access` or `refresh`)
+   Access and refresh tokens are signed concurrently (`Promise.all`), not sequentially.
 4. Refresh token hash is persisted in session (`sha256`) and plaintext token is returned only to client.
 5. Refresh validates token signature/type/expiry and compares hashed token to persisted `refresh_token_hash`.
 6. On successful refresh, old session is revoked and a new session/token pair is issued (rotation).
+   User/workspace/role for the new response are resolved via `authRepo.findAuthContext`, a single
+   joined query, instead of three separate lookups.
 7. Logout revokes session by `sid` from refresh token.
 
 ## Workspace-aware authorization model
@@ -194,7 +208,8 @@ This auth module is intentionally workspace-aware.
 
 - User identity alone is not enough.
 - Active auth context is `(userId, workspaceId, role, sessionId)`.
-- Access middleware (`requireAuth`) validates token and ensures:
+- Access middleware (`requireAuth`) validates token and ensures, via a single
+  `authRepo.findAuthContext` join query:
   - user exists
   - workspace exists
   - membership exists between user and workspace
@@ -209,10 +224,17 @@ Tables used:
 - `workspaces`
 - `workspace_memberships`
 - `auth_sessions`
+- `workspace_events`
+- `workspace_invitations`
 
-Migration file:
+The last two exist because the `workspaces` module has no `repo.ts` of its own and reuses
+`auth/repo.ts` for all workspace/event/invitation persistence.
+
+Migration files:
 
 - `migrations/20260320_001_create_auth_tables.migration.ts`
+- `migrations/20260328_005_create_workspace_events_table.migration.ts`
+- `migrations/20260407_006_create_workspace_invitations_table.migration.ts`
 
 Postgres persistence details in repo implementation:
 
@@ -227,6 +249,10 @@ Postgres persistence details in repo implementation:
 - Refresh tokens are stored hashed (`sha256`), not in plaintext.
 - Refresh rotation invalidates previous refresh session after use.
 - Access token middleware re-hydrates DB context to reject stale/deleted memberships.
+- Email is lowercased at the schema level, so lookups, the DB unique constraint, and login are
+  all case-insensitive.
+- User/workspace/membership creation on register is atomic (single DB transaction); a failure
+  partway through cannot leave a user without a workspace.
 
 ## Environment variables used by this module
 
