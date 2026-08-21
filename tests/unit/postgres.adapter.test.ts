@@ -98,7 +98,6 @@ describe("postgres adapter", () => {
     );
     await expect(client.query("select now()", [])).rejects.toMatchObject({
       message: "PostgreSQL query failed",
-      dialect: "postgres",
     });
   });
 
@@ -145,7 +144,6 @@ describe("postgres adapter", () => {
       client.transaction(async (tx) => tx.query("select * from users", [])),
     ).rejects.toMatchObject({
       message: "PostgreSQL transaction query failed",
-      dialect: "postgres",
     });
     expect(txQuery).toHaveBeenNthCalledWith(3, "ROLLBACK");
   });
@@ -175,7 +173,7 @@ describe("postgres adapter", () => {
   it("rethrows DbError from transaction callback", async () => {
     const txQuery = vi.fn();
     const release = vi.fn();
-    const dbError = new DbError("custom db error", { dialect: "postgres" });
+    const dbError = new DbError("custom db error");
 
     txQuery.mockResolvedValueOnce(undefined);
     txQuery.mockResolvedValueOnce(undefined);

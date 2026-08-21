@@ -29,14 +29,12 @@ const createTransactionClient = (client: PoolClient): DatabaseClient => {
       return normalizeResult(result);
     } catch (error) {
       throw new DbError("PostgreSQL transaction query failed", {
-        dialect: "postgres",
         cause: error,
       });
     }
   };
 
   return {
-    dialect: "postgres",
     query,
     transaction: async <T>(
       callback: (tx: DatabaseClient) => Promise<T>,
@@ -46,8 +44,6 @@ const createTransactionClient = (client: PoolClient): DatabaseClient => {
 };
 
 class PostgresDatabaseClient implements DatabaseClient {
-  public readonly dialect = "postgres" as const;
-
   public constructor(private readonly pool: Pool) {}
 
   public async query<TRow extends QueryRow = QueryRow>(
@@ -59,7 +55,6 @@ class PostgresDatabaseClient implements DatabaseClient {
       return normalizeResult(result);
     } catch (error) {
       throw new DbError("PostgreSQL query failed", {
-        dialect: this.dialect,
         cause: error,
       });
     }
@@ -83,7 +78,6 @@ class PostgresDatabaseClient implements DatabaseClient {
       }
 
       throw new DbError("PostgreSQL transaction failed", {
-        dialect: this.dialect,
         cause: error,
       });
     } finally {

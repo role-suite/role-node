@@ -1,4 +1,4 @@
-import type { DatabaseClient, DbDialect } from "../../types/db.js";
+import type { DatabaseClient } from "../../types/db.js";
 import type {
   MigrationDefinition,
   MigrationStatus,
@@ -47,17 +47,15 @@ const readLastAppliedId = async (
 
 export const ensureMigrationsTable = async (
   db: DatabaseClient,
-  _dialect: DbDialect,
 ): Promise<void> => {
   await db.query(createTableSql);
 };
 
 export const getMigrationStatus = async (
   db: DatabaseClient,
-  dialect: DbDialect,
   migrations: readonly MigrationDefinition[],
 ): Promise<MigrationStatus> => {
-  await ensureMigrationsTable(db, dialect);
+  await ensureMigrationsTable(db);
 
   const applied = await readAppliedIds(db);
   const appliedSet = new Set(applied);
@@ -73,11 +71,10 @@ export const getMigrationStatus = async (
 
 export const applyMigrations = async (
   db: DatabaseClient,
-  dialect: DbDialect,
   migrations: readonly MigrationDefinition[],
   limit?: number,
 ): Promise<string[]> => {
-  await ensureMigrationsTable(db, dialect);
+  await ensureMigrationsTable(db);
 
   const appliedSet = new Set(await readAppliedIds(db));
   const pending = migrations.filter(
@@ -89,7 +86,7 @@ export const applyMigrations = async (
 
   for (const migration of selected) {
     await db.transaction(async (tx) => {
-      await migration.up({ db: tx, dialect });
+      await migration.up({ db: tx });
       await insertAppliedId(tx, migration.id);
     });
 
@@ -101,11 +98,10 @@ export const applyMigrations = async (
 
 export const rollbackMigrations = async (
   db: DatabaseClient,
-  dialect: DbDialect,
   migrations: readonly MigrationDefinition[],
   count = 1,
 ): Promise<string[]> => {
-  await ensureMigrationsTable(db, dialect);
+  await ensureMigrationsTable(db);
 
   const rolledBack: string[] = [];
   const rollbackCount = count > 0 ? count : 1;
@@ -126,7 +122,7 @@ export const rollbackMigrations = async (
     }
 
     await db.transaction(async (tx) => {
-      await migration.down({ db: tx, dialect });
+      await migration.down({ db: tx });
       await deleteAppliedId(tx, migration.id);
     });
 

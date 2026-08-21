@@ -17,7 +17,6 @@ export const validateStartupOrThrow = async (): Promise<void> => {
   logger.info("Startup validation passed", {
     nodeEnv: env.NODE_ENV,
     port: env.PORT,
-    dbDialect: "postgres",
     dbHost: env.DB_HOST,
   });
 };

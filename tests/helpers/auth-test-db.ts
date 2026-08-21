@@ -1225,7 +1225,6 @@ export const createAuthTestDb = (): DatabaseClient => {
   };
 
   const db: DatabaseClient = {
-    dialect: "postgres",
     query,
     transaction: async <T>(callback: (tx: DatabaseClient) => Promise<T>) => {
       return callback(db);

@@ -11,7 +11,6 @@ vi.mock("../../src/shared/db/postgres-client.js", () => ({
 }));
 
 const buildClient = (): DatabaseClient => ({
-  dialect: "postgres",
   query: vi.fn(),
   transaction: vi.fn(),
   close: vi.fn().mockResolvedValue(undefined),

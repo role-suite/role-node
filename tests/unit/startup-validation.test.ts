@@ -46,7 +46,7 @@ describe("startup validation", () => {
     expect(query).toHaveBeenCalledWith("SELECT 1");
     expect(loggerInfo).toHaveBeenCalledWith(
       "Startup validation passed",
-      expect.objectContaining({ dbDialect: "postgres", dbHost: "localhost" }),
+      expect.objectContaining({ dbHost: "localhost" }),
     );
   });
 
