@@ -686,21 +686,24 @@ export const authRepo = {
     );
   },
 
-  async createWorkspaceEvent(payload: {
-    workspaceId: number;
-    actorUserId: number;
-    entity: string;
-    action: string;
-    entityId: number | null;
-    payloadJson: string | null;
-  }): Promise<WorkspaceEvent> {
+  async createWorkspaceEvent(
+    payload: {
+      workspaceId: number;
+      actorUserId: number;
+      entity: string;
+      action: string;
+      entityId: number | null;
+      payloadJson: string | null;
+    },
+    dbClient?: DatabaseClient,
+  ): Promise<WorkspaceEvent> {
     const workspaceToken = resolveToken(1);
     const actorToken = resolveToken(2);
     const entityToken = resolveToken(3);
     const actionToken = resolveToken(4);
     const entityIdToken = resolveToken(5);
     const payloadToken = resolveToken(6);
-    const db = resolveDb();
+    const db = dbClient ?? resolveDb();
 
     const result = await db.query<WorkspaceEventRow>(
       `INSERT INTO ${WORKSPACE_EVENTS_TABLE} (workspace_id, actor_user_id, entity, action, entity_id, payload_json) VALUES (${workspaceToken}, ${actorToken}, ${entityToken}, ${actionToken}, ${entityIdToken}, ${payloadToken}) RETURNING id, workspace_id, actor_user_id, entity, action, entity_id, payload_json, created_at`,

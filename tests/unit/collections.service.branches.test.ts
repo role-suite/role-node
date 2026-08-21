@@ -41,6 +41,8 @@ vi.mock("../../src/modules/auth/repo.js", () => ({
     findMembershipByUserAndWorkspace: findMembershipByUserAndWorkspaceMock,
     findWorkspaceById: findWorkspaceByIdMock,
   },
+  withAuthTransaction: async (callback: (tx: undefined) => Promise<unknown>) =>
+    callback(undefined),
 }));
 
 vi.mock("../../src/modules/collections/repo.js", () => ({
@@ -92,8 +94,8 @@ describe("collections service branches", () => {
       name: "Endpoint",
       method: "GET",
       url: "https://api.example.com",
-      headers: "[]",
-      queryParams: "[]",
+      headers: [],
+      queryParams: [],
       body: null,
       auth: null,
       position: 0,
@@ -116,7 +118,7 @@ describe("collections service branches", () => {
       endpointId: 30,
       name: "200",
       statusCode: 200,
-      headers: "[]",
+      headers: [],
       body: null,
       position: 0,
       createdByUserId: 1,
@@ -166,23 +168,23 @@ describe("collections service branches", () => {
     expect(created.id).toBe(41);
     expect(createFolderMock).toHaveBeenCalledWith(
       expect.objectContaining({ parentFolderId: 40 }),
+      undefined,
     );
     expect(publishMock).toHaveBeenCalled();
   });
 
   it("updates folder and throws when updated folder cannot be fetched", async () => {
-    findFolderByIdMock
-      .mockResolvedValueOnce({
-        id: 40,
-        collectionId: 20,
-        parentFolderId: null,
-        name: "Root",
-        position: 0,
-        createdByUserId: 1,
-        createdAt: now,
-        updatedAt: now,
-      })
-      .mockResolvedValueOnce(undefined);
+    findFolderByIdMock.mockResolvedValueOnce({
+      id: 40,
+      collectionId: 20,
+      parentFolderId: null,
+      name: "Root",
+      position: 0,
+      createdByUserId: 1,
+      createdAt: now,
+      updatedAt: now,
+    });
+    updateFolderMock.mockResolvedValueOnce(undefined);
 
     await expect(
       collectionsService.updateFolderForCollection(1, 5, 20, 40, {
@@ -223,12 +225,13 @@ describe("collections service branches", () => {
 
     await collectionsService.deleteFolderForCollection(1, 5, 20, 40);
 
-    expect(deleteFolderByIdMock).toHaveBeenCalledWith(40);
+    expect(deleteFolderByIdMock).toHaveBeenCalledWith(40, undefined);
     expect(publishMock).toHaveBeenCalledWith(
       expect.objectContaining({
         action: "deleted",
         entity: "collection_folder",
       }),
+      undefined,
     );
   });
 
@@ -239,7 +242,7 @@ describe("collections service branches", () => {
         endpointId: 30,
         name: "200",
         statusCode: 200,
-        headers: '[{"key":"content-type","value":"application/json"}]',
+        headers: [{ key: "content-type", value: "application/json" }],
         body: "{}",
         position: 0,
         createdByUserId: 1,
@@ -252,39 +255,37 @@ describe("collections service branches", () => {
       endpointId: 30,
       name: "201",
       statusCode: 201,
-      headers: "[]",
+      headers: [],
       body: "{}",
       position: 0,
       createdByUserId: 1,
       createdAt: now,
       updatedAt: now,
     });
-    updateExampleMock.mockResolvedValue(undefined);
-    findExampleByIdMock
-      .mockResolvedValueOnce({
-        id: 60,
-        endpointId: 30,
-        name: "200",
-        statusCode: 200,
-        headers: "[]",
-        body: null,
-        position: 0,
-        createdByUserId: 1,
-        createdAt: now,
-        updatedAt: now,
-      })
-      .mockResolvedValueOnce({
-        id: 60,
-        endpointId: 30,
-        name: "202",
-        statusCode: 202,
-        headers: "[]",
-        body: "{}",
-        position: 0,
-        createdByUserId: 1,
-        createdAt: now,
-        updatedAt: now,
-      });
+    findExampleByIdMock.mockResolvedValueOnce({
+      id: 60,
+      endpointId: 30,
+      name: "200",
+      statusCode: 200,
+      headers: [],
+      body: null,
+      position: 0,
+      createdByUserId: 1,
+      createdAt: now,
+      updatedAt: now,
+    });
+    updateExampleMock.mockResolvedValueOnce({
+      id: 60,
+      endpointId: 30,
+      name: "202",
+      statusCode: 202,
+      headers: [],
+      body: "{}",
+      position: 0,
+      createdByUserId: 1,
+      createdAt: now,
+      updatedAt: now,
+    });
 
     const examples = await collectionsService.listExamplesForEndpoint(
       1,
@@ -316,7 +317,7 @@ describe("collections service branches", () => {
     expect(updated.name).toBe("202");
 
     await collectionsService.deleteExampleForEndpoint(1, 5, 20, 30, 60);
-    expect(deleteExampleByIdMock).toHaveBeenCalledWith(60);
+    expect(deleteExampleByIdMock).toHaveBeenCalledWith(60, undefined);
   });
 
   it("throws on missing endpoint/example branches", async () => {
@@ -335,8 +336,8 @@ describe("collections service branches", () => {
       name: "Endpoint",
       method: "GET",
       url: "https://api.example.com",
-      headers: "[]",
-      queryParams: "[]",
+      headers: [],
+      queryParams: [],
       body: null,
       auth: null,
       position: 0,
@@ -360,7 +361,7 @@ describe("collections service branches", () => {
       endpointId: 30,
       name: "200",
       statusCode: 200,
-      headers: "[]",
+      headers: [],
       body: null,
       position: 0,
       createdByUserId: 1,
@@ -387,8 +388,8 @@ describe("collections service branches", () => {
       name: "Endpoint",
       method: "GET",
       url: "https://api.example.com",
-      headers: "[]",
-      queryParams: "[]",
+      headers: [],
+      queryParams: [],
       body: null,
       auth: null,
       position: 0,

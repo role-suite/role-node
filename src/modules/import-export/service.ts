@@ -40,36 +40,25 @@ const mapJob = (job: ImportExportJob): ImportExportJobResponse => {
   };
 };
 
-const parseJsonObject = (
-  value: string | null,
-): Record<string, unknown> | null => {
-  if (value === null) {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(value) as unknown;
-    return typeof parsed === "object" && parsed !== null
-      ? (parsed as Record<string, unknown>)
-      : null;
-  } catch {
-    return null;
-  }
+/**
+ * `collectionsRepo` returns JSONB columns already parsed by the pg driver,
+ * so these just narrow `unknown` to the expected shape rather than parsing
+ * JSON text.
+ */
+const asJsonObject = (value: unknown): Record<string, unknown> | null => {
+  return typeof value === "object" && value !== null
+    ? (value as Record<string, unknown>)
+    : null;
 };
 
-const parseJsonArray = (value: string): unknown[] => {
-  try {
-    const parsed = JSON.parse(value) as unknown;
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+const asJsonArray = (value: unknown): unknown[] => {
+  return Array.isArray(value) ? value : [];
 };
 
 const parseKeyValueArray = (
-  value: string,
+  value: unknown,
 ): Array<{ key: string; value: string; enabled?: boolean }> => {
-  return parseJsonArray(value).flatMap((entry) => {
+  return asJsonArray(value).flatMap((entry) => {
     if (typeof entry !== "object" || entry === null) {
       return [];
     }
@@ -133,8 +122,8 @@ const buildExportArtifact = async (
               url: endpoint.url,
               headers: parseKeyValueArray(endpoint.headers),
               queryParams: parseKeyValueArray(endpoint.queryParams),
-              body: parseJsonObject(endpoint.body),
-              auth: parseJsonObject(endpoint.auth),
+              body: asJsonObject(endpoint.body),
+              auth: asJsonObject(endpoint.auth),
               position: endpoint.position,
               examples: (
                 await collectionsRepo.listExamplesByEndpoint(endpoint.id)

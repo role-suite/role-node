@@ -18,10 +18,10 @@ export type CollectionEndpoint = {
   name: string;
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD" | "OPTIONS";
   url: string;
-  headers: string;
-  queryParams: string;
-  body: string | null;
-  auth: string | null;
+  headers: unknown;
+  queryParams: unknown;
+  body: unknown | null;
+  auth: unknown | null;
   position: number;
   createdByUserId: number;
   createdAt: Date;
@@ -44,7 +44,7 @@ export type CollectionEndpointExample = {
   endpointId: number;
   name: string;
   statusCode: number;
-  headers: string;
+  headers: unknown;
   body: string | null;
   position: number;
   createdByUserId: number;
@@ -110,8 +110,8 @@ const COLLECTION_ENDPOINT_EXAMPLES_TABLE = "collection_endpoint_examples";
 
 let dbOverride: DatabaseClient | null = null;
 
-const resolveDb = (): DatabaseClient => {
-  return dbOverride ?? getDb();
+const resolveDb = (dbClient?: DatabaseClient): DatabaseClient => {
+  return dbClient ?? dbOverride ?? getDb();
 };
 
 export const setCollectionsRepoDbClient = (
@@ -126,14 +126,6 @@ const resolveToken = (index: number): string => {
 
 const toDate = (value: Date | string): Date => {
   return value instanceof Date ? value : new Date(value);
-};
-
-const stringifyJsonColumn = (value: unknown): string => {
-  return typeof value === "string" ? value : JSON.stringify(value);
-};
-
-const stringifyNullableJsonColumn = (value: unknown | null): string | null => {
-  return value === null ? null : stringifyJsonColumn(value);
 };
 
 const mapCollectionRow = (row: CollectionRow): Collection => {
@@ -158,10 +150,10 @@ const mapCollectionEndpointRow = (
     name: row.name,
     method: row.method,
     url: row.url,
-    headers: stringifyJsonColumn(row.headers_json),
-    queryParams: stringifyJsonColumn(row.query_params_json),
-    body: stringifyNullableJsonColumn(row.body_json),
-    auth: stringifyNullableJsonColumn(row.auth_json),
+    headers: row.headers_json,
+    queryParams: row.query_params_json,
+    body: row.body_json,
+    auth: row.auth_json,
     position: row.position,
     createdByUserId: row.created_by_user_id,
     createdAt: toDate(row.created_at),
@@ -190,7 +182,7 @@ const mapCollectionEndpointExampleRow = (
     endpointId: row.endpoint_id,
     name: row.name,
     statusCode: row.status_code,
-    headers: stringifyJsonColumn(row.headers_json),
+    headers: row.headers_json,
     body: row.body_text,
     position: row.position,
     createdByUserId: row.created_by_user_id,
@@ -208,17 +200,20 @@ export const collectionsRepo = {
     await db.query(`DELETE FROM ${COLLECTIONS_TABLE}`);
   },
 
-  async create(payload: {
-    workspaceId: number;
-    name: string;
-    description: string | null;
-    createdByUserId: number;
-  }): Promise<Collection> {
+  async create(
+    payload: {
+      workspaceId: number;
+      name: string;
+      description: string | null;
+      createdByUserId: number;
+    },
+    dbClient?: DatabaseClient,
+  ): Promise<Collection> {
     const workspaceToken = resolveToken(1);
     const nameToken = resolveToken(2);
     const descriptionToken = resolveToken(3);
     const createdByToken = resolveToken(4);
-    const db = resolveDb();
+    const db = resolveDb(dbClient);
 
     const result = await db.query<CollectionRow>(
       `INSERT INTO ${COLLECTIONS_TABLE} (workspace_id, name, description, created_by_user_id) VALUES (${workspaceToken}, ${nameToken}, ${descriptionToken}, ${createdByToken}) RETURNING id, workspace_id, name, description, created_by_user_id, created_at, updated_at`,
@@ -259,42 +254,51 @@ export const collectionsRepo = {
     return row ? mapCollectionRow(row) : undefined;
   },
 
-  async update(payload: {
-    id: number;
-    name: string;
-    description: string | null;
-  }): Promise<void> {
+  async update(
+    payload: {
+      id: number;
+      name: string;
+      description: string | null;
+    },
+    dbClient?: DatabaseClient,
+  ): Promise<Collection | undefined> {
     const idToken = resolveToken(1);
     const nameToken = resolveToken(2);
     const descriptionToken = resolveToken(3);
 
-    await resolveDb().query(
-      `UPDATE ${COLLECTIONS_TABLE} SET name = ${nameToken}, description = ${descriptionToken}, updated_at = CURRENT_TIMESTAMP WHERE id = ${idToken}`,
+    const result = await resolveDb(dbClient).query<CollectionRow>(
+      `UPDATE ${COLLECTIONS_TABLE} SET name = ${nameToken}, description = ${descriptionToken}, updated_at = CURRENT_TIMESTAMP WHERE id = ${idToken} RETURNING id, workspace_id, name, description, created_by_user_id, created_at, updated_at`,
       [payload.id, payload.name, payload.description],
     );
+
+    const row = result.rows[0];
+    return row ? mapCollectionRow(row) : undefined;
   },
 
-  async deleteById(id: number): Promise<void> {
+  async deleteById(id: number, dbClient?: DatabaseClient): Promise<void> {
     const token = resolveToken(1);
-    await resolveDb().query(
+    await resolveDb(dbClient).query(
       `DELETE FROM ${COLLECTIONS_TABLE} WHERE id = ${token}`,
       [id],
     );
   },
 
-  async createEndpoint(payload: {
-    collectionId: number;
-    folderId: number | null;
-    name: string;
-    method: CollectionEndpoint["method"];
-    url: string;
-    headers: string;
-    queryParams: string;
-    body: string | null;
-    auth: string | null;
-    position: number;
-    createdByUserId: number;
-  }): Promise<CollectionEndpoint> {
+  async createEndpoint(
+    payload: {
+      collectionId: number;
+      folderId: number | null;
+      name: string;
+      method: CollectionEndpoint["method"];
+      url: string;
+      headers: string;
+      queryParams: string;
+      body: string | null;
+      auth: string | null;
+      position: number;
+      createdByUserId: number;
+    },
+    dbClient?: DatabaseClient,
+  ): Promise<CollectionEndpoint> {
     const collectionToken = resolveToken(1);
     const folderToken = resolveToken(2);
     const nameToken = resolveToken(3);
@@ -306,7 +310,7 @@ export const collectionsRepo = {
     const authToken = resolveToken(9);
     const positionToken = resolveToken(10);
     const createdByToken = resolveToken(11);
-    const db = resolveDb();
+    const db = resolveDb(dbClient);
 
     const result = await db.query<CollectionEndpointRow>(
       `INSERT INTO ${COLLECTION_ENDPOINTS_TABLE} (collection_id, folder_id, name, method, url, headers_json, query_params_json, body_json, auth_json, position, created_by_user_id) VALUES (${collectionToken}, ${folderToken}, ${nameToken}, ${methodToken}, ${urlToken}, ${headersToken}, ${queryToken}, ${bodyToken}, ${authToken}, ${positionToken}, ${createdByToken}) RETURNING id, collection_id, folder_id, name, method, url, headers_json, query_params_json, body_json, auth_json, position, created_by_user_id, created_at, updated_at`,
@@ -356,18 +360,21 @@ export const collectionsRepo = {
     return row ? mapCollectionEndpointRow(row) : undefined;
   },
 
-  async updateEndpoint(payload: {
-    id: number;
-    folderId: number | null;
-    name: string;
-    method: CollectionEndpoint["method"];
-    url: string;
-    headers: string;
-    queryParams: string;
-    body: string | null;
-    auth: string | null;
-    position: number;
-  }): Promise<void> {
+  async updateEndpoint(
+    payload: {
+      id: number;
+      folderId: number | null;
+      name: string;
+      method: CollectionEndpoint["method"];
+      url: string;
+      headers: string;
+      queryParams: string;
+      body: string | null;
+      auth: string | null;
+      position: number;
+    },
+    dbClient?: DatabaseClient,
+  ): Promise<CollectionEndpoint | undefined> {
     const idToken = resolveToken(1);
     const folderToken = resolveToken(2);
     const nameToken = resolveToken(3);
@@ -379,8 +386,8 @@ export const collectionsRepo = {
     const authToken = resolveToken(9);
     const positionToken = resolveToken(10);
 
-    await resolveDb().query(
-      `UPDATE ${COLLECTION_ENDPOINTS_TABLE} SET folder_id = ${folderToken}, name = ${nameToken}, method = ${methodToken}, url = ${urlToken}, headers_json = ${headersToken}, query_params_json = ${queryToken}, body_json = ${bodyToken}, auth_json = ${authToken}, position = ${positionToken}, updated_at = CURRENT_TIMESTAMP WHERE id = ${idToken}`,
+    const result = await resolveDb(dbClient).query<CollectionEndpointRow>(
+      `UPDATE ${COLLECTION_ENDPOINTS_TABLE} SET folder_id = ${folderToken}, name = ${nameToken}, method = ${methodToken}, url = ${urlToken}, headers_json = ${headersToken}, query_params_json = ${queryToken}, body_json = ${bodyToken}, auth_json = ${authToken}, position = ${positionToken}, updated_at = CURRENT_TIMESTAMP WHERE id = ${idToken} RETURNING id, collection_id, folder_id, name, method, url, headers_json, query_params_json, body_json, auth_json, position, created_by_user_id, created_at, updated_at`,
       [
         payload.id,
         payload.folderId,
@@ -394,21 +401,27 @@ export const collectionsRepo = {
         payload.position,
       ],
     );
+
+    const row = result.rows[0];
+    return row ? mapCollectionEndpointRow(row) : undefined;
   },
 
-  async createFolder(payload: {
-    collectionId: number;
-    parentFolderId: number | null;
-    name: string;
-    position: number;
-    createdByUserId: number;
-  }): Promise<CollectionFolder> {
+  async createFolder(
+    payload: {
+      collectionId: number;
+      parentFolderId: number | null;
+      name: string;
+      position: number;
+      createdByUserId: number;
+    },
+    dbClient?: DatabaseClient,
+  ): Promise<CollectionFolder> {
     const collectionToken = resolveToken(1);
     const parentToken = resolveToken(2);
     const nameToken = resolveToken(3);
     const positionToken = resolveToken(4);
     const createdByToken = resolveToken(5);
-    const db = resolveDb();
+    const db = resolveDb(dbClient);
 
     const result = await db.query<CollectionFolderRow>(
       `INSERT INTO ${COLLECTION_FOLDERS_TABLE} (collection_id, parent_folder_id, name, position, created_by_user_id) VALUES (${collectionToken}, ${parentToken}, ${nameToken}, ${positionToken}, ${createdByToken}) RETURNING id, collection_id, parent_folder_id, name, position, created_by_user_id, created_at, updated_at`,
@@ -452,40 +465,49 @@ export const collectionsRepo = {
     return row ? mapCollectionFolderRow(row) : undefined;
   },
 
-  async updateFolder(payload: {
-    id: number;
-    parentFolderId: number | null;
-    name: string;
-    position: number;
-  }): Promise<void> {
+  async updateFolder(
+    payload: {
+      id: number;
+      parentFolderId: number | null;
+      name: string;
+      position: number;
+    },
+    dbClient?: DatabaseClient,
+  ): Promise<CollectionFolder | undefined> {
     const idToken = resolveToken(1);
     const parentToken = resolveToken(2);
     const nameToken = resolveToken(3);
     const positionToken = resolveToken(4);
 
-    await resolveDb().query(
-      `UPDATE ${COLLECTION_FOLDERS_TABLE} SET parent_folder_id = ${parentToken}, name = ${nameToken}, position = ${positionToken}, updated_at = CURRENT_TIMESTAMP WHERE id = ${idToken}`,
+    const result = await resolveDb(dbClient).query<CollectionFolderRow>(
+      `UPDATE ${COLLECTION_FOLDERS_TABLE} SET parent_folder_id = ${parentToken}, name = ${nameToken}, position = ${positionToken}, updated_at = CURRENT_TIMESTAMP WHERE id = ${idToken} RETURNING id, collection_id, parent_folder_id, name, position, created_by_user_id, created_at, updated_at`,
       [payload.id, payload.parentFolderId, payload.name, payload.position],
     );
+
+    const row = result.rows[0];
+    return row ? mapCollectionFolderRow(row) : undefined;
   },
 
-  async deleteFolderById(id: number): Promise<void> {
+  async deleteFolderById(id: number, dbClient?: DatabaseClient): Promise<void> {
     const token = resolveToken(1);
-    await resolveDb().query(
+    await resolveDb(dbClient).query(
       `DELETE FROM ${COLLECTION_FOLDERS_TABLE} WHERE id = ${token}`,
       [id],
     );
   },
 
-  async createEndpointExample(payload: {
-    endpointId: number;
-    name: string;
-    statusCode: number;
-    headers: string;
-    body: string | null;
-    position: number;
-    createdByUserId: number;
-  }): Promise<CollectionEndpointExample> {
+  async createEndpointExample(
+    payload: {
+      endpointId: number;
+      name: string;
+      statusCode: number;
+      headers: string;
+      body: string | null;
+      position: number;
+      createdByUserId: number;
+    },
+    dbClient?: DatabaseClient,
+  ): Promise<CollectionEndpointExample> {
     const endpointToken = resolveToken(1);
     const nameToken = resolveToken(2);
     const statusToken = resolveToken(3);
@@ -493,7 +515,7 @@ export const collectionsRepo = {
     const bodyToken = resolveToken(5);
     const positionToken = resolveToken(6);
     const createdByToken = resolveToken(7);
-    const db = resolveDb();
+    const db = resolveDb(dbClient);
 
     const result = await db.query<CollectionEndpointExampleRow>(
       `INSERT INTO ${COLLECTION_ENDPOINT_EXAMPLES_TABLE} (endpoint_id, name, status_code, headers_json, body_text, position, created_by_user_id) VALUES (${endpointToken}, ${nameToken}, ${statusToken}, ${headersToken}, ${bodyToken}, ${positionToken}, ${createdByToken}) RETURNING id, endpoint_id, name, status_code, headers_json, body_text, position, created_by_user_id, created_at, updated_at`,
@@ -541,14 +563,17 @@ export const collectionsRepo = {
     return row ? mapCollectionEndpointExampleRow(row) : undefined;
   },
 
-  async updateExample(payload: {
-    id: number;
-    name: string;
-    statusCode: number;
-    headers: string;
-    body: string | null;
-    position: number;
-  }): Promise<void> {
+  async updateExample(
+    payload: {
+      id: number;
+      name: string;
+      statusCode: number;
+      headers: string;
+      body: string | null;
+      position: number;
+    },
+    dbClient?: DatabaseClient,
+  ): Promise<CollectionEndpointExample | undefined> {
     const idToken = resolveToken(1);
     const nameToken = resolveToken(2);
     const statusToken = resolveToken(3);
@@ -556,8 +581,10 @@ export const collectionsRepo = {
     const bodyToken = resolveToken(5);
     const positionToken = resolveToken(6);
 
-    await resolveDb().query(
-      `UPDATE ${COLLECTION_ENDPOINT_EXAMPLES_TABLE} SET name = ${nameToken}, status_code = ${statusToken}, headers_json = ${headersToken}, body_text = ${bodyToken}, position = ${positionToken}, updated_at = CURRENT_TIMESTAMP WHERE id = ${idToken}`,
+    const result = await resolveDb(
+      dbClient,
+    ).query<CollectionEndpointExampleRow>(
+      `UPDATE ${COLLECTION_ENDPOINT_EXAMPLES_TABLE} SET name = ${nameToken}, status_code = ${statusToken}, headers_json = ${headersToken}, body_text = ${bodyToken}, position = ${positionToken}, updated_at = CURRENT_TIMESTAMP WHERE id = ${idToken} RETURNING id, endpoint_id, name, status_code, headers_json, body_text, position, created_by_user_id, created_at, updated_at`,
       [
         payload.id,
         payload.name,
@@ -567,19 +594,28 @@ export const collectionsRepo = {
         payload.position,
       ],
     );
+
+    const row = result.rows[0];
+    return row ? mapCollectionEndpointExampleRow(row) : undefined;
   },
 
-  async deleteExampleById(id: number): Promise<void> {
+  async deleteExampleById(
+    id: number,
+    dbClient?: DatabaseClient,
+  ): Promise<void> {
     const token = resolveToken(1);
-    await resolveDb().query(
+    await resolveDb(dbClient).query(
       `DELETE FROM ${COLLECTION_ENDPOINT_EXAMPLES_TABLE} WHERE id = ${token}`,
       [id],
     );
   },
 
-  async deleteEndpointById(id: number): Promise<void> {
+  async deleteEndpointById(
+    id: number,
+    dbClient?: DatabaseClient,
+  ): Promise<void> {
     const token = resolveToken(1);
-    await resolveDb().query(
+    await resolveDb(dbClient).query(
       `DELETE FROM ${COLLECTION_ENDPOINTS_TABLE} WHERE id = ${token}`,
       [id],
     );

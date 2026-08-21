@@ -1,4 +1,4 @@
-import { authRepo } from "../auth/repo.js";
+import { authRepo, withAuthTransaction } from "../auth/repo.js";
 import { createAppError } from "../../shared/errors/app-error.js";
 import { ERROR_CODES } from "../../shared/errors/error-codes.js";
 import { workspaceEventsService } from "../workspaces/events.service.js";
@@ -125,16 +125,13 @@ type CollectionEndpointExampleResponse = {
   updatedAt: Date;
 };
 
-const parseJson = <T>(value: string | null, fallback: T): T => {
-  if (!value) {
-    return fallback;
-  }
-
-  try {
-    return JSON.parse(value) as T;
-  } catch {
-    return fallback;
-  }
+/**
+ * Repo entities carry JSONB columns as already-parsed values (the pg driver
+ * decodes jsonb on the way out), so response mapping only needs a type-safe
+ * cast with a safe default, not a JSON.parse round trip.
+ */
+const asKeyValueList = (value: unknown): EndpointKeyValue[] => {
+  return Array.isArray(value) ? (value as EndpointKeyValue[]) : [];
 };
 
 const toJson = (value: unknown): string => {
@@ -154,24 +151,21 @@ const mapCollection = (collection: Collection): CollectionResponse => {
   };
 };
 
-const parseEndpointBodyValue = (value: string | null): EndpointBody | null => {
-  const parsed = parseJson<
-    EndpointBody | { contentType?: string; raw?: string } | null
-  >(value, null);
-
-  if (!parsed) {
+const normalizeEndpointBody = (value: unknown): EndpointBody | null => {
+  if (!value || typeof value !== "object") {
     return null;
   }
 
-  if (typeof parsed === "object" && "mode" in parsed) {
-    return parsed as EndpointBody;
+  if ("mode" in value) {
+    return value as EndpointBody;
   }
 
+  const legacy = value as { contentType?: string; raw?: string };
   return {
     mode: "raw",
-    raw: parsed.raw ?? "",
-    ...(parsed.contentType !== undefined
-      ? { contentType: parsed.contentType }
+    raw: legacy.raw ?? "",
+    ...(legacy.contentType !== undefined
+      ? { contentType: legacy.contentType }
       : {}),
   };
 };
@@ -186,10 +180,10 @@ const mapEndpoint = (
     name: endpoint.name,
     method: endpoint.method,
     url: endpoint.url,
-    headers: parseJson<EndpointKeyValue[]>(endpoint.headers, []),
-    queryParams: parseJson<EndpointKeyValue[]>(endpoint.queryParams, []),
-    body: parseEndpointBodyValue(endpoint.body),
-    auth: parseJson<EndpointAuth | null>(endpoint.auth, null),
+    headers: asKeyValueList(endpoint.headers),
+    queryParams: asKeyValueList(endpoint.queryParams),
+    body: normalizeEndpointBody(endpoint.body),
+    auth: (endpoint.auth as EndpointAuth | null) ?? null,
     position: endpoint.position,
     createdByUserId: endpoint.createdByUserId,
     createdAt: endpoint.createdAt,
@@ -218,7 +212,7 @@ const mapExample = (
     endpointId: example.endpointId,
     name: example.name,
     statusCode: example.statusCode,
-    headers: parseJson<EndpointKeyValue[]>(example.headers, []),
+    headers: asKeyValueList(example.headers),
     body: example.body,
     position: example.position,
     createdByUserId: example.createdByUserId,
@@ -280,6 +274,51 @@ const requireFolderInCollection = async (
   return folder;
 };
 
+const requireEndpointInCollection = async (
+  collectionId: number,
+  endpointId: number,
+): Promise<CollectionEndpoint> => {
+  const endpoint = await collectionsRepo.findEndpointById(endpointId);
+
+  if (!endpoint || endpoint.collectionId !== collectionId) {
+    throw createAppError(ERROR_CODES.collections.ENDPOINT_NOT_FOUND);
+  }
+
+  return endpoint;
+};
+
+const requireExampleForEndpoint = async (
+  endpointId: number,
+  exampleId: number,
+): Promise<CollectionEndpointExample> => {
+  const example = await collectionsRepo.findExampleById(exampleId);
+
+  if (!example || example.endpointId !== endpointId) {
+    throw createAppError(ERROR_CODES.collections.EXAMPLE_NOT_FOUND);
+  }
+
+  return example;
+};
+
+/**
+ * Runs the workspace-role check and the resource-scope check in parallel:
+ * neither depends on the other's result, and both are independent DB round
+ * trips, so serializing them (as separate `await`s) only adds latency.
+ */
+const requireAccessAndCollection = async (
+  userId: number,
+  workspaceId: number,
+  collectionId: number,
+  roleCheck: (userId: number, workspaceId: number) => Promise<unknown>,
+): Promise<Collection> => {
+  const [, collection] = await Promise.all([
+    roleCheck(userId, workspaceId),
+    requireCollectionInWorkspace(workspaceId, collectionId),
+  ]);
+
+  return collection;
+};
+
 const validateParentFolderReference = async (
   collectionId: number,
   parentFolderId: number | null,
@@ -312,10 +351,11 @@ export const collectionsService = {
     workspaceId: number,
     collectionId: number,
   ): Promise<CollectionResponse> {
-    await requireWorkspaceMembership(userId, workspaceId);
-    const collection = await requireCollectionInWorkspace(
+    const collection = await requireAccessAndCollection(
+      userId,
       workspaceId,
       collectionId,
+      requireWorkspaceMembership,
     );
     return mapCollection(collection);
   },
@@ -327,22 +367,32 @@ export const collectionsService = {
   ): Promise<CollectionResponse> {
     await requireWorkspaceWriterRole(userId, workspaceId);
 
-    const created = await collectionsRepo.create({
-      workspaceId,
-      name: payload.name,
-      description: payload.description ?? null,
-      createdByUserId: userId,
-    });
+    const created = await withAuthTransaction(async (tx) => {
+      const row = await collectionsRepo.create(
+        {
+          workspaceId,
+          name: payload.name,
+          description: payload.description ?? null,
+          createdByUserId: userId,
+        },
+        tx,
+      );
 
-    await workspaceEventsService.publish({
-      workspaceId,
-      actorUserId: userId,
-      entity: "collection",
-      action: "created",
-      entityId: created.id,
-      payload: {
-        name: created.name,
-      },
+      await workspaceEventsService.publish(
+        {
+          workspaceId,
+          actorUserId: userId,
+          entity: "collection",
+          action: "created",
+          entityId: row.id,
+          payload: {
+            name: row.name,
+          },
+        },
+        tx,
+      );
+
+      return row;
     });
 
     return mapCollection(created);
@@ -354,37 +404,45 @@ export const collectionsService = {
     collectionId: number,
     payload: UpdateCollectionInput,
   ): Promise<CollectionResponse> {
-    await requireWorkspaceWriterRole(userId, workspaceId);
-
-    const existing = await requireCollectionInWorkspace(
+    const existing = await requireAccessAndCollection(
+      userId,
       workspaceId,
       collectionId,
+      requireWorkspaceWriterRole,
     );
 
-    await collectionsRepo.update({
-      id: existing.id,
-      name: payload.name ?? existing.name,
-      description:
-        payload.description === undefined
-          ? existing.description
-          : payload.description,
-    });
+    const updated = await withAuthTransaction(async (tx) => {
+      const row = await collectionsRepo.update(
+        {
+          id: existing.id,
+          name: payload.name ?? existing.name,
+          description:
+            payload.description === undefined
+              ? existing.description
+              : payload.description,
+        },
+        tx,
+      );
 
-    const updated = await collectionsRepo.findById(existing.id);
+      if (!row) {
+        throw createAppError(ERROR_CODES.collections.COLLECTION_NOT_FOUND);
+      }
 
-    if (!updated) {
-      throw createAppError(ERROR_CODES.collections.COLLECTION_NOT_FOUND);
-    }
+      await workspaceEventsService.publish(
+        {
+          workspaceId,
+          actorUserId: userId,
+          entity: "collection",
+          action: "updated",
+          entityId: row.id,
+          payload: {
+            name: row.name,
+          },
+        },
+        tx,
+      );
 
-    await workspaceEventsService.publish({
-      workspaceId,
-      actorUserId: userId,
-      entity: "collection",
-      action: "updated",
-      entityId: updated.id,
-      payload: {
-        name: updated.name,
-      },
+      return row;
     });
 
     return mapCollection(updated);
@@ -395,16 +453,26 @@ export const collectionsService = {
     workspaceId: number,
     collectionId: number,
   ): Promise<void> {
-    await requireWorkspaceWriterRole(userId, workspaceId);
-    await requireCollectionInWorkspace(workspaceId, collectionId);
-    await collectionsRepo.deleteById(collectionId);
-
-    await workspaceEventsService.publish({
+    await requireAccessAndCollection(
+      userId,
       workspaceId,
-      actorUserId: userId,
-      entity: "collection",
-      action: "deleted",
-      entityId: collectionId,
+      collectionId,
+      requireWorkspaceWriterRole,
+    );
+
+    await withAuthTransaction(async (tx) => {
+      await collectionsRepo.deleteById(collectionId, tx);
+
+      await workspaceEventsService.publish(
+        {
+          workspaceId,
+          actorUserId: userId,
+          entity: "collection",
+          action: "deleted",
+          entityId: collectionId,
+        },
+        tx,
+      );
     });
   },
 
@@ -413,8 +481,12 @@ export const collectionsService = {
     workspaceId: number,
     collectionId: number,
   ): Promise<CollectionEndpointResponse[]> {
-    await requireWorkspaceMembership(userId, workspaceId);
-    await requireCollectionInWorkspace(workspaceId, collectionId);
+    await requireAccessAndCollection(
+      userId,
+      workspaceId,
+      collectionId,
+      requireWorkspaceMembership,
+    );
     const endpoints =
       await collectionsRepo.listEndpointsByCollection(collectionId);
     return endpoints.map(mapEndpoint);
@@ -426,13 +498,16 @@ export const collectionsService = {
     collectionId: number,
     endpointId: number,
   ): Promise<CollectionEndpointResponse> {
-    await requireWorkspaceMembership(userId, workspaceId);
-    await requireCollectionInWorkspace(workspaceId, collectionId);
-    const endpoint = await collectionsRepo.findEndpointById(endpointId);
-
-    if (!endpoint || endpoint.collectionId !== collectionId) {
-      throw createAppError(ERROR_CODES.collections.ENDPOINT_NOT_FOUND);
-    }
+    await requireAccessAndCollection(
+      userId,
+      workspaceId,
+      collectionId,
+      requireWorkspaceMembership,
+    );
+    const endpoint = await requireEndpointInCollection(
+      collectionId,
+      endpointId,
+    );
 
     return mapEndpoint(endpoint);
   },
@@ -443,38 +518,52 @@ export const collectionsService = {
     collectionId: number,
     payload: CreateCollectionEndpointInput,
   ): Promise<CollectionEndpointResponse> {
-    await requireWorkspaceWriterRole(userId, workspaceId);
-    await requireCollectionInWorkspace(workspaceId, collectionId);
+    await requireAccessAndCollection(
+      userId,
+      workspaceId,
+      collectionId,
+      requireWorkspaceWriterRole,
+    );
 
     if (payload.folderId !== undefined && payload.folderId !== null) {
       await requireFolderInCollection(collectionId, payload.folderId);
     }
 
-    const endpoint = await collectionsRepo.createEndpoint({
-      collectionId,
-      folderId: payload.folderId ?? null,
-      name: payload.name,
-      method: payload.method,
-      url: payload.url,
-      headers: toJson(payload.headers ?? []),
-      queryParams: toJson(payload.queryParams ?? []),
-      body: payload.body ? toJson(payload.body) : null,
-      auth: payload.auth ? toJson(payload.auth) : null,
-      position: payload.position ?? 0,
-      createdByUserId: userId,
-    });
+    const endpoint = await withAuthTransaction(async (tx) => {
+      const row = await collectionsRepo.createEndpoint(
+        {
+          collectionId,
+          folderId: payload.folderId ?? null,
+          name: payload.name,
+          method: payload.method,
+          url: payload.url,
+          headers: toJson(payload.headers ?? []),
+          queryParams: toJson(payload.queryParams ?? []),
+          body: payload.body ? toJson(payload.body) : null,
+          auth: payload.auth ? toJson(payload.auth) : null,
+          position: payload.position ?? 0,
+          createdByUserId: userId,
+        },
+        tx,
+      );
 
-    await workspaceEventsService.publish({
-      workspaceId,
-      actorUserId: userId,
-      entity: "collection_endpoint",
-      action: "created",
-      entityId: endpoint.id,
-      payload: {
-        collectionId,
-        method: endpoint.method,
-        name: endpoint.name,
-      },
+      await workspaceEventsService.publish(
+        {
+          workspaceId,
+          actorUserId: userId,
+          entity: "collection_endpoint",
+          action: "created",
+          entityId: row.id,
+          payload: {
+            collectionId,
+            method: row.method,
+            name: row.name,
+          },
+        },
+        tx,
+      );
+
+      return row;
     });
 
     return mapEndpoint(endpoint);
@@ -487,30 +576,33 @@ export const collectionsService = {
     endpointId: number,
     payload: UpdateCollectionEndpointInput,
   ): Promise<CollectionEndpointResponse> {
-    await requireWorkspaceWriterRole(userId, workspaceId);
-    await requireCollectionInWorkspace(workspaceId, collectionId);
+    await requireAccessAndCollection(
+      userId,
+      workspaceId,
+      collectionId,
+      requireWorkspaceWriterRole,
+    );
 
-    const existing = await collectionsRepo.findEndpointById(endpointId);
-
-    if (!existing || existing.collectionId !== collectionId) {
-      throw createAppError(ERROR_CODES.collections.ENDPOINT_NOT_FOUND);
-    }
+    const existing = await requireEndpointInCollection(
+      collectionId,
+      endpointId,
+    );
 
     const nextHeaders =
       payload.headers === undefined
-        ? parseJson<EndpointKeyValue[]>(existing.headers, [])
+        ? asKeyValueList(existing.headers)
         : payload.headers;
     const nextQuery =
       payload.queryParams === undefined
-        ? parseJson<EndpointKeyValue[]>(existing.queryParams, [])
+        ? asKeyValueList(existing.queryParams)
         : payload.queryParams;
     const nextBody =
       payload.body === undefined
-        ? parseEndpointBodyValue(existing.body)
+        ? normalizeEndpointBody(existing.body)
         : payload.body;
     const nextAuth =
       payload.auth === undefined
-        ? parseJson<EndpointAuth | null>(existing.auth, null)
+        ? ((existing.auth as EndpointAuth | null) ?? null)
         : payload.auth;
 
     if (payload.folderId !== undefined) {
@@ -519,37 +611,47 @@ export const collectionsService = {
       }
     }
 
-    await collectionsRepo.updateEndpoint({
-      id: existing.id,
-      folderId:
-        payload.folderId === undefined ? existing.folderId : payload.folderId,
-      name: payload.name ?? existing.name,
-      method: payload.method ?? existing.method,
-      url: payload.url ?? existing.url,
-      headers: toJson(nextHeaders),
-      queryParams: toJson(nextQuery),
-      body: nextBody ? toJson(nextBody) : null,
-      auth: nextAuth ? toJson(nextAuth) : null,
-      position: payload.position ?? existing.position,
-    });
+    const updated = await withAuthTransaction(async (tx) => {
+      const row = await collectionsRepo.updateEndpoint(
+        {
+          id: existing.id,
+          folderId:
+            payload.folderId === undefined
+              ? existing.folderId
+              : payload.folderId,
+          name: payload.name ?? existing.name,
+          method: payload.method ?? existing.method,
+          url: payload.url ?? existing.url,
+          headers: toJson(nextHeaders),
+          queryParams: toJson(nextQuery),
+          body: nextBody ? toJson(nextBody) : null,
+          auth: nextAuth ? toJson(nextAuth) : null,
+          position: payload.position ?? existing.position,
+        },
+        tx,
+      );
 
-    const updated = await collectionsRepo.findEndpointById(existing.id);
+      if (!row) {
+        throw createAppError(ERROR_CODES.collections.ENDPOINT_NOT_FOUND);
+      }
 
-    if (!updated) {
-      throw createAppError(ERROR_CODES.collections.ENDPOINT_NOT_FOUND);
-    }
+      await workspaceEventsService.publish(
+        {
+          workspaceId,
+          actorUserId: userId,
+          entity: "collection_endpoint",
+          action: "updated",
+          entityId: row.id,
+          payload: {
+            collectionId,
+            method: row.method,
+            name: row.name,
+          },
+        },
+        tx,
+      );
 
-    await workspaceEventsService.publish({
-      workspaceId,
-      actorUserId: userId,
-      entity: "collection_endpoint",
-      action: "updated",
-      entityId: updated.id,
-      payload: {
-        collectionId,
-        method: updated.method,
-        name: updated.name,
-      },
+      return row;
     });
 
     return mapEndpoint(updated);
@@ -561,25 +663,30 @@ export const collectionsService = {
     collectionId: number,
     endpointId: number,
   ): Promise<void> {
-    await requireWorkspaceWriterRole(userId, workspaceId);
-    await requireCollectionInWorkspace(workspaceId, collectionId);
-    const existing = await collectionsRepo.findEndpointById(endpointId);
-
-    if (!existing || existing.collectionId !== collectionId) {
-      throw createAppError(ERROR_CODES.collections.ENDPOINT_NOT_FOUND);
-    }
-
-    await collectionsRepo.deleteEndpointById(endpointId);
-
-    await workspaceEventsService.publish({
+    await requireAccessAndCollection(
+      userId,
       workspaceId,
-      actorUserId: userId,
-      entity: "collection_endpoint",
-      action: "deleted",
-      entityId: endpointId,
-      payload: {
-        collectionId,
-      },
+      collectionId,
+      requireWorkspaceWriterRole,
+    );
+    await requireEndpointInCollection(collectionId, endpointId);
+
+    await withAuthTransaction(async (tx) => {
+      await collectionsRepo.deleteEndpointById(endpointId, tx);
+
+      await workspaceEventsService.publish(
+        {
+          workspaceId,
+          actorUserId: userId,
+          entity: "collection_endpoint",
+          action: "deleted",
+          entityId: endpointId,
+          payload: {
+            collectionId,
+          },
+        },
+        tx,
+      );
     });
   },
 
@@ -588,8 +695,12 @@ export const collectionsService = {
     workspaceId: number,
     collectionId: number,
   ): Promise<CollectionFolderResponse[]> {
-    await requireWorkspaceMembership(userId, workspaceId);
-    await requireCollectionInWorkspace(workspaceId, collectionId);
+    await requireAccessAndCollection(
+      userId,
+      workspaceId,
+      collectionId,
+      requireWorkspaceMembership,
+    );
     const folders = await collectionsRepo.listFoldersByCollection(collectionId);
     return folders.map(mapFolder);
   },
@@ -600,8 +711,12 @@ export const collectionsService = {
     collectionId: number,
     folderId: number,
   ): Promise<CollectionFolderResponse> {
-    await requireWorkspaceMembership(userId, workspaceId);
-    await requireCollectionInWorkspace(workspaceId, collectionId);
+    await requireAccessAndCollection(
+      userId,
+      workspaceId,
+      collectionId,
+      requireWorkspaceMembership,
+    );
     const folder = await requireFolderInCollection(collectionId, folderId);
     return mapFolder(folder);
   },
@@ -612,31 +727,45 @@ export const collectionsService = {
     collectionId: number,
     payload: CreateCollectionFolderInput,
   ): Promise<CollectionFolderResponse> {
-    await requireWorkspaceWriterRole(userId, workspaceId);
-    await requireCollectionInWorkspace(workspaceId, collectionId);
+    await requireAccessAndCollection(
+      userId,
+      workspaceId,
+      collectionId,
+      requireWorkspaceWriterRole,
+    );
     await validateParentFolderReference(
       collectionId,
       payload.parentFolderId ?? null,
     );
 
-    const folder = await collectionsRepo.createFolder({
-      collectionId,
-      parentFolderId: payload.parentFolderId ?? null,
-      name: payload.name,
-      position: payload.position ?? 0,
-      createdByUserId: userId,
-    });
+    const folder = await withAuthTransaction(async (tx) => {
+      const row = await collectionsRepo.createFolder(
+        {
+          collectionId,
+          parentFolderId: payload.parentFolderId ?? null,
+          name: payload.name,
+          position: payload.position ?? 0,
+          createdByUserId: userId,
+        },
+        tx,
+      );
 
-    await workspaceEventsService.publish({
-      workspaceId,
-      actorUserId: userId,
-      entity: "collection_folder",
-      action: "created",
-      entityId: folder.id,
-      payload: {
-        collectionId,
-        name: folder.name,
-      },
+      await workspaceEventsService.publish(
+        {
+          workspaceId,
+          actorUserId: userId,
+          entity: "collection_folder",
+          action: "created",
+          entityId: row.id,
+          payload: {
+            collectionId,
+            name: row.name,
+          },
+        },
+        tx,
+      );
+
+      return row;
     });
 
     return mapFolder(folder);
@@ -649,8 +778,12 @@ export const collectionsService = {
     folderId: number,
     payload: UpdateCollectionFolderInput,
   ): Promise<CollectionFolderResponse> {
-    await requireWorkspaceWriterRole(userId, workspaceId);
-    await requireCollectionInWorkspace(workspaceId, collectionId);
+    await requireAccessAndCollection(
+      userId,
+      workspaceId,
+      collectionId,
+      requireWorkspaceWriterRole,
+    );
     const existing = await requireFolderInCollection(collectionId, folderId);
 
     const nextParentFolderId =
@@ -664,29 +797,37 @@ export const collectionsService = {
       existing.id,
     );
 
-    await collectionsRepo.updateFolder({
-      id: existing.id,
-      parentFolderId: nextParentFolderId,
-      name: payload.name ?? existing.name,
-      position: payload.position ?? existing.position,
-    });
+    const updated = await withAuthTransaction(async (tx) => {
+      const row = await collectionsRepo.updateFolder(
+        {
+          id: existing.id,
+          parentFolderId: nextParentFolderId,
+          name: payload.name ?? existing.name,
+          position: payload.position ?? existing.position,
+        },
+        tx,
+      );
 
-    const updated = await collectionsRepo.findFolderById(existing.id);
+      if (!row) {
+        throw createAppError(ERROR_CODES.collections.FOLDER_NOT_FOUND);
+      }
 
-    if (!updated) {
-      throw createAppError(ERROR_CODES.collections.FOLDER_NOT_FOUND);
-    }
+      await workspaceEventsService.publish(
+        {
+          workspaceId,
+          actorUserId: userId,
+          entity: "collection_folder",
+          action: "updated",
+          entityId: row.id,
+          payload: {
+            collectionId,
+            name: row.name,
+          },
+        },
+        tx,
+      );
 
-    await workspaceEventsService.publish({
-      workspaceId,
-      actorUserId: userId,
-      entity: "collection_folder",
-      action: "updated",
-      entityId: updated.id,
-      payload: {
-        collectionId,
-        name: updated.name,
-      },
+      return row;
     });
 
     return mapFolder(updated);
@@ -698,20 +839,30 @@ export const collectionsService = {
     collectionId: number,
     folderId: number,
   ): Promise<void> {
-    await requireWorkspaceWriterRole(userId, workspaceId);
-    await requireCollectionInWorkspace(workspaceId, collectionId);
-    await requireFolderInCollection(collectionId, folderId);
-    await collectionsRepo.deleteFolderById(folderId);
-
-    await workspaceEventsService.publish({
+    await requireAccessAndCollection(
+      userId,
       workspaceId,
-      actorUserId: userId,
-      entity: "collection_folder",
-      action: "deleted",
-      entityId: folderId,
-      payload: {
-        collectionId,
-      },
+      collectionId,
+      requireWorkspaceWriterRole,
+    );
+    await requireFolderInCollection(collectionId, folderId);
+
+    await withAuthTransaction(async (tx) => {
+      await collectionsRepo.deleteFolderById(folderId, tx);
+
+      await workspaceEventsService.publish(
+        {
+          workspaceId,
+          actorUserId: userId,
+          entity: "collection_folder",
+          action: "deleted",
+          entityId: folderId,
+          payload: {
+            collectionId,
+          },
+        },
+        tx,
+      );
     });
   },
 
@@ -721,13 +872,13 @@ export const collectionsService = {
     collectionId: number,
     endpointId: number,
   ): Promise<CollectionEndpointExampleResponse[]> {
-    await requireWorkspaceMembership(userId, workspaceId);
-    await requireCollectionInWorkspace(workspaceId, collectionId);
-    const endpoint = await collectionsRepo.findEndpointById(endpointId);
-
-    if (!endpoint || endpoint.collectionId !== collectionId) {
-      throw createAppError(ERROR_CODES.collections.ENDPOINT_NOT_FOUND);
-    }
+    await requireAccessAndCollection(
+      userId,
+      workspaceId,
+      collectionId,
+      requireWorkspaceMembership,
+    );
+    await requireEndpointInCollection(collectionId, endpointId);
 
     const examples = await collectionsRepo.listExamplesByEndpoint(endpointId);
     return examples.map(mapExample);
@@ -740,19 +891,14 @@ export const collectionsService = {
     endpointId: number,
     exampleId: number,
   ): Promise<CollectionEndpointExampleResponse> {
-    await requireWorkspaceMembership(userId, workspaceId);
-    await requireCollectionInWorkspace(workspaceId, collectionId);
-    const endpoint = await collectionsRepo.findEndpointById(endpointId);
-
-    if (!endpoint || endpoint.collectionId !== collectionId) {
-      throw createAppError(ERROR_CODES.collections.ENDPOINT_NOT_FOUND);
-    }
-
-    const example = await collectionsRepo.findExampleById(exampleId);
-
-    if (!example || example.endpointId !== endpointId) {
-      throw createAppError(ERROR_CODES.collections.EXAMPLE_NOT_FOUND);
-    }
+    await requireAccessAndCollection(
+      userId,
+      workspaceId,
+      collectionId,
+      requireWorkspaceMembership,
+    );
+    await requireEndpointInCollection(collectionId, endpointId);
+    const example = await requireExampleForEndpoint(endpointId, exampleId);
 
     return mapExample(example);
   },
@@ -764,35 +910,45 @@ export const collectionsService = {
     endpointId: number,
     payload: CreateCollectionEndpointExampleInput,
   ): Promise<CollectionEndpointExampleResponse> {
-    await requireWorkspaceWriterRole(userId, workspaceId);
-    await requireCollectionInWorkspace(workspaceId, collectionId);
-    const endpoint = await collectionsRepo.findEndpointById(endpointId);
-
-    if (!endpoint || endpoint.collectionId !== collectionId) {
-      throw createAppError(ERROR_CODES.collections.ENDPOINT_NOT_FOUND);
-    }
-
-    const created = await collectionsRepo.createEndpointExample({
-      endpointId,
-      name: payload.name,
-      statusCode: payload.statusCode ?? 200,
-      headers: toJson(payload.headers ?? []),
-      body: payload.body ?? null,
-      position: payload.position ?? 0,
-      createdByUserId: userId,
-    });
-
-    await workspaceEventsService.publish({
+    await requireAccessAndCollection(
+      userId,
       workspaceId,
-      actorUserId: userId,
-      entity: "collection_example",
-      action: "created",
-      entityId: created.id,
-      payload: {
-        collectionId,
-        endpointId,
-        name: created.name,
-      },
+      collectionId,
+      requireWorkspaceWriterRole,
+    );
+    await requireEndpointInCollection(collectionId, endpointId);
+
+    const created = await withAuthTransaction(async (tx) => {
+      const row = await collectionsRepo.createEndpointExample(
+        {
+          endpointId,
+          name: payload.name,
+          statusCode: payload.statusCode ?? 200,
+          headers: toJson(payload.headers ?? []),
+          body: payload.body ?? null,
+          position: payload.position ?? 0,
+          createdByUserId: userId,
+        },
+        tx,
+      );
+
+      await workspaceEventsService.publish(
+        {
+          workspaceId,
+          actorUserId: userId,
+          entity: "collection_example",
+          action: "created",
+          entityId: row.id,
+          payload: {
+            collectionId,
+            endpointId,
+            name: row.name,
+          },
+        },
+        tx,
+      );
+
+      return row;
     });
 
     return mapExample(created);
@@ -806,49 +962,52 @@ export const collectionsService = {
     exampleId: number,
     payload: UpdateCollectionEndpointExampleInput,
   ): Promise<CollectionEndpointExampleResponse> {
-    await requireWorkspaceWriterRole(userId, workspaceId);
-    await requireCollectionInWorkspace(workspaceId, collectionId);
-    const endpoint = await collectionsRepo.findEndpointById(endpointId);
-
-    if (!endpoint || endpoint.collectionId !== collectionId) {
-      throw createAppError(ERROR_CODES.collections.ENDPOINT_NOT_FOUND);
-    }
-
-    const existing = await collectionsRepo.findExampleById(exampleId);
-
-    if (!existing || existing.endpointId !== endpointId) {
-      throw createAppError(ERROR_CODES.collections.EXAMPLE_NOT_FOUND);
-    }
-
-    await collectionsRepo.updateExample({
-      id: existing.id,
-      name: payload.name ?? existing.name,
-      statusCode: payload.statusCode ?? existing.statusCode,
-      headers:
-        payload.headers === undefined
-          ? existing.headers
-          : toJson(payload.headers),
-      body: payload.body === undefined ? existing.body : payload.body,
-      position: payload.position ?? existing.position,
-    });
-
-    const updated = await collectionsRepo.findExampleById(exampleId);
-
-    if (!updated) {
-      throw createAppError(ERROR_CODES.collections.EXAMPLE_NOT_FOUND);
-    }
-
-    await workspaceEventsService.publish({
+    await requireAccessAndCollection(
+      userId,
       workspaceId,
-      actorUserId: userId,
-      entity: "collection_example",
-      action: "updated",
-      entityId: updated.id,
-      payload: {
-        collectionId,
-        endpointId,
-        name: updated.name,
-      },
+      collectionId,
+      requireWorkspaceWriterRole,
+    );
+    await requireEndpointInCollection(collectionId, endpointId);
+    const existing = await requireExampleForEndpoint(endpointId, exampleId);
+
+    const updated = await withAuthTransaction(async (tx) => {
+      const row = await collectionsRepo.updateExample(
+        {
+          id: existing.id,
+          name: payload.name ?? existing.name,
+          statusCode: payload.statusCode ?? existing.statusCode,
+          headers:
+            payload.headers === undefined
+              ? toJson(asKeyValueList(existing.headers))
+              : toJson(payload.headers),
+          body: payload.body === undefined ? existing.body : payload.body,
+          position: payload.position ?? existing.position,
+        },
+        tx,
+      );
+
+      if (!row) {
+        throw createAppError(ERROR_CODES.collections.EXAMPLE_NOT_FOUND);
+      }
+
+      await workspaceEventsService.publish(
+        {
+          workspaceId,
+          actorUserId: userId,
+          entity: "collection_example",
+          action: "updated",
+          entityId: row.id,
+          payload: {
+            collectionId,
+            endpointId,
+            name: row.name,
+          },
+        },
+        tx,
+      );
+
+      return row;
     });
 
     return mapExample(updated);
@@ -861,32 +1020,32 @@ export const collectionsService = {
     endpointId: number,
     exampleId: number,
   ): Promise<void> {
-    await requireWorkspaceWriterRole(userId, workspaceId);
-    await requireCollectionInWorkspace(workspaceId, collectionId);
-    const endpoint = await collectionsRepo.findEndpointById(endpointId);
-
-    if (!endpoint || endpoint.collectionId !== collectionId) {
-      throw createAppError(ERROR_CODES.collections.ENDPOINT_NOT_FOUND);
-    }
-
-    const existing = await collectionsRepo.findExampleById(exampleId);
-
-    if (!existing || existing.endpointId !== endpointId) {
-      throw createAppError(ERROR_CODES.collections.EXAMPLE_NOT_FOUND);
-    }
-
-    await collectionsRepo.deleteExampleById(exampleId);
-
-    await workspaceEventsService.publish({
+    await requireAccessAndCollection(
+      userId,
       workspaceId,
-      actorUserId: userId,
-      entity: "collection_example",
-      action: "deleted",
-      entityId: exampleId,
-      payload: {
-        collectionId,
-        endpointId,
-      },
+      collectionId,
+      requireWorkspaceWriterRole,
+    );
+    await requireEndpointInCollection(collectionId, endpointId);
+    await requireExampleForEndpoint(endpointId, exampleId);
+
+    await withAuthTransaction(async (tx) => {
+      await collectionsRepo.deleteExampleById(exampleId, tx);
+
+      await workspaceEventsService.publish(
+        {
+          workspaceId,
+          actorUserId: userId,
+          entity: "collection_example",
+          action: "deleted",
+          entityId: exampleId,
+          payload: {
+            collectionId,
+            endpointId,
+          },
+        },
+        tx,
+      );
     });
   },
 };

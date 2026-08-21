@@ -1,4 +1,5 @@
 import { authRepo, type WorkspaceEvent } from "../auth/repo.js";
+import type { DatabaseClient } from "../../types/db.js";
 
 type WorkspaceEventPayload = Record<string, unknown> | null;
 
@@ -34,22 +35,28 @@ const mapEvent = (event: WorkspaceEvent) => {
 };
 
 export const workspaceEventsService = {
-  async publish(input: {
-    workspaceId: number;
-    actorUserId: number;
-    entity: string;
-    action: string;
-    entityId?: number | null;
-    payload?: Record<string, unknown>;
-  }): Promise<void> {
-    await authRepo.createWorkspaceEvent({
-      workspaceId: input.workspaceId,
-      actorUserId: input.actorUserId,
-      entity: input.entity,
-      action: input.action,
-      entityId: input.entityId ?? null,
-      payloadJson: input.payload ? JSON.stringify(input.payload) : null,
-    });
+  async publish(
+    input: {
+      workspaceId: number;
+      actorUserId: number;
+      entity: string;
+      action: string;
+      entityId?: number | null;
+      payload?: Record<string, unknown>;
+    },
+    dbClient?: DatabaseClient,
+  ): Promise<void> {
+    await authRepo.createWorkspaceEvent(
+      {
+        workspaceId: input.workspaceId,
+        actorUserId: input.actorUserId,
+        entity: input.entity,
+        action: input.action,
+        entityId: input.entityId ?? null,
+        payloadJson: input.payload ? JSON.stringify(input.payload) : null,
+      },
+      dbClient,
+    );
   },
 
   async listByCursor(workspaceId: number, since: number, limit: number) {

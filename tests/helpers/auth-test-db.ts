@@ -716,7 +716,7 @@ export const createAuthTestDb = (): DatabaseClient => {
         row.updated_at = new Date();
       }
 
-      return { rows: [] as TRow[], rowCount: row ? 1 : 0 };
+      return { rows: row ? castRows<TRow>([row]) : [], rowCount: row ? 1 : 0 };
     }
 
     if (normalized.startsWith("delete from collections where id =")) {
@@ -816,7 +816,7 @@ export const createAuthTestDb = (): DatabaseClient => {
         row.updated_at = new Date();
       }
 
-      return { rows: [] as TRow[], rowCount: row ? 1 : 0 };
+      return { rows: row ? castRows<TRow>([row]) : [], rowCount: row ? 1 : 0 };
     }
 
     if (normalized.startsWith("delete from collection_endpoints where id =")) {
@@ -940,7 +940,7 @@ export const createAuthTestDb = (): DatabaseClient => {
         row.updated_at = new Date();
       }
 
-      return { rows: [] as TRow[], rowCount: row ? 1 : 0 };
+      return { rows: row ? castRows<TRow>([row]) : [], rowCount: row ? 1 : 0 };
     }
 
     if (normalized.startsWith("delete from collection_folders where id =")) {
@@ -1013,7 +1013,7 @@ export const createAuthTestDb = (): DatabaseClient => {
         row.updated_at = new Date();
       }
 
-      return { rows: [] as TRow[], rowCount: row ? 1 : 0 };
+      return { rows: row ? castRows<TRow>([row]) : [], rowCount: row ? 1 : 0 };
     }
 
     if (
