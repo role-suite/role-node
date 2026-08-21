@@ -171,9 +171,9 @@ Query params:
 ## Implementation notes
 
 - Module files:
-  - `src/modules/workspaces/workspaces.route.ts`
-  - `src/modules/workspaces/workspaces.controller.ts`
-  - `src/modules/workspaces/workspaces.service.ts`
-  - `src/modules/workspaces/workspaces.repo.ts`
-  - `src/modules/workspaces/workspaces.schema.ts`
+  - `src/modules/workspaces/route.ts`
+  - `src/modules/workspaces/controller.ts`
+  - `src/modules/workspaces/service.ts`
+  - `src/modules/workspaces/repo.ts`
+  - `src/modules/workspaces/schema.ts`
 - Persistence is delegated through auth-backed workspace/membership repo functions.

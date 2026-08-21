@@ -218,7 +218,7 @@ Create example request:
 
 ## Request body mode reference
 
-Supported in collection endpoint payloads and run `adhoc` requests.
+Supported in collection endpoint payloads.
 
 ### `raw`
 
@@ -313,66 +313,6 @@ Create variable request:
 }
 ```
 
-## Runs API
-
-### Create run
-
-`POST /api/workspaces/:workspaceId/runs`
-
-Two source types:
-
-1. `adhoc`
-2. `collectionEndpoint`
-
-Ad-hoc example:
-
-```json
-{
-  "source": {
-    "type": "adhoc",
-    "request": {
-      "method": "POST",
-      "url": "https://api.example.com/orders",
-      "headers": [{ "key": "accept", "value": "application/json" }],
-      "queryParams": [],
-      "body": {
-        "mode": "urlencoded",
-        "entries": [{ "key": "region", "value": "eu-west-1" }]
-      },
-      "auth": { "type": "none" }
-    }
-  },
-  "environmentId": 10,
-  "variableOverrides": [{ "key": "region", "value": "eu-west-1" }],
-  "options": {
-    "timeoutMs": 10000,
-    "followRedirects": true,
-    "maxResponseBytes": 200000
-  }
-}
-```
-
-Collection endpoint source example:
-
-```json
-{
-  "source": {
-    "type": "collectionEndpoint",
-    "collectionId": 15,
-    "endpointId": 51
-  },
-  "environmentId": 10
-}
-```
-
-### Get run by id
-
-`GET /api/workspaces/:workspaceId/runs/:runId`
-
-### Cancel run
-
-`POST /api/workspaces/:workspaceId/runs/:runId/cancel`
-
 ## Import/Export API
 
 ### List jobs
@@ -393,8 +333,7 @@ Request:
 {
   "format": "json",
   "includeCollections": true,
-  "includeEnvironments": true,
-  "includeRuns": false
+  "includeEnvironments": true
 }
 ```
 
@@ -416,7 +355,7 @@ Request:
 
 ## Permission summary
 
-- `owner` and `admin` can write in collections/environments/runs/import-export
+- `owner` and `admin` can write in collections/environments/import-export
 - `member` has read access but write restrictions in collection/environment/import-export modules
 - member management operations are owner-only
 
@@ -427,7 +366,6 @@ Request:
 - `403`: missing workspace membership or insufficient role
 - `404`: scoped resource not found
 - `409`: conflict scenarios
-- `422`: run blocked by policy
 - `500`: unexpected server errors
 
 ## Operational tips
@@ -435,10 +373,8 @@ Request:
 - Prefer creating folders before endpoints for cleaner organization
 - Use endpoint examples to keep API behavior documented per request
 - Use environment `isSecret=true` for sensitive variable values
-- Use variable overrides in runs for one-off executions
 
 ## Current limitations
 
 - No version snapshots and no fork/merge for collections yet
-- No list endpoint for run history yet (only fetch by run id)
 - Import/export currently tracks jobs and summaries, not full async file lifecycle

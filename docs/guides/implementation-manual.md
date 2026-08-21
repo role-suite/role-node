@@ -150,19 +150,15 @@ Example pattern: adding `examples` under collection endpoints.
 - invalid cross-collection parent
 - write denied for member role
 
-## 5. Playbook C: Extend request runner payloads
+## 5. Playbook C: Extend collection endpoint body/auth payloads
 
-When adding a request body/auth mode, update all related layers.
+When adding a request body/auth mode for saved collection endpoints, update all related layers.
 
 Required touchpoints:
 
-- `src/modules/runs/runs.schema.ts`
-- `src/modules/collections/collections.schema.ts` if collection endpoint payloads change
-- `src/internal/runner/core/types.ts`
-- `src/internal/runner/planning/*` (source parsing, variable resolution)
-- `src/internal/runner/execution/http-client.ts`
-- `src/internal/runner/policy/*` (limits and redaction)
-- `src/modules/runs/runs.repo.ts` persistence serialization
+- `src/modules/collections/schema.ts`
+- `src/modules/collections/service.ts` (mapping/validation)
+- `src/modules/collections/repo.ts` (persistence serialization)
 
 Backward compatibility strategy:
 
@@ -216,8 +212,7 @@ When resource shape changes (for example folders/examples/body modes):
 
 For pending high-value features:
 
-1. run listing/pagination
-2. collection versioning snapshots
-3. fork/merge workflow
-4. import/export full-fidelity payloads
-5. CI pipeline hardening
+1. collection versioning snapshots
+2. fork/merge workflow
+3. import/export full-fidelity payloads
+4. CI pipeline hardening

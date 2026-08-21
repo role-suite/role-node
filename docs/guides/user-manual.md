@@ -84,39 +84,16 @@ Then add variables using:
 
 - `POST /api/workspaces/:workspaceId/environments/:environmentId/variables`
 
-## 6) Execute a run
-
-Ad-hoc run:
-
-```bash
-curl -s -X POST "http://localhost:3000/api/workspaces/${WORKSPACE_ID}/runs" \
-  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "source": {
-      "type": "adhoc",
-      "request": {
-        "method": "GET",
-        "url": "https://api.example.com/orders",
-        "headers": [{"key":"accept","value":"application/json"}],
-        "auth": {"type": "none"}
-      }
-    }
-  }'
-```
-
-Get run details:
-
-- `GET /api/workspaces/:workspaceId/runs/:runId`
-
-## 7) Optional organization features
+## 6) Optional organization features
 
 - Folders:
   - `GET/POST/PATCH/DELETE /api/workspaces/:workspaceId/collections/:collectionId/folders`
 - Endpoint examples:
   - `GET/POST/PATCH/DELETE /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples`
 
-## 8) Body modes quick reference
+## 7) Body modes quick reference
+
+Endpoint bodies (saved on collection endpoints) support:
 
 - `raw`
 - `urlencoded`
@@ -124,14 +101,13 @@ Get run details:
 - `binary`
 - `none`
 
-## 9) Common error map
+## 8) Common error map
 
 - `401`: missing or invalid token
 - `403`: no access or insufficient role
 - `404`: resource not found in workspace scope
-- `422`: request run blocked by policy
 
-## 10) Next docs
+## 9) Next docs
 
 - Full API reference: `docs/guides/user-reference-manual.md`
 - Developer guide: `docs/guides/developer-manual.md`

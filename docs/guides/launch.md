@@ -22,8 +22,6 @@ Set these for production:
 - `AUTH_ACCESS_TOKEN_SECRET`, `AUTH_REFRESH_TOKEN_SECRET` with production-only random values.
 - `AUTH_ACCESS_TOKEN_TTL_SECONDS`, `AUTH_REFRESH_TOKEN_TTL_SECONDS`
 
-Optional request runner overrides use `RUNNER_*` environment variables documented in `docs/architecture/request-runner-engine.md`.
-
 ## Deployment Secrets
 
 GitHub Actions deployment requires:

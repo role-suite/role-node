@@ -16,11 +16,11 @@ Base route: `/api/auth`
 
 ## Module files
 
-- `src/modules/auth/auth.route.ts`: Route definitions.
-- `src/modules/auth/auth.controller.ts`: Request parsing/validation and HTTP responses.
-- `src/modules/auth/auth.schema.ts`: Zod input schemas.
-- `src/modules/auth/auth.service.ts`: Business logic.
-- `src/modules/auth/auth.repo.ts`: Database reads/writes for users, workspaces, memberships, sessions.
+- `src/modules/auth/route.ts`: Route definitions.
+- `src/modules/auth/controller.ts`: Request parsing/validation and HTTP responses.
+- `src/modules/auth/schema.ts`: Zod input schemas.
+- `src/modules/auth/service.ts`: Business logic.
+- `src/modules/auth/repo.ts`: Database reads/writes for users, workspaces, memberships, sessions.
 - `src/shared/middleware/require-auth.ts`: Access token verification + context hydration.
 
 ## API endpoints
@@ -249,7 +249,7 @@ Current tests:
 
 Auth tests use an in-memory DB test double via:
 
-- `setAuthRepoDbClient(...)` from `src/modules/auth/auth.repo.ts`
+- `setAuthRepoDbClient(...)` from `src/modules/auth/repo.ts`
 - `tests/helpers/auth-test-db.ts`
 
 This keeps auth tests deterministic and independent from external DB availability while preserving repository behavior.

@@ -36,8 +36,7 @@ Request body:
 {
   "format": "json",
   "includeCollections": true,
-  "includeEnvironments": true,
-  "includeRuns": false
+  "includeEnvironments": true
 }
 ```
 
@@ -46,7 +45,6 @@ Validation and defaults:
 - `format`: only `json` (defaults to `json`)
 - `includeCollections`: optional boolean (defaults to `true`)
 - `includeEnvironments`: optional boolean (defaults to `true`)
-- `includeRuns`: optional boolean (defaults to `false`)
 
 Authorization:
 
@@ -93,19 +91,19 @@ Each job in list/get/create responses contains:
 
 `summary` values:
 
-- Export jobs include `includeCollections`, `includeEnvironments`, `includeRuns`.
+- Export jobs include `includeCollections`, `includeEnvironments`.
 - Import jobs include `rootKeys` and `rootKeyCount` from `payload` top-level keys.
 
 ## Implementation notes
 
 - Module files:
-  - `src/modules/import-export/import-export.route.ts`
-  - `src/modules/import-export/import-export.controller.ts`
-  - `src/modules/import-export/import-export.service.ts`
-  - `src/modules/import-export/import-export.repo.ts`
-  - `src/modules/import-export/import-export.schema.ts`
+  - `src/modules/import-export/route.ts`
+  - `src/modules/import-export/controller.ts`
+  - `src/modules/import-export/service.ts`
+  - `src/modules/import-export/repo.ts`
+  - `src/modules/import-export/schema.ts`
 - Repository storage is database-backed in `import_export_jobs`.
-- Migration: `migrations/20260322_007_create_import_export_jobs_table.migration.ts`.
+- Migration: `migrations/20260322_004_create_import_export_jobs_table.migration.ts`.
 - Jobs are inserted and marked `completed` with identical `createdAt` and `completedAt` timestamps.
 
 ## Test coverage

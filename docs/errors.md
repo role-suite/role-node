@@ -101,21 +101,6 @@ Source of truth: `src/shared/errors/error-codes.ts`.
 | `ENVIRONMENT_NAME_ALREADY_EXISTS`         | 409  | Environment name already exists                          |
 | `ENVIRONMENT_VARIABLE_KEY_ALREADY_EXISTS` | 409  | Environment variable key already exists                  |
 
-### Runs
-
-| Code                     | HTTP | Default message        |
-| ------------------------ | ---- | ---------------------- |
-| `RUN_NOT_FOUND`          | 404  | Run not found          |
-| `RUN_VALIDATION_FAILED`  | 400  | Run validation failed  |
-| `RUN_ACCESS_DENIED`      | 403  | Run access denied      |
-| `RUN_SOURCE_NOT_FOUND`   | 404  | Run source not found   |
-| `RUN_POLICY_BLOCKED`     | 422  | Run blocked by policy  |
-| `RUN_TIMEOUT`            | 408  | Run timeout            |
-| `RUN_NETWORK_ERROR`      | 502  | Run network error      |
-| `RUN_RESPONSE_TOO_LARGE` | 413  | Run response too large |
-| `RUN_CANCELLED`          | 409  | Run cancelled          |
-| `RUN_INTERNAL_ERROR`     | 500  | Run internal error     |
-
 ### Import/Export
 
 | Code                          | HTTP | Default message                                              |

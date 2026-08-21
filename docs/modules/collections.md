@@ -97,7 +97,7 @@ Table: `collections`
 - `created_at`
 - `updated_at`
 
-Migration: `migrations/20260320_002_create_collections_table.migration.ts`
+Migration: `migrations/20260320_002_create_collections_schema.migration.ts` (also creates `collection_folders`, `collection_endpoints`, and `collection_endpoint_examples`).
 
 ### Endpoint persistence
 
@@ -117,8 +117,4 @@ Table: `collection_endpoints`
 - `created_at`
 - `updated_at`
 
-Migration: `migrations/20260320_003_create_collection_endpoints_table.migration.ts`
-
-`folder_id` support and examples/folder tables are added in:
-
-- `migrations/20260322_008_expand_collections_structure.migration.ts`
+`folder_id` (FK -> `collection_folders.id`) supports organizing endpoints into folders.

@@ -67,7 +67,7 @@ Table: `environments`
 - `created_at`
 - `updated_at`
 
-Migration: `migrations/20260321_004_create_environments_table.migration.ts`
+Migration: `migrations/20260321_003_create_environments_schema.migration.ts` (also creates `environment_variables`).
 
 ### Variable persistence
 
@@ -83,5 +83,3 @@ Table: `environment_variables`
 - `created_by_user_id` (FK -> `auth_users.id`)
 - `created_at`
 - `updated_at`
-
-Migration: `migrations/20260321_005_create_environment_variables_table.migration.ts`

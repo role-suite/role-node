@@ -10,7 +10,7 @@ This project uses a feature-first module layout with clear per-module layers.
 - `repo`: persistence and data access logic.
 - `schema`: Zod schemas for runtime validation and type inference.
 
-Current example modules: `src/modules/auth`, `src/modules/workspaces`, `src/modules/collections`, `src/modules/environments`, and `src/modules/runs`.
+Current example modules: `src/modules/auth`, `src/modules/workspaces`, `src/modules/collections`, and `src/modules/environments`.
 
 ## Runtime flow
 
@@ -27,13 +27,12 @@ Current example modules: `src/modules/auth`, `src/modules/workspaces`, `src/modu
 - `src/config/env.ts`: environment schema validation.
 - `src/config/startup-validation.ts`: startup checks + DB connectivity check (`SELECT 1`).
 - `src/config/db.ts`: singleton DB client lifecycle (`getDb`, `closeDb`).
-- `src/shared/db/adapters/postgres.adapter.ts`: PostgreSQL client adapter.
-- `src/shared/db/migrations/runner.ts`: migration table management + up/down/status operations.
+- `src/shared/db/postgres-client.ts`: PostgreSQL client adapter.
+- `src/shared/db/migration-runner.ts`: migration table management + up/down/status operations.
 - `src/shared/middleware/request-logger.ts`: per-request logging with `x-request-id` propagation.
 - `src/shared/middleware/not-found.ts`: fallback 404 handler.
 - `src/shared/errors/error-handler.ts`: centralized error mapping for Zod/domain/unexpected errors.
 - `src/shared/logger.ts`: environment-aware logger output.
-- `src/internal/runner/*`: config-driven request runner engine composed from planning, policy, execution, and persistence modules.
 
 ## Module extension pattern
 
@@ -45,4 +44,4 @@ When adding a feature module:
 
 ## Data layer status
 
-Database infrastructure and migration tooling are in place, and auth/workspace/collections/environments/runs flows are DB-backed.
+Database infrastructure and migration tooling are in place, and auth/workspace/collections/environments flows are DB-backed.

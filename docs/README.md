@@ -8,7 +8,6 @@ This folder is organized by concern for the public REST API and backend runtime.
 ## Architecture
 
 - `docs/architecture/overview.md`: Application layers, runtime flow, and shared infrastructure.
-- `docs/architecture/request-runner-engine.md`: Internal-first request runner engine design and implementation plan.
 
 ## Guides
 
@@ -26,5 +25,4 @@ This folder is organized by concern for the public REST API and backend runtime.
 - `docs/modules/workspaces.md`: Workspace listing and creation flows.
 - `docs/modules/collections.md`: Workspace-scoped API collections CRUD.
 - `docs/modules/environments.md`: Workspace-scoped environments and variables CRUD.
-- `docs/modules/runs.md`: Workspace-scoped request execution API and runner integration.
 - `docs/modules/import-export.md`: Workspace-scoped import/export job API.

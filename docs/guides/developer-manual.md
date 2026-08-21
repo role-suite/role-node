@@ -59,7 +59,6 @@ Current major schema areas:
 - auth users/sessions/workspaces/memberships
 - collections/endpoints/folders/endpoint_examples
 - environments/environment_variables
-- request runs and snapshots
 - import/export jobs
 
 ## 4. Auth and access model
@@ -88,40 +87,7 @@ Common helper style:
 - `requireWorkspaceMembership(...)`
 - `requireWorkspaceWriterRole(...)`
 
-## 5. Runner engine model
-
-Runner internals: `src/internal/runner/`
-
-Pipeline shape (high level):
-
-1. Build source request (adhoc or collection endpoint)
-2. Resolve variables (environment + overrides)
-3. Resolve auth headers
-4. Enforce limits and network policy
-5. Execute HTTP call
-6. Redact sensitive values
-7. Persist run and snapshots
-
-Important files:
-
-- `src/internal/runner/core/types.ts`
-- `src/internal/runner/planning/plan-builder.ts`
-- `src/internal/runner/planning/variable-resolver.ts`
-- `src/internal/runner/execution/http-client.ts`
-- `src/internal/runner/policy/limits-policy.ts`
-- `src/internal/runner/policy/redaction-policy.ts`
-
-### Request body support
-
-Current `HttpRequestBody` modes:
-
-- `raw`
-- `urlencoded`
-- `formdata`
-- `binary`
-- `none`
-
-## 6. API behavior style
+## 5. API behavior style
 
 Response helper: `src/shared/app-response.ts`
 
@@ -135,7 +101,7 @@ Behavior expectations:
 - services throw domain errors (not controllers)
 - controllers stay thin
 
-## 7. Testing strategy
+## 6. Testing strategy
 
 Test layers:
 
@@ -155,7 +121,7 @@ pnpm test:coverage
 pnpm build
 ```
 
-## 8. Contributor workflow
+## 7. Contributor workflow
 
 1. Create branch
 2. Implement by module boundary (schema -> repo -> service -> controller -> route)
@@ -164,7 +130,7 @@ pnpm build
 5. Run build + tests locally
 6. Update docs in `docs/modules` and `docs/guides`
 
-## 9. Coding rules used in this repository
+## 8. Coding rules used in this repository
 
 - Keep business logic in services
 - Keep SQL in repositories
@@ -172,14 +138,13 @@ pnpm build
 - Prefer explicit status/error messages
 - Preserve backward-compatible payload parsing when evolving API behavior
 
-## 10. Observed backlog after current implementation
+## 9. Observed backlog after current implementation
 
 - collection versioning snapshots
 - collection fork/merge workflows
-- list/filter endpoint for run history
 - CI workflow automation
 
-## 11. Where to document new features
+## 10. Where to document new features
 
 When adding a feature:
 

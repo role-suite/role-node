@@ -127,7 +127,5 @@ Coverage thresholds are defined in `vitest.config.ts`.
 
 ## Current improvement backlog
 
-- Add async worker mode for request runs (`queued -> running -> terminal` transitions).
-- Add run retention cleanup job for `request_runs` and related snapshots.
 - Add CI workflow for `pnpm build` + `pnpm test:run` (and optional coverage gate).
 - Add or update relevant API docs when route behavior changes.
