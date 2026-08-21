@@ -284,7 +284,7 @@ const requireWorkspaceMembership = async (
   );
 
   if (!membership) {
-    throw createAppError(ERROR_CODES.workspaces.WORKSPACE_ACCESS_DENIED);
+    throw createAppError(ERROR_CODES.workspaces.ACCESS_DENIED);
   }
 
   return { role: membership.role };

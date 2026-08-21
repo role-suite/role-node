@@ -222,7 +222,7 @@ export const authService = {
     const workspace = await authRepo.findWorkspaceById(workspaceId);
 
     if (!workspace) {
-      throw createAppError(ERROR_CODES.workspaces.WORKSPACE_NOT_FOUND);
+      throw createAppError(ERROR_CODES.workspaces.NOT_FOUND);
     }
 
     const tokens = await issueTokenPair(user.id, workspace.id);

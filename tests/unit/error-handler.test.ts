@@ -122,7 +122,7 @@ describe("error handler", () => {
     const response = makeResponse();
 
     errorHandler(
-      createAppError(ERROR_CODES.workspaces.WORKSPACE_ACCESS_DENIED),
+      createAppError(ERROR_CODES.workspaces.ACCESS_DENIED),
       {} as never,
       response as never,
       vi.fn(),

@@ -76,7 +76,7 @@ const requireWorkspaceMembership = async (
   );
 
   if (!membership) {
-    throw createAppError(ERROR_CODES.workspaces.WORKSPACE_ACCESS_DENIED);
+    throw createAppError(ERROR_CODES.workspaces.ACCESS_DENIED);
   }
 
   return { role: membership.role };
@@ -97,7 +97,7 @@ const requireWorkspaceExists = async (workspaceId: number): Promise<void> => {
   const workspace = await authRepo.findWorkspaceById(workspaceId);
 
   if (!workspace) {
-    throw createAppError(ERROR_CODES.workspaces.WORKSPACE_NOT_FOUND);
+    throw createAppError(ERROR_CODES.workspaces.NOT_FOUND);
   }
 };
 
