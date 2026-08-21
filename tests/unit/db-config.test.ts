@@ -2,12 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { DatabaseClient } from "../../src/types/db.js";
 
-const { createDatabaseClientMock } = vi.hoisted(() => ({
-  createDatabaseClientMock: vi.fn(),
+const { createPostgresClientMock } = vi.hoisted(() => ({
+  createPostgresClientMock: vi.fn(),
 }));
 
-vi.mock("../../src/shared/db/client-factory.js", () => ({
-  createDatabaseClient: createDatabaseClientMock,
+vi.mock("../../src/shared/db/postgres-client.js", () => ({
+  createPostgresClient: createPostgresClientMock,
 }));
 
 const buildClient = (): DatabaseClient => ({
@@ -25,7 +25,7 @@ describe("config db", () => {
 
   it("creates db instance lazily and reuses singleton", async () => {
     const client = buildClient();
-    createDatabaseClientMock.mockReturnValue(client);
+    createPostgresClientMock.mockReturnValue(client);
 
     vi.doMock("../../src/config/env.js", () => ({
       env: {
@@ -46,8 +46,8 @@ describe("config db", () => {
 
     expect(first).toBe(client);
     expect(second).toBe(client);
-    expect(createDatabaseClientMock).toHaveBeenCalledOnce();
-    expect(createDatabaseClientMock).toHaveBeenCalledWith({
+    expect(createPostgresClientMock).toHaveBeenCalledOnce();
+    expect(createPostgresClientMock).toHaveBeenCalledWith({
       host: "localhost",
       port: 5432,
       user: "db-user",
@@ -62,7 +62,7 @@ describe("config db", () => {
   it("closes existing client and allows recreation", async () => {
     const firstClient = buildClient();
     const secondClient = buildClient();
-    createDatabaseClientMock
+    createPostgresClientMock
       .mockReturnValueOnce(firstClient)
       .mockReturnValueOnce(secondClient);
 
@@ -88,6 +88,6 @@ describe("config db", () => {
     expect(first).toBe(firstClient);
     expect(firstClient.close).toHaveBeenCalledOnce();
     expect(second).toBe(secondClient);
-    expect(createDatabaseClientMock).toHaveBeenCalledTimes(2);
+    expect(createPostgresClientMock).toHaveBeenCalledTimes(2);
   });
 });

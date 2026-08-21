@@ -4,7 +4,7 @@ import {
   applyMigrations,
   getMigrationStatus,
   rollbackMigrations,
-} from "../../src/shared/db/migrations/runner.js";
+} from "../../src/shared/db/migration-runner.js";
 import type {
   DatabaseClient,
   DbDialect,

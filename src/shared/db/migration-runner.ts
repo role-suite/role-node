@@ -1,8 +1,8 @@
-import type { DatabaseClient, DbDialect } from "../../../types/db.js";
+import type { DatabaseClient, DbDialect } from "../../types/db.js";
 import type {
   MigrationDefinition,
   MigrationStatus,
-} from "../../../types/db-migration.js";
+} from "../../types/db-migration.js";
 
 const MIGRATIONS_TABLE = "app_migrations";
 

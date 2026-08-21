@@ -3,7 +3,6 @@ import { Server as HttpServer } from "node:http";
 import { app } from "./app.js";
 import { closeDb } from "./config/db.js";
 import { env } from "./config/env.js";
-import { closeKyselyDb } from "./config/kysely.js";
 import { validateStartupOrThrow } from "./config/startup-validation.js";
 import { logger } from "./shared/logger.js";
 
@@ -27,7 +26,6 @@ const startServer = async (): Promise<void> => {
   } catch (error) {
     logger.error("Startup validation failed", error);
     await closeDb();
-    await closeKyselyDb();
     process.exit(1);
   }
 };
@@ -52,7 +50,6 @@ const handleShutdown = async (signal: NodeJS.Signals): Promise<void> => {
     }
 
     await closeDb();
-    await closeKyselyDb();
   } catch (error) {
     logger.error("Error while closing database connections", error);
     process.exit(1);

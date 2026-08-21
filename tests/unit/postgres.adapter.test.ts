@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DbError } from "../../src/shared/errors/db-error.js";
-import { createPostgresClient } from "../../src/shared/db/adapters/postgres.adapter.js";
+import { createPostgresClient } from "../../src/shared/db/postgres-client.js";
 import type { DatabaseConfig } from "../../src/types/db.js";
 
 const { poolState, MockPool } = vi.hoisted(() => {

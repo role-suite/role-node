@@ -1,5 +1,5 @@
 import type { DatabaseClient, DatabaseConfig } from "../types/db.js";
-import { createDatabaseClient } from "../shared/db/client-factory.js";
+import { createPostgresClient } from "../shared/db/postgres-client.js";
 
 import { env } from "./env.js";
 
@@ -20,7 +20,7 @@ const resolveDatabaseConfig = (): DatabaseConfig => {
 
 export const getDb = (): DatabaseClient => {
   if (!dbClient) {
-    dbClient = createDatabaseClient(resolveDatabaseConfig());
+    dbClient = createPostgresClient(resolveDatabaseConfig());
   }
 
   return dbClient;

@@ -3,12 +3,12 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { env } from "../src/config/env.js";
-import { createDatabaseClient } from "../src/shared/db/client-factory.js";
+import { createPostgresClient } from "../src/shared/db/postgres-client.js";
 import {
   applyMigrations,
   getMigrationStatus,
   rollbackMigrations,
-} from "../src/shared/db/migrations/runner.js";
+} from "../src/shared/db/migration-runner.js";
 import type {
   MigrationDefinition,
   MigrationHandler,
@@ -120,7 +120,7 @@ const run = async (): Promise<void> => {
     throw new Error(`Unsupported migration command: ${command}`);
   }
 
-  const db = createDatabaseClient({
+  const db = createPostgresClient({
     host: env.DB_HOST,
     port: env.DB_PORT,
     user: env.DB_USER,

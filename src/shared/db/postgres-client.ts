@@ -6,8 +6,8 @@ import type {
   QueryParams,
   QueryResult,
   QueryRow,
-} from "../../../types/db.js";
-import { DbError } from "../../errors/db-error.js";
+} from "../../types/db.js";
+import { DbError } from "../errors/db-error.js";
 
 const normalizeResult = <TRow extends QueryRow>(result: {
   rows: TRow[];
