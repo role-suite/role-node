@@ -28,6 +28,18 @@ export type Membership = {
   createdAt: Date;
 };
 
+export type WorkspaceMemberWithUser = {
+  userId: number;
+  name: string;
+  email: string;
+  role: MembershipRole;
+};
+
+export type MembershipWithWorkspace = {
+  role: MembershipRole;
+  workspace: Workspace;
+};
+
 export type Session = {
   id: number;
   userId: number;
@@ -84,6 +96,23 @@ type MembershipRow = {
   workspace_id: number;
   role: MembershipRole;
   created_at: Date | string;
+};
+
+type WorkspaceMemberWithUserRow = {
+  user_id: number;
+  name: string;
+  email: string;
+  role: MembershipRole;
+};
+
+type MembershipWithWorkspaceRow = {
+  role: MembershipRole;
+  workspace_id: number;
+  workspace_name: string;
+  workspace_slug: string;
+  workspace_type: "personal" | "team";
+  workspace_created_by_user_id: number;
+  workspace_created_at: Date | string;
 };
 
 type SessionRow = {
@@ -180,6 +209,33 @@ const mapMembershipRow = (row: MembershipRow): Membership => {
     workspaceId: row.workspace_id,
     role: row.role,
     createdAt: toDate(row.created_at),
+  };
+};
+
+const mapWorkspaceMemberWithUserRow = (
+  row: WorkspaceMemberWithUserRow,
+): WorkspaceMemberWithUser => {
+  return {
+    userId: row.user_id,
+    name: row.name,
+    email: row.email,
+    role: row.role,
+  };
+};
+
+const mapMembershipWithWorkspaceRow = (
+  row: MembershipWithWorkspaceRow,
+): MembershipWithWorkspace => {
+  return {
+    role: row.role,
+    workspace: {
+      id: row.workspace_id,
+      name: row.workspace_name,
+      slug: row.workspace_slug,
+      type: row.workspace_type,
+      createdByUserId: row.workspace_created_by_user_id,
+      createdAt: toDate(row.workspace_created_at),
+    },
   };
 };
 
@@ -400,6 +456,44 @@ export const authRepo = {
     );
 
     return result.rows.map(mapMembershipRow);
+  },
+
+  async listWorkspaceMembersWithUser(
+    workspaceId: number,
+  ): Promise<WorkspaceMemberWithUser[]> {
+    const workspaceToken = resolveToken(1);
+    const result = await resolveDb().query<WorkspaceMemberWithUserRow>(
+      `SELECT u.id AS user_id, u.name, u.email, m.role
+       FROM ${MEMBERSHIPS_TABLE} m
+       JOIN ${USERS_TABLE} u ON u.id = m.user_id
+       WHERE m.workspace_id = ${workspaceToken}
+       ORDER BY m.id ASC`,
+      [workspaceId],
+    );
+
+    return result.rows.map(mapWorkspaceMemberWithUserRow);
+  },
+
+  async listMembershipsWithWorkspaceByUser(
+    userId: number,
+  ): Promise<MembershipWithWorkspace[]> {
+    const userToken = resolveToken(1);
+    const result = await resolveDb().query<MembershipWithWorkspaceRow>(
+      `SELECT m.role,
+              w.id AS workspace_id,
+              w.name AS workspace_name,
+              w.slug AS workspace_slug,
+              w.type AS workspace_type,
+              w.created_by_user_id AS workspace_created_by_user_id,
+              w.created_at AS workspace_created_at
+       FROM ${MEMBERSHIPS_TABLE} m
+       JOIN ${WORKSPACES_TABLE} w ON w.id = m.workspace_id
+       WHERE m.user_id = ${userToken}
+       ORDER BY m.id ASC`,
+      [userId],
+    );
+
+    return result.rows.map(mapMembershipWithWorkspaceRow);
   },
 
   async updateMembershipRole(

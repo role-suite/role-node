@@ -1,11 +1,8 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  authRepo,
-  setAuthRepoDbClient,
-} from "../../src/modules/auth/auth.repo.js";
-import { authService } from "../../src/modules/auth/auth.service.js";
-import { workspacesService } from "../../src/modules/workspaces/workspaces.service.js";
+import { authRepo, setAuthRepoDbClient } from "../../src/modules/auth/repo.js";
+import { authService } from "../../src/modules/auth/service.js";
+import { workspacesService } from "../../src/modules/workspaces/service.js";
 import { createAuthTestDb } from "../helpers/auth-test-db.js";
 
 const testDb = createAuthTestDb();

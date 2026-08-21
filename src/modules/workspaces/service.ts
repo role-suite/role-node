@@ -1,12 +1,12 @@
 import { randomBytes } from "node:crypto";
 
+import { authRepo, type MembershipRole } from "../auth/repo.js";
 import { hashToken } from "../../shared/auth/password.js";
 import { createAppError } from "../../shared/errors/app-error.js";
 import { ERROR_CODES } from "../../shared/errors/error-codes.js";
 import type { z } from "zod";
 
-import { workspacesRepo, type WorkspaceRole } from "./workspaces.repo.js";
-import { workspaceUpdatesQuerySchema } from "./workspaces.schema.js";
+import { workspaceUpdatesQuerySchema } from "./schema.js";
 import type {
   AddWorkspaceMemberInput,
   AcceptWorkspaceInvitationInput,
@@ -14,8 +14,8 @@ import type {
   CreateWorkspaceInvitationInput,
   CreateWorkspaceInput,
   UpdateWorkspaceMemberRoleInput,
-} from "./workspaces.schema.js";
-import { workspaceEventsService } from "./workspace-events.service.js";
+} from "./schema.js";
+import { workspaceEventsService } from "./events.service.js";
 
 type WorkspaceUpdatesQuery = z.infer<typeof workspaceUpdatesQuerySchema>;
 
@@ -25,21 +25,21 @@ type WorkspaceSummary = {
   name: string;
   slug: string;
   type: "personal" | "team";
-  role: WorkspaceRole;
+  role: MembershipRole;
 };
 
 type WorkspaceMember = {
   userId: number;
   name: string;
   email: string;
-  role: WorkspaceRole;
+  role: MembershipRole;
 };
 
 type WorkspaceInvitation = {
   id: number;
   workspaceId: number;
   email: string;
-  role: WorkspaceRole;
+  role: MembershipRole;
   token: string;
   expiresAt: Date;
 };
@@ -54,7 +54,7 @@ const requireWorkspaceMembership = async (
   userId: number,
   workspaceId: number,
 ) => {
-  const membership = await workspacesRepo.findMembershipByUserAndWorkspace(
+  const membership = await authRepo.findMembershipByUserAndWorkspace(
     userId,
     workspaceId,
   );
@@ -79,58 +79,22 @@ const requireWorkspaceOwner = async (userId: number, workspaceId: number) => {
 const listWorkspaceMembers = async (
   workspaceId: number,
 ): Promise<WorkspaceMember[]> => {
-  const memberships =
-    await workspacesRepo.listMembershipsByWorkspace(workspaceId);
-  const hydrated = await Promise.all(
-    memberships.map(async (membership) => {
-      const user = await workspacesRepo.findUserById(membership.userId);
-
-      if (!user) {
-        return null;
-      }
-
-      return {
-        userId: user.id,
-        name: user.name,
-        email: user.email,
-        role: membership.role,
-      };
-    }),
-  );
-
-  return hydrated.filter(
-    (item): item is NonNullable<typeof item> => item !== null,
-  );
+  return authRepo.listWorkspaceMembersWithUser(workspaceId);
 };
 
 const listWorkspaceSummaries = async (
   userId: number,
 ): Promise<WorkspaceSummary[]> => {
-  const memberships = await workspacesRepo.listMembershipsByUser(userId);
-  const hydrated = await Promise.all(
-    memberships.map(async (membership) => {
-      const workspace = await workspacesRepo.findWorkspaceById(
-        membership.workspaceId,
-      );
+  const memberships = await authRepo.listMembershipsWithWorkspaceByUser(userId);
 
-      if (!workspace) {
-        return null;
-      }
-
-      return {
-        id: workspace.id,
-        _id: workspace.id,
-        name: workspace.name,
-        slug: workspace.slug,
-        type: workspace.type,
-        role: membership.role,
-      };
-    }),
-  );
-
-  return hydrated.filter(
-    (item): item is NonNullable<typeof item> => item !== null,
-  );
+  return memberships.map(({ role, workspace }) => ({
+    id: workspace.id,
+    _id: workspace.id,
+    name: workspace.name,
+    slug: workspace.slug,
+    type: workspace.type,
+    role,
+  }));
 };
 
 export const workspacesService = {
@@ -144,7 +108,7 @@ export const workspacesService = {
   ): Promise<WorkspaceSummary> {
     const membership = await requireWorkspaceMembership(userId, workspaceId);
 
-    const workspace = await workspacesRepo.findWorkspaceById(workspaceId);
+    const workspace = await authRepo.findWorkspaceById(workspaceId);
 
     if (!workspace) {
       throw createAppError(ERROR_CODES.workspaces.WORKSPACE_NOT_FOUND);
@@ -164,13 +128,13 @@ export const workspacesService = {
     userId: number,
     payload: CreateWorkspaceInput,
   ): Promise<WorkspaceSummary> {
-    const workspace = await workspacesRepo.createWorkspace({
+    const workspace = await authRepo.createWorkspace({
       name: payload.name,
       type: "team",
       createdByUserId: userId,
     });
 
-    const membership = await workspacesRepo.createMembership({
+    const membership = await authRepo.createMembership({
       userId,
       workspaceId: workspace.id,
       role: "owner",
@@ -212,9 +176,7 @@ export const workspacesService = {
   ): Promise<WorkspaceMember> {
     await requireWorkspaceOwner(userId, payload.workspaceId);
 
-    const workspace = await workspacesRepo.findWorkspaceById(
-      payload.workspaceId,
-    );
+    const workspace = await authRepo.findWorkspaceById(payload.workspaceId);
 
     if (!workspace) {
       throw createAppError(ERROR_CODES.workspaces.WORKSPACE_NOT_FOUND);
@@ -224,23 +186,22 @@ export const workspacesService = {
       throw createAppError(ERROR_CODES.workspaces.PERSONAL_MEMBERS_UNSUPPORTED);
     }
 
-    const invitedUser = await workspacesRepo.findUserByEmail(payload.email);
+    const invitedUser = await authRepo.findUserByEmail(payload.email);
 
     if (!invitedUser) {
       throw createAppError(ERROR_CODES.common.USER_NOT_FOUND);
     }
 
-    const existingMembership =
-      await workspacesRepo.findMembershipByUserAndWorkspace(
-        invitedUser.id,
-        payload.workspaceId,
-      );
+    const existingMembership = await authRepo.findMembershipByUserAndWorkspace(
+      invitedUser.id,
+      payload.workspaceId,
+    );
 
     if (existingMembership) {
       throw createAppError(ERROR_CODES.workspaces.MEMBERSHIP_ALREADY_EXISTS);
     }
 
-    const membership = await workspacesRepo.createMembership({
+    const membership = await authRepo.createMembership({
       userId: invitedUser.id,
       workspaceId: payload.workspaceId,
       role: payload.role,
@@ -272,9 +233,7 @@ export const workspacesService = {
   ): Promise<WorkspaceInvitation> {
     await requireWorkspaceOwner(userId, payload.workspaceId);
 
-    const workspace = await workspacesRepo.findWorkspaceById(
-      payload.workspaceId,
-    );
+    const workspace = await authRepo.findWorkspaceById(payload.workspaceId);
 
     if (!workspace) {
       throw createAppError(ERROR_CODES.workspaces.WORKSPACE_NOT_FOUND);
@@ -288,7 +247,7 @@ export const workspacesService = {
 
     const email = normalizeEmail(payload.email);
     const existingInvitation =
-      await workspacesRepo.findPendingWorkspaceInvitationByEmail(
+      await authRepo.findPendingWorkspaceInvitationByEmail(
         payload.workspaceId,
         email,
       );
@@ -297,11 +256,11 @@ export const workspacesService = {
       throw createAppError(ERROR_CODES.workspaces.INVITATION_ALREADY_PENDING);
     }
 
-    const existingUser = await workspacesRepo.findUserByEmail(email);
+    const existingUser = await authRepo.findUserByEmail(email);
 
     if (existingUser) {
       const existingMembership =
-        await workspacesRepo.findMembershipByUserAndWorkspace(
+        await authRepo.findMembershipByUserAndWorkspace(
           existingUser.id,
           payload.workspaceId,
         );
@@ -317,7 +276,7 @@ export const workspacesService = {
       Date.now() + INVITATION_TTL_DAYS * 24 * 60 * 60 * 1000,
     );
 
-    const invitation = await workspacesRepo.createWorkspaceInvitation({
+    const invitation = await authRepo.createWorkspaceInvitation({
       workspaceId: payload.workspaceId,
       invitedByUserId: userId,
       email,
@@ -354,7 +313,7 @@ export const workspacesService = {
   ): Promise<WorkspaceSummary> {
     const tokenHash = hashToken(payload.token);
     const invitation =
-      await workspacesRepo.findWorkspaceInvitationByTokenHash(tokenHash);
+      await authRepo.findWorkspaceInvitationByTokenHash(tokenHash);
 
     if (!invitation) {
       throw createAppError(ERROR_CODES.workspaces.INVITATION_NOT_FOUND);
@@ -368,7 +327,7 @@ export const workspacesService = {
       throw createAppError(ERROR_CODES.workspaces.INVITATION_EXPIRED);
     }
 
-    const user = await workspacesRepo.findUserById(userId);
+    const user = await authRepo.findUserById(userId);
 
     if (!user) {
       throw createAppError(ERROR_CODES.common.USER_NOT_FOUND);
@@ -378,9 +337,7 @@ export const workspacesService = {
       throw createAppError(ERROR_CODES.workspaces.INVITATION_EMAIL_MISMATCH);
     }
 
-    const workspace = await workspacesRepo.findWorkspaceById(
-      invitation.workspaceId,
-    );
+    const workspace = await authRepo.findWorkspaceById(invitation.workspaceId);
 
     if (!workspace) {
       throw createAppError(ERROR_CODES.workspaces.WORKSPACE_NOT_FOUND);
@@ -390,23 +347,22 @@ export const workspacesService = {
       throw createAppError(ERROR_CODES.workspaces.DOES_NOT_ACCEPT_MEMBERS);
     }
 
-    const existingMembership =
-      await workspacesRepo.findMembershipByUserAndWorkspace(
-        userId,
-        invitation.workspaceId,
-      );
+    const existingMembership = await authRepo.findMembershipByUserAndWorkspace(
+      userId,
+      invitation.workspaceId,
+    );
 
     if (existingMembership) {
       throw createAppError(ERROR_CODES.workspaces.MEMBERSHIP_ALREADY_EXISTS);
     }
 
-    const membership = await workspacesRepo.createMembership({
+    const membership = await authRepo.createMembership({
       userId,
       workspaceId: invitation.workspaceId,
       role: invitation.role,
     });
 
-    await workspacesRepo.markWorkspaceInvitationAccepted(invitation.id);
+    await authRepo.markWorkspaceInvitationAccepted(invitation.id);
 
     await workspaceEventsService.publish({
       workspaceId: invitation.workspaceId,
@@ -448,11 +404,10 @@ export const workspacesService = {
   ): Promise<WorkspaceMember> {
     await requireWorkspaceOwner(userId, payload.workspaceId);
 
-    const targetMembership =
-      await workspacesRepo.findMembershipByUserAndWorkspace(
-        payload.memberUserId,
-        payload.workspaceId,
-      );
+    const targetMembership = await authRepo.findMembershipByUserAndWorkspace(
+      payload.memberUserId,
+      payload.workspaceId,
+    );
 
     if (!targetMembership) {
       throw createAppError(ERROR_CODES.workspaces.MEMBER_NOT_FOUND);
@@ -462,7 +417,7 @@ export const workspacesService = {
       throw createAppError(ERROR_CODES.workspaces.OWNER_ROLE_IMMUTABLE);
     }
 
-    await workspacesRepo.updateMembershipRole(
+    await authRepo.updateMembershipRole(
       payload.memberUserId,
       payload.workspaceId,
       payload.role,
@@ -480,7 +435,7 @@ export const workspacesService = {
       },
     });
 
-    const user = await workspacesRepo.findUserById(payload.memberUserId);
+    const user = await authRepo.findUserById(payload.memberUserId);
 
     if (!user) {
       throw createAppError(ERROR_CODES.common.USER_NOT_FOUND);
@@ -505,18 +460,17 @@ export const workspacesService = {
       throw createAppError(ERROR_CODES.workspaces.SELF_REMOVE_USE_LEAVE);
     }
 
-    const targetMembership =
-      await workspacesRepo.findMembershipByUserAndWorkspace(
-        memberUserId,
-        workspaceId,
-      );
+    const targetMembership = await authRepo.findMembershipByUserAndWorkspace(
+      memberUserId,
+      workspaceId,
+    );
 
     if (!targetMembership) {
       throw createAppError(ERROR_CODES.workspaces.MEMBER_NOT_FOUND);
     }
 
     if (targetMembership.role === "owner") {
-      const owners = await workspacesRepo.countMembershipsByRole(
+      const owners = await authRepo.countMembershipsByRole(
         workspaceId,
         "owner",
       );
@@ -528,7 +482,7 @@ export const workspacesService = {
       }
     }
 
-    await workspacesRepo.deleteMembershipByUserAndWorkspace(
+    await authRepo.deleteMembershipByUserAndWorkspace(
       memberUserId,
       workspaceId,
     );
@@ -549,7 +503,7 @@ export const workspacesService = {
     const membership = await requireWorkspaceMembership(userId, workspaceId);
 
     if (membership.role === "owner") {
-      const owners = await workspacesRepo.countMembershipsByRole(
+      const owners = await authRepo.countMembershipsByRole(
         workspaceId,
         "owner",
       );
@@ -559,10 +513,7 @@ export const workspacesService = {
       }
     }
 
-    await workspacesRepo.deleteMembershipByUserAndWorkspace(
-      userId,
-      workspaceId,
-    );
+    await authRepo.deleteMembershipByUserAndWorkspace(userId, workspaceId);
 
     await workspaceEventsService.publish({
       workspaceId,
@@ -582,9 +533,7 @@ export const workspacesService = {
   ): Promise<WorkspaceSummary> {
     await requireWorkspaceOwner(userId, payload.workspaceId);
 
-    const workspace = await workspacesRepo.findWorkspaceById(
-      payload.workspaceId,
-    );
+    const workspace = await authRepo.findWorkspaceById(payload.workspaceId);
 
     if (!workspace) {
       throw createAppError(ERROR_CODES.workspaces.WORKSPACE_NOT_FOUND);
@@ -596,7 +545,7 @@ export const workspacesService = {
 
     const name = payload.name ?? workspace.name;
 
-    await workspacesRepo.updateWorkspaceTypeAndName({
+    await authRepo.updateWorkspaceTypeAndName({
       workspaceId: workspace.id,
       name,
       type: "team",
