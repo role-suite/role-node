@@ -11,7 +11,12 @@ import {
   verifyRefreshToken,
 } from "../../shared/auth/tokens.js";
 
-import { authRepo, type AuthUser, type Workspace } from "./repo.js";
+import { authRepo, withAuthTransaction } from "./repo.js";
+import type {
+  AuthUser,
+  MembershipWithWorkspace,
+  Workspace,
+} from "./repo.js";
 import type { LoginInput, RefreshTokenInput, RegisterInput } from "./schema.js";
 
 type AuthRole = "owner" | "admin" | "member";
@@ -57,35 +62,37 @@ const createWorkspaceNameForSingleAccount = (name: string): string => {
   return `${firstName ?? "Personal"}'s Workspace`;
 };
 
+// `_id` mirrors `id`/`workspaceId` for legacy Mongo-style API clients; new consumers should use
+// the plain numeric field instead.
+const toWorkspaceSummary = (
+  workspace: Workspace,
+  role: AuthRole,
+): AuthResponse["workspace"] => ({
+  id: workspace.id,
+  _id: workspace.id,
+  name: workspace.name,
+  slug: workspace.slug,
+  type: workspace.type,
+  role,
+});
+
+const toMembershipSummary = (
+  membership: MembershipWithWorkspace,
+): AuthResponse["memberships"][number] => ({
+  workspaceId: membership.workspace.id,
+  _id: membership.workspace.id,
+  name: membership.workspace.name,
+  slug: membership.workspace.slug,
+  type: membership.workspace.type,
+  role: membership.role,
+});
+
 const buildMemberships = async (
   userId: number,
 ): Promise<AuthResponse["memberships"]> => {
-  const memberships = await authRepo.listMembershipsByUser(userId);
+  const memberships = await authRepo.listMembershipsWithWorkspaceByUser(userId);
 
-  const hydrated = await Promise.all(
-    memberships.map(async (membership) => {
-      const workspace = await authRepo.findWorkspaceById(
-        membership.workspaceId,
-      );
-
-      if (!workspace) {
-        return null;
-      }
-
-      return {
-        workspaceId: workspace.id,
-        _id: workspace.id,
-        name: workspace.name,
-        slug: workspace.slug,
-        type: workspace.type,
-        role: membership.role,
-      };
-    }),
-  );
-
-  return hydrated.filter(
-    (item): item is NonNullable<typeof item> => item !== null,
-  );
+  return memberships.map(toMembershipSummary);
 };
 
 const issueTokenPair = async (userId: number, workspaceId: number) => {
@@ -100,23 +107,24 @@ const issueTokenPair = async (userId: number, workspaceId: number) => {
     expiresAt: refreshExpiry,
   });
 
-  const accessToken = await createAuthToken({
-    userId,
-    workspaceId,
-    sessionId: session.id,
-    type: "access",
-    ttlSeconds: env.AUTH_ACCESS_TOKEN_TTL_SECONDS,
-    secret: env.AUTH_ACCESS_TOKEN_SECRET,
-  });
-
-  const refreshToken = await createAuthToken({
-    userId,
-    workspaceId,
-    sessionId: session.id,
-    type: "refresh",
-    ttlSeconds: env.AUTH_REFRESH_TOKEN_TTL_SECONDS,
-    secret: env.AUTH_REFRESH_TOKEN_SECRET,
-  });
+  const [accessToken, refreshToken] = await Promise.all([
+    createAuthToken({
+      userId,
+      workspaceId,
+      sessionId: session.id,
+      type: "access",
+      ttlSeconds: env.AUTH_ACCESS_TOKEN_TTL_SECONDS,
+      secret: env.AUTH_ACCESS_TOKEN_SECRET,
+    }),
+    createAuthToken({
+      userId,
+      workspaceId,
+      sessionId: session.id,
+      type: "refresh",
+      ttlSeconds: env.AUTH_REFRESH_TOKEN_TTL_SECONDS,
+      secret: env.AUTH_REFRESH_TOKEN_SECRET,
+    }),
+  ]);
 
   await authRepo.updateSessionRefreshTokenHash(
     session.id,
@@ -131,6 +139,9 @@ const issueTokenPair = async (userId: number, workspaceId: number) => {
   };
 };
 
+// There is no explicit "default workspace" flag on a membership. `listMembershipsByUser` orders
+// by membership id ascending, so the earliest-created membership (typically the workspace made
+// at registration) is what login lands the user in.
 const selectWorkspaceIdForLogin = async (
   userId: number,
 ): Promise<{ workspaceId: number; role: AuthRole }> => {
@@ -164,14 +175,7 @@ const toAuthResponse = async (
       name: user.name,
       email: user.email,
     },
-    workspace: {
-      id: workspace.id,
-      _id: workspace.id,
-      name: workspace.name,
-      slug: workspace.slug,
-      type: workspace.type,
-      role,
-    },
+    workspace: toWorkspaceSummary(workspace, role),
     memberships: await buildMemberships(user.id),
     tokens,
   };
@@ -185,26 +189,43 @@ export const authService = {
       throw createAppError(ERROR_CODES.auth.EMAIL_ALREADY_IN_USE);
     }
 
-    const user = await authRepo.createUser({
-      name: payload.name,
-      email: payload.email,
-      passwordHash: await hashPassword(payload.password),
-    });
+    const passwordHash = await hashPassword(payload.password);
 
-    const workspace = await authRepo.createWorkspace({
-      name:
-        payload.accountType === "team"
-          ? (payload.teamName ?? "Team Workspace")
-          : createWorkspaceNameForSingleAccount(payload.name),
-      type: payload.accountType === "team" ? "team" : "personal",
-      createdByUserId: user.id,
-    });
+    const { user, workspace, membership } = await withAuthTransaction(
+      async (tx) => {
+        const user = await authRepo.createUser(
+          {
+            name: payload.name,
+            email: payload.email,
+            passwordHash,
+          },
+          tx,
+        );
 
-    const membership = await authRepo.createMembership({
-      userId: user.id,
-      workspaceId: workspace.id,
-      role: "owner",
-    });
+        const workspace = await authRepo.createWorkspace(
+          {
+            name:
+              payload.accountType === "team"
+                ? payload.teamName
+                : createWorkspaceNameForSingleAccount(payload.name),
+            type: payload.accountType === "team" ? "team" : "personal",
+            createdByUserId: user.id,
+          },
+          tx,
+        );
+
+        const membership = await authRepo.createMembership(
+          {
+            userId: user.id,
+            workspaceId: workspace.id,
+            role: "owner",
+          },
+          tx,
+        );
+
+        return { user, workspace, membership };
+      },
+    );
 
     const tokens = await issueTokenPair(user.id, workspace.id);
 
@@ -253,21 +274,21 @@ export const authService = {
       throw createAppError(ERROR_CODES.auth.REFRESH_SESSION_INVALID);
     }
 
-    const user = await authRepo.findUserById(session.userId);
-    const workspace = await authRepo.findWorkspaceById(session.workspaceId);
-    const membership = await authRepo.findMembershipByUserAndWorkspace(
+    const authContext = await authRepo.findAuthContext(
       session.userId,
       session.workspaceId,
     );
 
-    if (!user || !workspace || !membership) {
+    if (!authContext) {
       throw createAppError(ERROR_CODES.auth.REFRESH_SESSION_INVALID);
     }
+
+    const { user, workspace, role } = authContext;
 
     await authRepo.revokeSessionById(session.id);
     const tokens = await issueTokenPair(user.id, workspace.id);
 
-    return toAuthResponse(user, workspace, membership.role, tokens);
+    return toAuthResponse(user, workspace, role, tokens);
   },
 
   async logout(payload: RefreshTokenInput): Promise<void> {
@@ -284,16 +305,16 @@ export const authService = {
   },
 
   async getMe(context: AuthContext): Promise<Omit<AuthResponse, "tokens">> {
-    const user = await authRepo.findUserById(context.userId);
-    const workspace = await authRepo.findWorkspaceById(context.workspaceId);
-    const membership = await authRepo.findMembershipByUserAndWorkspace(
+    const authContext = await authRepo.findAuthContext(
       context.userId,
       context.workspaceId,
     );
 
-    if (!user || !workspace || !membership) {
+    if (!authContext) {
       throw createAppError(ERROR_CODES.common.AUTH_CONTEXT_INVALID);
     }
+
+    const { user, workspace, role } = authContext;
 
     return {
       user: {
@@ -301,14 +322,7 @@ export const authService = {
         name: user.name,
         email: user.email,
       },
-      workspace: {
-        id: workspace.id,
-        _id: workspace.id,
-        name: workspace.name,
-        slug: workspace.slug,
-        type: workspace.type,
-        role: membership.role,
-      },
+      workspace: toWorkspaceSummary(workspace, role),
       memberships: await buildMemberships(user.id),
     };
   },

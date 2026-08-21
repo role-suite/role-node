@@ -552,6 +552,44 @@ export const createAuthTestDb = (): DatabaseClient => {
 
     if (
       normalized.startsWith(
+        "select u.id as user_id, u.name as user_name, u.email as user_email, u.password_hash as user_password_hash, u.created_at as user_created_at, w.id as workspace_id, w.name as workspace_name, w.slug as workspace_slug, w.type as workspace_type, w.created_by_user_id as workspace_created_by_user_id, w.created_at as workspace_created_at, m.role as membership_role from auth_users u join workspace_memberships m on m.user_id = u.id join workspaces w on w.id = m.workspace_id where u.id =",
+      )
+    ) {
+      const userIdParam = expectParam<number>(params, 0);
+      const workspaceIdParam = expectParam<number>(params, 1);
+      const user = users.find((item) => item.id === userIdParam);
+      const membership = memberships.find(
+        (item) =>
+          item.user_id === userIdParam &&
+          item.workspace_id === workspaceIdParam,
+      );
+      const workspace = membership
+        ? workspaces.find((item) => item.id === membership.workspace_id)
+        : undefined;
+
+      if (!user || !membership || !workspace) {
+        return { rows: [] as TRow[], rowCount: 0 };
+      }
+
+      const row = {
+        user_id: user.id,
+        user_name: user.name,
+        user_email: user.email,
+        user_password_hash: user.password_hash,
+        user_created_at: user.created_at,
+        workspace_id: workspace.id,
+        workspace_name: workspace.name,
+        workspace_slug: workspace.slug,
+        workspace_type: workspace.type,
+        workspace_created_by_user_id: workspace.created_by_user_id,
+        workspace_created_at: workspace.created_at,
+        membership_role: membership.role,
+      };
+      return { rows: castRows<TRow>([row]), rowCount: 1 };
+    }
+
+    if (
+      normalized.startsWith(
         "select m.role, w.id as workspace_id, w.name as workspace_name, w.slug as workspace_slug, w.type as workspace_type, w.created_by_user_id as workspace_created_by_user_id, w.created_at as workspace_created_at from workspace_memberships m join workspaces w on w.id = m.workspace_id where m.user_id =",
       )
     ) {

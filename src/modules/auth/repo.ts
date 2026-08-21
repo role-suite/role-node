@@ -40,6 +40,12 @@ export type MembershipWithWorkspace = {
   workspace: Workspace;
 };
 
+export type AuthContext = {
+  user: AuthUser;
+  workspace: Workspace;
+  role: MembershipRole;
+};
+
 export type Session = {
   id: number;
   userId: number;
@@ -115,6 +121,21 @@ type MembershipWithWorkspaceRow = {
   workspace_created_at: Date | string;
 };
 
+type AuthContextRow = {
+  user_id: number;
+  user_name: string;
+  user_email: string;
+  user_password_hash: string;
+  user_created_at: Date | string;
+  workspace_id: number;
+  workspace_name: string;
+  workspace_slug: string;
+  workspace_type: "personal" | "team";
+  workspace_created_by_user_id: number;
+  workspace_created_at: Date | string;
+  membership_role: MembershipRole;
+};
+
 type SessionRow = {
   id: number;
   user_id: number;
@@ -163,6 +184,12 @@ const resolveDb = (): DatabaseClient => {
 
 export const setAuthRepoDbClient = (dbClient: DatabaseClient | null): void => {
   dbOverride = dbClient;
+};
+
+export const withAuthTransaction = <T>(
+  callback: (tx: DatabaseClient) => Promise<T>,
+): Promise<T> => {
+  return resolveDb().transaction(callback);
 };
 
 const resolveToken = (index: number): string => {
@@ -239,6 +266,27 @@ const mapMembershipWithWorkspaceRow = (
   };
 };
 
+const mapAuthContextRow = (row: AuthContextRow): AuthContext => {
+  return {
+    user: {
+      id: row.user_id,
+      name: row.user_name,
+      email: row.user_email,
+      passwordHash: row.user_password_hash,
+      createdAt: toDate(row.user_created_at),
+    },
+    workspace: {
+      id: row.workspace_id,
+      name: row.workspace_name,
+      slug: row.workspace_slug,
+      type: row.workspace_type,
+      createdByUserId: row.workspace_created_by_user_id,
+      createdAt: toDate(row.workspace_created_at),
+    },
+    role: row.membership_role,
+  };
+};
+
 const mapSessionRow = (row: SessionRow): Session => {
   return {
     id: row.id,
@@ -290,11 +338,12 @@ const slugify = (value: string): string => {
 
 const buildUniqueWorkspaceSlug = async (
   workspaceName: string,
+  dbClient?: DatabaseClient,
 ): Promise<string> => {
   const base = slugify(workspaceName) || "workspace";
   const exactToken = resolveToken(1);
   const prefixToken = resolveToken(2);
-  const db = resolveDb();
+  const db = dbClient ?? resolveDb();
   const existingRows = await db.query<{ slug: string }>(
     `SELECT slug FROM ${WORKSPACES_TABLE} WHERE slug = ${exactToken} OR slug LIKE ${prefixToken}`,
     [base, `${base}-%`],
@@ -316,15 +365,18 @@ const buildUniqueWorkspaceSlug = async (
 };
 
 export const authRepo = {
-  async createUser(payload: {
-    name: string;
-    email: string;
-    passwordHash: string;
-  }): Promise<AuthUser> {
+  async createUser(
+    payload: {
+      name: string;
+      email: string;
+      passwordHash: string;
+    },
+    dbClient?: DatabaseClient,
+  ): Promise<AuthUser> {
     const nameToken = resolveToken(1);
     const emailToken = resolveToken(2);
     const hashToken = resolveToken(3);
-    const db = resolveDb();
+    const db = dbClient ?? resolveDb();
 
     const result = await db.query<UserRow>(
       `INSERT INTO ${USERS_TABLE} (name, email, password_hash) VALUES (${nameToken}, ${emailToken}, ${hashToken}) RETURNING id, name, email, password_hash, created_at`,
@@ -362,17 +414,20 @@ export const authRepo = {
     return row ? mapUserRow(row) : undefined;
   },
 
-  async createWorkspace(payload: {
-    name: string;
-    type: "personal" | "team";
-    createdByUserId: number;
-  }): Promise<Workspace> {
-    const slug = await buildUniqueWorkspaceSlug(payload.name);
+  async createWorkspace(
+    payload: {
+      name: string;
+      type: "personal" | "team";
+      createdByUserId: number;
+    },
+    dbClient?: DatabaseClient,
+  ): Promise<Workspace> {
+    const slug = await buildUniqueWorkspaceSlug(payload.name, dbClient);
     const nameToken = resolveToken(1);
     const slugToken = resolveToken(2);
     const typeToken = resolveToken(3);
     const createdByToken = resolveToken(4);
-    const db = resolveDb();
+    const db = dbClient ?? resolveDb();
 
     const result = await db.query<WorkspaceRow>(
       `INSERT INTO ${WORKSPACES_TABLE} (name, slug, type, created_by_user_id) VALUES (${nameToken}, ${slugToken}, ${typeToken}, ${createdByToken}) RETURNING id, name, slug, type, created_by_user_id, created_at`,
@@ -399,15 +454,18 @@ export const authRepo = {
     return row ? mapWorkspaceRow(row) : undefined;
   },
 
-  async createMembership(payload: {
-    userId: number;
-    workspaceId: number;
-    role: MembershipRole;
-  }): Promise<Membership> {
+  async createMembership(
+    payload: {
+      userId: number;
+      workspaceId: number;
+      role: MembershipRole;
+    },
+    dbClient?: DatabaseClient,
+  ): Promise<Membership> {
     const userToken = resolveToken(1);
     const workspaceToken = resolveToken(2);
     const roleToken = resolveToken(3);
-    const db = resolveDb();
+    const db = dbClient ?? resolveDb();
 
     const result = await db.query<MembershipRow>(
       `INSERT INTO ${MEMBERSHIPS_TABLE} (user_id, workspace_id, role) VALUES (${userToken}, ${workspaceToken}, ${roleToken}) RETURNING id, user_id, workspace_id, role, created_at`,
@@ -436,6 +494,30 @@ export const authRepo = {
 
     const row = result.rows[0];
     return row ? mapMembershipRow(row) : undefined;
+  },
+
+  async findAuthContext(
+    userId: number,
+    workspaceId: number,
+  ): Promise<AuthContext | undefined> {
+    const userToken = resolveToken(1);
+    const workspaceToken = resolveToken(2);
+    const result = await resolveDb().query<AuthContextRow>(
+      `SELECT u.id AS user_id, u.name AS user_name, u.email AS user_email,
+              u.password_hash AS user_password_hash, u.created_at AS user_created_at,
+              w.id AS workspace_id, w.name AS workspace_name, w.slug AS workspace_slug,
+              w.type AS workspace_type, w.created_by_user_id AS workspace_created_by_user_id,
+              w.created_at AS workspace_created_at,
+              m.role AS membership_role
+       FROM ${USERS_TABLE} u
+       JOIN ${MEMBERSHIPS_TABLE} m ON m.user_id = u.id
+       JOIN ${WORKSPACES_TABLE} w ON w.id = m.workspace_id
+       WHERE u.id = ${userToken} AND m.workspace_id = ${workspaceToken}`,
+      [userId, workspaceId],
+    );
+
+    const row = result.rows[0];
+    return row ? mapAuthContextRow(row) : undefined;
   },
 
   async listMembershipsByUser(userId: number): Promise<Membership[]> {

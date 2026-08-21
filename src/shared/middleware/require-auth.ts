@@ -37,21 +37,16 @@ export const requireAuth = async (
     throw createAppError(ERROR_CODES.common.INVALID_ACCESS_TOKEN);
   }
 
-  const user = await authRepo.findUserById(payload.sub);
-  const workspace = await authRepo.findWorkspaceById(payload.wid);
-  const membership = await authRepo.findMembershipByUserAndWorkspace(
-    payload.sub,
-    payload.wid,
-  );
+  const context = await authRepo.findAuthContext(payload.sub, payload.wid);
 
-  if (!user || !workspace || !membership) {
+  if (!context) {
     throw createAppError(ERROR_CODES.common.AUTH_CONTEXT_INVALID);
   }
 
   req.auth = {
-    userId: user.id,
-    workspaceId: workspace.id,
-    role: membership.role,
+    userId: context.user.id,
+    workspaceId: context.workspace.id,
+    role: context.role,
     sessionId: payload.sid,
   };
 
