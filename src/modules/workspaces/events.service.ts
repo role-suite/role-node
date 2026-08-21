@@ -60,15 +60,19 @@ export const workspaceEventsService = {
   },
 
   async listByCursor(workspaceId: number, since: number, limit: number) {
+    // Fetch one extra row to tell "exactly `limit` events left" apart from "more after this
+    // page" - `mapped.length === limit` alone can't distinguish those, so it reported `hasMore:
+    // true` even when the caller had just received the last page.
     const events = await authRepo.listWorkspaceEventsByCursor(
       workspaceId,
       since,
-      limit,
+      limit + 1,
     );
 
-    const mapped = events.map(mapEvent);
+    const hasMore = events.length > limit;
+    const page = hasMore ? events.slice(0, limit) : events;
+    const mapped = page.map(mapEvent);
     const nextCursor = mapped.at(-1)?.id ?? since;
-    const hasMore = mapped.length === limit;
 
     return {
       items: mapped,

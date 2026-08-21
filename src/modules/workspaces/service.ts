@@ -1,8 +1,13 @@
 import { randomBytes } from "node:crypto";
 
-import { authRepo, type MembershipRole } from "../auth/repo.js";
+import {
+  authRepo,
+  withAuthTransaction,
+  type MembershipRole,
+} from "../auth/repo.js";
 import { hashToken } from "../../shared/auth/password.js";
 import { createAppError } from "../../shared/errors/app-error.js";
+import { isUniqueViolation } from "../../shared/errors/db-error.js";
 import { ERROR_CODES } from "../../shared/errors/error-codes.js";
 import type { z } from "zod";
 
@@ -45,6 +50,12 @@ type WorkspaceInvitation = {
 };
 
 const INVITATION_TTL_DAYS = 7;
+
+// Membership uniqueness is pre-checked below for a friendly error on the common path, but that
+// check-then-write is racy under concurrent requests (e.g. a double-submitted "join"). This
+// constraint backs it up so a race still resolves to the same domain error instead of a raw 500.
+const MEMBERSHIP_UNIQUE_CONSTRAINT =
+  "workspace_memberships_user_id_workspace_id_key";
 
 const normalizeEmail = (email: string): string => {
   return email.trim().toLowerCase();
@@ -128,16 +139,28 @@ export const workspacesService = {
     userId: number,
     payload: CreateWorkspaceInput,
   ): Promise<WorkspaceSummary> {
-    const workspace = await authRepo.createWorkspace({
-      name: payload.name,
-      type: "team",
-      createdByUserId: userId,
-    });
+    // Same transaction guarantee as auth registration: a failure creating the owner membership
+    // must not leave an orphaned, ownerless workspace behind.
+    const { workspace, membership } = await withAuthTransaction(async (tx) => {
+      const workspace = await authRepo.createWorkspace(
+        {
+          name: payload.name,
+          type: "team",
+          createdByUserId: userId,
+        },
+        tx,
+      );
 
-    const membership = await authRepo.createMembership({
-      userId,
-      workspaceId: workspace.id,
-      role: "owner",
+      const membership = await authRepo.createMembership(
+        {
+          userId,
+          workspaceId: workspace.id,
+          role: "owner",
+        },
+        tx,
+      );
+
+      return { workspace, membership };
     });
 
     await workspaceEventsService.publish({
@@ -201,11 +224,21 @@ export const workspacesService = {
       throw createAppError(ERROR_CODES.workspaces.MEMBERSHIP_ALREADY_EXISTS);
     }
 
-    const membership = await authRepo.createMembership({
-      userId: invitedUser.id,
-      workspaceId: payload.workspaceId,
-      role: payload.role,
-    });
+    let membership;
+
+    try {
+      membership = await authRepo.createMembership({
+        userId: invitedUser.id,
+        workspaceId: payload.workspaceId,
+        role: payload.role,
+      });
+    } catch (error) {
+      if (isUniqueViolation(error, MEMBERSHIP_UNIQUE_CONSTRAINT)) {
+        throw createAppError(ERROR_CODES.workspaces.MEMBERSHIP_ALREADY_EXISTS);
+      }
+
+      throw error;
+    }
 
     await workspaceEventsService.publish({
       workspaceId: payload.workspaceId,
@@ -356,13 +389,35 @@ export const workspacesService = {
       throw createAppError(ERROR_CODES.workspaces.MEMBERSHIP_ALREADY_EXISTS);
     }
 
-    const membership = await authRepo.createMembership({
-      userId,
-      workspaceId: invitation.workspaceId,
-      role: invitation.role,
-    });
+    // A double-submitted join (or a race with an owner's concurrent addMember for the same
+    // email) must not leave a membership created without the invitation being marked accepted -
+    // one transaction, with the unique-violation guard as the concurrency backstop.
+    const membership = await withAuthTransaction(async (tx) => {
+      let created;
 
-    await authRepo.markWorkspaceInvitationAccepted(invitation.id);
+      try {
+        created = await authRepo.createMembership(
+          {
+            userId,
+            workspaceId: invitation.workspaceId,
+            role: invitation.role,
+          },
+          tx,
+        );
+      } catch (error) {
+        if (isUniqueViolation(error, MEMBERSHIP_UNIQUE_CONSTRAINT)) {
+          throw createAppError(
+            ERROR_CODES.workspaces.MEMBERSHIP_ALREADY_EXISTS,
+          );
+        }
+
+        throw error;
+      }
+
+      await authRepo.markWorkspaceInvitationAccepted(invitation.id, tx);
+
+      return created;
+    });
 
     await workspaceEventsService.publish({
       workspaceId: invitation.workspaceId,

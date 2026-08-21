@@ -230,4 +230,153 @@ describe("workspaces service", () => {
       message: "Cannot leave as the last workspace owner",
     });
   });
+
+  it("resolves a raced double-join on the same invitation token as a clean conflict", async () => {
+    const owner = await authService.register({
+      name: "Owner",
+      email: "owner@example.com",
+      password: "password123",
+      accountType: "single",
+    });
+    const invitee = await authService.register({
+      name: "Invitee",
+      email: "invitee@example.com",
+      password: "password123",
+      accountType: "single",
+    });
+
+    const created = await workspacesService.createForUser(owner.user.id, {
+      name: "Race Join Team",
+    });
+
+    const invitation = await workspacesService.createInvitationForUser(
+      owner.user.id,
+      {
+        workspaceId: created.id,
+        email: invitee.user.email,
+        role: "member",
+      },
+    );
+
+    // Both requests read the invitation as "not yet accepted" before either write happens - the
+    // second createMembership hits the DB's UNIQUE(user_id, workspace_id) constraint and must
+    // resolve to the same friendly 409, not an unhandled 500.
+    const [first, second] = await Promise.allSettled([
+      workspacesService.joinForUser(invitee.user.id, {
+        token: invitation.token,
+      }),
+      workspacesService.joinForUser(invitee.user.id, {
+        token: invitation.token,
+      }),
+    ]);
+
+    const outcomes = [first, second];
+    const fulfilled = outcomes.filter((o) => o.status === "fulfilled");
+    const rejected = outcomes.filter((o) => o.status === "rejected");
+
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+    expect(rejected[0]).toMatchObject({
+      reason: expect.objectContaining({
+        statusCode: 409,
+        message: "User is already a workspace member",
+      }),
+    });
+
+    const members = await workspacesService.listMembersForUser(
+      owner.user.id,
+      created.id,
+    );
+    expect(members).toHaveLength(2);
+  });
+
+  it("rejects addMemberForUser cleanly when the target is already a member", async () => {
+    const owner = await authService.register({
+      name: "Owner",
+      email: "owner@example.com",
+      password: "password123",
+      accountType: "single",
+    });
+    const target = await authService.register({
+      name: "Target",
+      email: "target@example.com",
+      password: "password123",
+      accountType: "single",
+    });
+
+    const workspace = await workspacesService.createForUser(owner.user.id, {
+      name: "Add Member Race Team",
+    });
+
+    await workspacesService.addMemberForUser(owner.user.id, {
+      workspaceId: workspace.id,
+      email: target.user.email,
+      role: "member",
+    });
+
+    await expect(
+      workspacesService.addMemberForUser(owner.user.id, {
+        workspaceId: workspace.id,
+        email: target.user.email,
+        role: "member",
+      }),
+    ).rejects.toMatchObject({
+      statusCode: 409,
+      message: "User is already a workspace member",
+    });
+  });
+
+  it("reports hasMore accurately at the exact page-size boundary", async () => {
+    const owner = await authService.register({
+      name: "Owner",
+      email: "owner@example.com",
+      password: "password123",
+      accountType: "single",
+    });
+    const memberOne = await authService.register({
+      name: "Member One",
+      email: "member-one@example.com",
+      password: "password123",
+      accountType: "single",
+    });
+    const memberTwo = await authService.register({
+      name: "Member Two",
+      email: "member-two@example.com",
+      password: "password123",
+      accountType: "single",
+    });
+
+    const workspace = await workspacesService.createForUser(owner.user.id, {
+      name: "Pagination Team",
+    });
+    await workspacesService.addMemberForUser(owner.user.id, {
+      workspaceId: workspace.id,
+      email: memberOne.user.email,
+      role: "member",
+    });
+    await workspacesService.addMemberForUser(owner.user.id, {
+      workspaceId: workspace.id,
+      email: memberTwo.user.email,
+      role: "member",
+    });
+
+    // Exactly 3 events exist ("workspace created" + 2x "member added"). Asking for a page of
+    // exactly 3 must report hasMore: false - not "true" just because the page was full.
+    const exactPage = await workspacesService.listUpdatesForUser(
+      owner.user.id,
+      workspace.id,
+      { since: 0, limit: 3 },
+    );
+    expect(exactPage.items).toHaveLength(3);
+    expect(exactPage.cursor.hasMore).toBe(false);
+
+    // A smaller page size should still correctly report more events remain.
+    const partialPage = await workspacesService.listUpdatesForUser(
+      owner.user.id,
+      workspace.id,
+      { since: 0, limit: 2 },
+    );
+    expect(partialPage.items).toHaveLength(2);
+    expect(partialPage.cursor.hasMore).toBe(true);
+  });
 });

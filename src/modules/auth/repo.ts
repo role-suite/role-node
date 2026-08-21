@@ -806,9 +806,12 @@ export const authRepo = {
     return row ? mapWorkspaceInvitationRow(row) : undefined;
   },
 
-  async markWorkspaceInvitationAccepted(invitationId: number): Promise<void> {
+  async markWorkspaceInvitationAccepted(
+    invitationId: number,
+    dbClient?: DatabaseClient,
+  ): Promise<void> {
     const token = resolveToken(1);
-    await resolveDb().query(
+    await (dbClient ?? resolveDb()).query(
       `UPDATE ${INVITATIONS_TABLE} SET accepted_at = CURRENT_TIMESTAMP WHERE id = ${token} AND accepted_at IS NULL`,
       [invitationId],
     );
