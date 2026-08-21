@@ -31,7 +31,7 @@
   "author": "",
   "license": "ISC",
   "type": "module",
-  "packageManager": "pnpm@10.33.0",
+  "packageManager": "pnpm@11.22.0",
   "bugs": {
     "url": "https://github.com/role-suite/role-node/issues"
   },
