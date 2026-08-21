@@ -1,5 +1,7 @@
 import express from "express";
 
+import { env } from "./config/env.js";
+import { docsRouter } from "./docs/swagger.js";
 import { authRouter } from "./modules/auth/route.js";
 import { workspacesRouter } from "./modules/workspaces/route.js";
 import { appResponse } from "./shared/app-response.js";
@@ -18,6 +20,10 @@ app.use(express.json());
 app.get(ROUTE_SEGMENTS.health, (_req, res) => {
   appResponse.sendObject(res, 200, { status: "ok" });
 });
+
+if (env.NODE_ENV !== "production") {
+  app.use("/docs", docsRouter);
+}
 
 app.use(API_MOUNTS.auth, authRouter);
 app.use(API_MOUNTS.workspaces, workspacesRouter);
