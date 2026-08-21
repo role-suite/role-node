@@ -50,8 +50,8 @@ const ENVIRONMENT_VARIABLES_TABLE = "environment_variables";
 
 let dbOverride: DatabaseClient | null = null;
 
-const resolveDb = (): DatabaseClient => {
-  return dbOverride ?? getDb();
+const resolveDb = (dbClient?: DatabaseClient): DatabaseClient => {
+  return dbClient ?? dbOverride ?? getDb();
 };
 
 export const setEnvironmentsRepoDbClient = (
@@ -97,15 +97,18 @@ const mapEnvironmentVariableRow = (
 };
 
 export const environmentsRepo = {
-  async createEnvironment(payload: {
-    workspaceId: number;
-    name: string;
-    createdByUserId: number;
-  }): Promise<Environment> {
+  async createEnvironment(
+    payload: {
+      workspaceId: number;
+      name: string;
+      createdByUserId: number;
+    },
+    dbClient?: DatabaseClient,
+  ): Promise<Environment> {
     const workspaceToken = resolveToken(1);
     const nameToken = resolveToken(2);
     const createdByToken = resolveToken(3);
-    const db = resolveDb();
+    const db = resolveDb(dbClient);
 
     const result = await db.query<EnvironmentRow>(
       `INSERT INTO ${ENVIRONMENTS_TABLE} (workspace_id, name, created_by_user_id) VALUES (${workspaceToken}, ${nameToken}, ${createdByToken}) RETURNING id, workspace_id, name, created_by_user_id, created_at, updated_at`,
@@ -159,13 +162,15 @@ export const environmentsRepo = {
   async updateEnvironment(payload: {
     id: number;
     name: string;
-  }): Promise<void> {
+  }): Promise<Environment | undefined> {
     const idToken = resolveToken(1);
     const nameToken = resolveToken(2);
-    await resolveDb().query(
-      `UPDATE ${ENVIRONMENTS_TABLE} SET name = ${nameToken}, updated_at = CURRENT_TIMESTAMP WHERE id = ${idToken}`,
+    const result = await resolveDb().query<EnvironmentRow>(
+      `UPDATE ${ENVIRONMENTS_TABLE} SET name = ${nameToken}, updated_at = CURRENT_TIMESTAMP WHERE id = ${idToken} RETURNING id, workspace_id, name, created_by_user_id, created_at, updated_at`,
       [payload.id, payload.name],
     );
+    const row = result.rows[0];
+    return row ? mapEnvironmentRow(row) : undefined;
   },
 
   async deleteEnvironmentById(id: number): Promise<void> {
@@ -176,15 +181,18 @@ export const environmentsRepo = {
     );
   },
 
-  async createVariable(payload: {
-    environmentId: number;
-    key: string;
-    value: string;
-    enabled: boolean;
-    isSecret: boolean;
-    position: number;
-    createdByUserId: number;
-  }): Promise<EnvironmentVariable> {
+  async createVariable(
+    payload: {
+      environmentId: number;
+      key: string;
+      value: string;
+      enabled: boolean;
+      isSecret: boolean;
+      position: number;
+      createdByUserId: number;
+    },
+    dbClient?: DatabaseClient,
+  ): Promise<EnvironmentVariable> {
     const environmentToken = resolveToken(1);
     const keyToken = resolveToken(2);
     const valueToken = resolveToken(3);
@@ -192,7 +200,7 @@ export const environmentsRepo = {
     const secretToken = resolveToken(5);
     const positionToken = resolveToken(6);
     const createdByToken = resolveToken(7);
-    const db = resolveDb();
+    const db = resolveDb(dbClient);
 
     const result = await db.query<EnvironmentVariableRow>(
       `INSERT INTO ${ENVIRONMENT_VARIABLES_TABLE} (environment_id, key_name, value_text, enabled, is_secret, position, created_by_user_id) VALUES (${environmentToken}, ${keyToken}, ${valueToken}, ${enabledToken}, ${secretToken}, ${positionToken}, ${createdByToken}) RETURNING id, environment_id, key_name, value_text, enabled, is_secret, position, created_by_user_id, created_at, updated_at`,
@@ -258,15 +266,15 @@ export const environmentsRepo = {
     enabled: boolean;
     isSecret: boolean;
     position: number;
-  }): Promise<void> {
+  }): Promise<EnvironmentVariable | undefined> {
     const idToken = resolveToken(1);
     const keyToken = resolveToken(2);
     const valueToken = resolveToken(3);
     const enabledToken = resolveToken(4);
     const secretToken = resolveToken(5);
     const positionToken = resolveToken(6);
-    await resolveDb().query(
-      `UPDATE ${ENVIRONMENT_VARIABLES_TABLE} SET key_name = ${keyToken}, value_text = ${valueToken}, enabled = ${enabledToken}, is_secret = ${secretToken}, position = ${positionToken}, updated_at = CURRENT_TIMESTAMP WHERE id = ${idToken}`,
+    const result = await resolveDb().query<EnvironmentVariableRow>(
+      `UPDATE ${ENVIRONMENT_VARIABLES_TABLE} SET key_name = ${keyToken}, value_text = ${valueToken}, enabled = ${enabledToken}, is_secret = ${secretToken}, position = ${positionToken}, updated_at = CURRENT_TIMESTAMP WHERE id = ${idToken} RETURNING id, environment_id, key_name, value_text, enabled, is_secret, position, created_by_user_id, created_at, updated_at`,
       [
         payload.id,
         payload.key,
@@ -276,6 +284,8 @@ export const environmentsRepo = {
         payload.position,
       ],
     );
+    const row = result.rows[0];
+    return row ? mapEnvironmentVariableRow(row) : undefined;
   },
 
   async deleteVariableById(id: number): Promise<void> {

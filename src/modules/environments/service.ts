@@ -1,5 +1,9 @@
 import { createAppError } from "../../shared/errors/app-error.js";
-import { ERROR_CODES } from "../../shared/errors/error-codes.js";
+import { isUniqueViolation } from "../../shared/errors/db-error.js";
+import {
+  ERROR_CODES,
+  type ErrorCode,
+} from "../../shared/errors/error-codes.js";
 import { authRepo } from "../auth/repo.js";
 import { workspaceEventsService } from "../workspaces/events.service.js";
 import {
@@ -93,14 +97,6 @@ const requireWorkspaceWriterRole = async (
   }
 };
 
-const requireWorkspaceExists = async (workspaceId: number): Promise<void> => {
-  const workspace = await authRepo.findWorkspaceById(workspaceId);
-
-  if (!workspace) {
-    throw createAppError(ERROR_CODES.workspaces.NOT_FOUND);
-  }
-};
-
 const requireEnvironmentInWorkspace = async (
   workspaceId: number,
   environmentId: number,
@@ -157,13 +153,37 @@ const ensureVariableKeyAvailable = async (
   }
 };
 
+// Name/key availability is pre-checked above for a friendly error on the common path, but that
+// check-then-write is inherently racy under concurrent requests. These constraints back it up:
+// the DB's UNIQUE indexes are the actual source of truth, and a violation here still resolves to
+// the same domain error instead of leaking as a raw 500. Exported so other modules that write
+// environments/variables (e.g. import-export) can translate the same constraint violations.
+export const ENVIRONMENT_NAME_CONSTRAINT = "environments_workspace_id_name_key";
+export const VARIABLE_KEY_CONSTRAINT =
+  "environment_variables_environment_id_key_name_key";
+
+const runUniqueGuarded = async <T>(
+  fn: () => Promise<T>,
+  constraint: string,
+  errorCode: ErrorCode,
+): Promise<T> => {
+  try {
+    return await fn();
+  } catch (error) {
+    if (isUniqueViolation(error, constraint)) {
+      throw createAppError(errorCode);
+    }
+
+    throw error;
+  }
+};
+
 export const environmentsService = {
   async listForWorkspace(
     userId: number,
     workspaceId: number,
   ): Promise<EnvironmentResponse[]> {
     await requireWorkspaceMembership(userId, workspaceId);
-    await requireWorkspaceExists(workspaceId);
     const environments =
       await environmentsRepo.listEnvironmentsByWorkspace(workspaceId);
     return environments.map(mapEnvironment);
@@ -188,14 +208,18 @@ export const environmentsService = {
     payload: CreateEnvironmentInput,
   ): Promise<EnvironmentResponse> {
     await requireWorkspaceWriterRole(userId, workspaceId);
-    await requireWorkspaceExists(workspaceId);
     await ensureEnvironmentNameAvailable(workspaceId, payload.name);
 
-    const created = await environmentsRepo.createEnvironment({
-      workspaceId,
-      name: payload.name,
-      createdByUserId: userId,
-    });
+    const created = await runUniqueGuarded(
+      () =>
+        environmentsRepo.createEnvironment({
+          workspaceId,
+          name: payload.name,
+          createdByUserId: userId,
+        }),
+      ENVIRONMENT_NAME_CONSTRAINT,
+      ERROR_CODES.environments.NAME_ALREADY_EXISTS,
+    );
 
     await workspaceEventsService.publish({
       workspaceId,
@@ -226,12 +250,15 @@ export const environmentsService = {
     const nextName = payload.name ?? existing.name;
     await ensureEnvironmentNameAvailable(workspaceId, nextName, existing.id);
 
-    await environmentsRepo.updateEnvironment({
-      id: existing.id,
-      name: nextName,
-    });
-
-    const updated = await environmentsRepo.findEnvironmentById(existing.id);
+    const updated = await runUniqueGuarded(
+      () =>
+        environmentsRepo.updateEnvironment({
+          id: existing.id,
+          name: nextName,
+        }),
+      ENVIRONMENT_NAME_CONSTRAINT,
+      ERROR_CODES.environments.NAME_ALREADY_EXISTS,
+    );
 
     if (!updated) {
       throw createAppError(ERROR_CODES.environments.ENVIRONMENT_NOT_FOUND);
@@ -306,15 +333,20 @@ export const environmentsService = {
     await requireEnvironmentInWorkspace(workspaceId, environmentId);
     await ensureVariableKeyAvailable(environmentId, payload.key);
 
-    const created = await environmentsRepo.createVariable({
-      environmentId,
-      key: payload.key,
-      value: payload.value,
-      enabled: payload.enabled ?? true,
-      isSecret: payload.isSecret ?? false,
-      position: payload.position ?? 0,
-      createdByUserId: userId,
-    });
+    const created = await runUniqueGuarded(
+      () =>
+        environmentsRepo.createVariable({
+          environmentId,
+          key: payload.key,
+          value: payload.value,
+          enabled: payload.enabled ?? true,
+          isSecret: payload.isSecret ?? false,
+          position: payload.position ?? 0,
+          createdByUserId: userId,
+        }),
+      VARIABLE_KEY_CONSTRAINT,
+      ERROR_CODES.environments.VARIABLE_KEY_ALREADY_EXISTS,
+    );
 
     await workspaceEventsService.publish({
       workspaceId,
@@ -348,16 +380,19 @@ export const environmentsService = {
     const nextKey = payload.key ?? existing.key;
     await ensureVariableKeyAvailable(environmentId, nextKey, existing.id);
 
-    await environmentsRepo.updateVariable({
-      id: existing.id,
-      key: nextKey,
-      value: payload.value ?? existing.value,
-      enabled: payload.enabled ?? existing.enabled,
-      isSecret: payload.isSecret ?? existing.isSecret,
-      position: payload.position ?? existing.position,
-    });
-
-    const updated = await environmentsRepo.findVariableById(existing.id);
+    const updated = await runUniqueGuarded(
+      () =>
+        environmentsRepo.updateVariable({
+          id: existing.id,
+          key: nextKey,
+          value: payload.value ?? existing.value,
+          enabled: payload.enabled ?? existing.enabled,
+          isSecret: payload.isSecret ?? existing.isSecret,
+          position: payload.position ?? existing.position,
+        }),
+      VARIABLE_KEY_CONSTRAINT,
+      ERROR_CODES.environments.VARIABLE_KEY_ALREADY_EXISTS,
+    );
 
     if (!updated) {
       throw createAppError(ERROR_CODES.environments.VARIABLE_NOT_FOUND);
