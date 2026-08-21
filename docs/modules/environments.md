@@ -10,6 +10,16 @@ This module stores workspace-scoped environments and their key/value variables.
 - Workspace `member` can list and read environments and variables.
 - Any non-member gets `403 Workspace access denied`.
 
+## Errors
+
+- `409 Environment name already exists` when creating/renaming an environment to a name already
+  used in the workspace.
+- `409 Environment variable key already exists` when creating/renaming a variable to a key
+  already used in the environment.
+- Both conflicts are enforced by the DB's `UNIQUE` constraints (see Persistence below), not just
+  an application-level check, so they resolve correctly even when two requests race to create the
+  same name/key at the same time.
+
 ## Endpoints
 
 - `GET /api/workspaces/:workspaceId/environments`

@@ -4,6 +4,9 @@ This folder is organized by concern for the public REST API and backend runtime.
 
 - `docs/compatibility.md`: role-node / role-sdk / role-client version compatibility matrix.
 - `docs/errors.md`: Unified API error envelope and error code table.
+- Interactive API docs: run the server outside production and open `/docs` for a Swagger UI
+  backed by the live OpenAPI spec (`/docs/openapi.json`), generated from the same zod schemas
+  that validate requests.
 
 ## Architecture
 

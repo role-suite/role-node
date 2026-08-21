@@ -11,6 +11,10 @@ This module exposes workspace-scoped import/export job endpoints and returns a j
 - Workspace `member` can list and read existing jobs.
 - Non-members get `403 Workspace access denied`.
 - Create routes currently complete synchronously and return jobs in `completed` state.
+- Imports are all-or-nothing: every write (collections, folders, endpoints, examples,
+  environments, variables, and the job record itself) runs in a single DB transaction. A failure
+  partway through (a name/key conflict, an invalid reference, a DB error) rolls back everything,
+  so a failed import never leaves orphaned partial data with no job to explain it.
 
 ## Endpoints
 
@@ -70,10 +74,22 @@ Validation:
 
 - `format`: only `json` (defaults to `json`)
 - `payload`: required object with string keys and unknown values
+- `payload.collections[].folders[].parentSourceId` and
+  `payload.collections[].endpoints[].folderSourceId` must reference a `sourceId` declared
+  elsewhere in the same collection's `folders` array. A dangling/typo'd reference is rejected
+  with `400 Import payload references an unknown sourceId` before any row is written, rather than
+  silently reparenting the folder/endpoint to the collection root.
 
 Authorization:
 
 - `member` gets `403 Only workspace owners and admins can run imports and exports`.
+
+Conflicts:
+
+- `409 Environment name already exists` / `409 Environment variable key already exists` when the
+  payload's environments/variables collide with existing names/keys in the workspace (or with
+  each other within the same payload). The whole import rolls back on this error - see
+  "Behavior" above.
 
 ## Response shape
 
@@ -91,8 +107,10 @@ Each job in list/get/create responses contains:
 
 `summary` values:
 
-- Export jobs include `includeCollections`, `includeEnvironments`.
-- Import jobs include `rootKeys` and `rootKeyCount` from `payload` top-level keys.
+- Export jobs include `includeCollections`, `includeEnvironments`, `collectionCount`,
+  `environmentCount`.
+- Import jobs include `rootKeys` and `rootKeyCount` from `payload` top-level keys, plus
+  `importedCollections` and `importedEnvironments` counts.
 
 ## Implementation notes
 
@@ -105,6 +123,9 @@ Each job in list/get/create responses contains:
 - Repository storage is database-backed in `import_export_jobs`.
 - Migration: `migrations/20260322_004_create_import_export_jobs_table.migration.ts`.
 - Jobs are inserted and marked `completed` with identical `createdAt` and `completedAt` timestamps.
+- `importExportRepo.withImportExportTransaction` wraps the import write path; `collectionsRepo`
+  and `environmentsRepo` writes accept an optional `dbClient` so they participate in the same
+  transaction instead of each opening their own connection.
 
 ## Test coverage
 

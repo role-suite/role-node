@@ -103,10 +103,11 @@ Source of truth: `src/shared/errors/error-codes.ts`.
 
 ### Import/Export
 
-| Code                          | HTTP | Default message                                              |
-| ----------------------------- | ---- | ------------------------------------------------------------ |
-| `IMPORT_EXPORT_RUN_FORBIDDEN` | 403  | Only workspace owners and admins can run imports and exports |
-| `IMPORT_EXPORT_JOB_NOT_FOUND` | 404  | Import/export job not found                                  |
+| Code                                     | HTTP | Default message                                              |
+| ---------------------------------------- | ---- | ------------------------------------------------------------ |
+| `IMPORT_EXPORT_RUN_FORBIDDEN`            | 403  | Only workspace owners and admins can run imports and exports |
+| `IMPORT_EXPORT_JOB_NOT_FOUND`            | 404  | Import/export job not found                                  |
+| `IMPORT_EXPORT_INVALID_SOURCE_REFERENCE` | 400  | Import payload references an unknown sourceId                |
 
 ### System
 

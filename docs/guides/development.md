@@ -10,6 +10,10 @@ pnpm dev
 
 `pnpm dev` runs startup validation before the HTTP server starts listening (unless disabled).
 
+Once the server is running, open `http://localhost:<PORT>/docs` for interactive Swagger UI docs
+(request/try-it-out against the real API with a bearer token). Only mounted when
+`NODE_ENV !== "production"`.
+
 ## Environment and startup integrity
 
 Environment values are validated in `src/config/env.ts`.

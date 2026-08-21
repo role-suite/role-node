@@ -8,7 +8,9 @@ This module provides Postman-style workspace management for authenticated users.
 
 - Every endpoint requires `Authorization: Bearer <access-token>`.
 - Listing returns workspaces where the authenticated user is a member.
-- Creating a workspace always creates a `team` workspace and adds the creator as `owner`.
+- Creating a workspace always creates a `team` workspace and adds the creator as `owner`. The
+  workspace row and the owner membership are created in a single DB transaction, so a failure
+  partway through can't leave an ownerless, orphaned workspace behind.
 - Getting workspace details requires membership in that workspace.
 - Owners can manage team workspace members.
 - Invitations are required for members to self-join a team workspace.
@@ -74,6 +76,9 @@ Rules:
 - Only workspace owners can add members.
 - Personal workspaces cannot accept additional members.
 - Target user must already exist.
+- `409 User is already a workspace member` if the target already has a membership, including when
+  two requests race to add the same user at the same time (backed by the DB's
+  `UNIQUE(user_id, workspace_id)` constraint, not just an app-level check).
 
 ### `POST /api/workspaces/:workspaceId/invitations`
 
@@ -114,6 +119,9 @@ Rules:
 - Invitation must exist, be unexpired, and unused.
 - Invite email must match the authenticated user.
 - Personal workspaces cannot accept members.
+- `409 User is already a workspace member` if the invitee already has a membership - including a
+  double-submitted join with the same token racing itself. The membership create and the
+  invitation's accepted-at update run in one transaction.
 
 ### `POST /api/workspaces/:workspaceId/convert-to-team`
 
@@ -174,6 +182,7 @@ Query params:
   - `src/modules/workspaces/route.ts`
   - `src/modules/workspaces/controller.ts`
   - `src/modules/workspaces/service.ts`
-  - `src/modules/workspaces/repo.ts`
+  - `src/modules/workspaces/events.service.ts`
   - `src/modules/workspaces/schema.ts`
-- Persistence is delegated through auth-backed workspace/membership repo functions.
+- There is no `workspaces/repo.ts`; persistence is delegated entirely through `authRepo`
+  (`src/modules/auth/repo.ts`), including `withAuthTransaction` for the multi-write paths above.

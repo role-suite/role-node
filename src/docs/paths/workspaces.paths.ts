@@ -143,6 +143,7 @@ export const workspacesPaths: ZodOpenApiPathsObject = {
           },
         },
         ["400", "401", "403", "404", "409"],
+        { "409": "User is already a workspace member" },
       ),
     },
   },
@@ -173,6 +174,10 @@ export const workspacesPaths: ZodOpenApiPathsObject = {
           },
         },
         ["400", "401", "403", "404", "409"],
+        {
+          "409":
+            "An unexpired invitation already exists for this email, or the user is already a member",
+        },
       ),
     },
   },
@@ -201,6 +206,7 @@ export const workspacesPaths: ZodOpenApiPathsObject = {
           },
         },
         ["400", "401", "404", "409"],
+        { "409": "User is already a workspace member" },
       ),
     },
   },

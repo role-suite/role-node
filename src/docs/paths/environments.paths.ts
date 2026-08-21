@@ -68,6 +68,7 @@ export const environmentsPaths: ZodOpenApiPathsObject = {
           },
         },
         ["400", "401", "403", "409"],
+        { "409": "Environment name already exists in this workspace" },
       ),
     },
   },
@@ -116,6 +117,7 @@ export const environmentsPaths: ZodOpenApiPathsObject = {
           },
         },
         ["400", "401", "403", "404", "409"],
+        { "409": "Environment name already exists in this workspace" },
       ),
     },
     delete: {
@@ -181,6 +183,9 @@ export const environmentsPaths: ZodOpenApiPathsObject = {
           },
         },
         ["400", "401", "403", "404", "409"],
+        {
+          "409": "Environment variable key already exists in this environment",
+        },
       ),
     },
   },
@@ -229,6 +234,9 @@ export const environmentsPaths: ZodOpenApiPathsObject = {
           },
         },
         ["400", "401", "403", "404", "409"],
+        {
+          "409": "Environment variable key already exists in this environment",
+        },
       ),
     },
     delete: {

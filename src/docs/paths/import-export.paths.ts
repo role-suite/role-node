@@ -148,9 +148,13 @@ export const importExportPaths: ZodOpenApiPathsObject = {
             },
           },
         },
-        ["400", "401", "403"],
+        ["400", "401", "403", "409"],
         {
+          "400":
+            "Validation failed, or the payload references an unknown sourceId",
           "403": "Only workspace owners and admins can run imports and exports",
+          "409":
+            "Environment name or variable key already exists (the whole import is rolled back)",
         },
       ),
     },
