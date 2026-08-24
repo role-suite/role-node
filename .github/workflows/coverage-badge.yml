@@ -54,7 +54,7 @@ jobs:
           node -e "const fs=require('node:fs'); const s=JSON.parse(fs.readFileSync('coverage/coverage-summary.json','utf8')); const p=Math.round(s.total.lines.pct); const c=p>=90?'green':p>=80?'yellow':p>=70?'orange':'red'; console.log('pct=' + p); console.log('color=' + c);" >> "$GITHUB_OUTPUT"
 
       - name: Generate coverage badge
-        uses: emibcn/badge-action@v2
+        uses: emibcn/badge-action@a3657a79b3cf224ad6b98f4891b8656e524c46f9 # v2
         with:
           label: coverage
           status: ${{ steps.coverage.outputs.pct }}%
@@ -62,7 +62,7 @@ jobs:
           path: docs/badges/coverage.svg
 
       - name: Commit updated coverage badge
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@b863ae1933cb653a53c021fe36dbb774e1fb9403 # v5
         with:
           commit_message: "chore(ci): update coverage badge"
           file_pattern: docs/badges/coverage.svg
