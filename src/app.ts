@@ -11,13 +11,16 @@ import { notFoundHandler } from "./shared/middleware/not-found.js";
 import { apiRateLimiter } from "./shared/middleware/rate-limit.js";
 import { requestIdMiddleware } from "./shared/middleware/request-id.js";
 import { requestLogger } from "./shared/middleware/request-logger.js";
+import { securityHeaders } from "./shared/middleware/security-headers.js";
 
 export const app = express();
 
+app.disable("x-powered-by");
 app.use(requestIdMiddleware);
 app.use(requestLogger);
 app.use(express.json({ limit: env.REQUEST_BODY_LIMIT }));
 
+app.use(securityHeaders);
 app.get(ROUTE_SEGMENTS.health, (_req, res) => {
   appResponse.sendObject(res, 200, { status: "ok" });
 });
