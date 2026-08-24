@@ -23,6 +23,10 @@ const startServer = async (): Promise<void> => {
         localUrl: `http://localhost:${env.PORT}`,
       });
     });
+
+    httpServer.keepAliveTimeout = env.SERVER_KEEP_ALIVE_TIMEOUT_MS;
+    httpServer.headersTimeout = env.SERVER_HEADERS_TIMEOUT_MS;
+    httpServer.requestTimeout = env.SERVER_REQUEST_TIMEOUT_MS;
   } catch (error) {
     logger.error("Startup validation failed", error);
     await closeDb();

@@ -15,7 +15,7 @@ export const app = express();
 
 app.use(requestIdMiddleware);
 app.use(requestLogger);
-app.use(express.json());
+app.use(express.json({ limit: env.REQUEST_BODY_LIMIT }));
 
 app.get(ROUTE_SEGMENTS.health, (_req, res) => {
   appResponse.sendObject(res, 200, { status: "ok" });
