@@ -11,6 +11,7 @@ describe("runtime Dockerfile", () => {
     );
 
     expect(dockerfile).toContain("HEALTHCHECK");
-    expect(dockerfile).toContain("http://127.0.0.1:3000/health");
+    expect(dockerfile).toContain("process.env.PORT ?? '3000'");
+    expect(dockerfile).toContain("http://127.0.0.1:${port}/health");
   });
 });
