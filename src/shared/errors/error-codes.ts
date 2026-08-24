@@ -17,6 +17,7 @@ export const ERROR_CODES = {
     NO_WORKSPACE_MEMBERSHIP: "NO_WORKSPACE_MEMBERSHIP",
     INVALID_REFRESH_TOKEN: "INVALID_REFRESH_TOKEN",
     REFRESH_SESSION_INVALID: "REFRESH_SESSION_INVALID",
+    SESSION_NOT_FOUND: "AUTH_SESSION_NOT_FOUND",
   },
   workspaces: {
     ACCESS_DENIED: "WORKSPACE_ACCESS_DENIED",
@@ -140,6 +141,10 @@ export const ERROR_CODE_DEFINITIONS: Record<ErrorCode, ErrorCodeDefinition> = {
   REFRESH_SESSION_INVALID: {
     status: 401,
     message: "Refresh session is invalid",
+  },
+  AUTH_SESSION_NOT_FOUND: {
+    status: 404,
+    message: "Session not found",
   },
   WORKSPACE_ACCESS_DENIED: {
     status: 403,

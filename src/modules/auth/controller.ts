@@ -7,6 +7,7 @@ import {
   loginSchema,
   refreshTokenSchema,
   registerSchema,
+  sessionIdParamSchema,
   switchWorkspaceSchema,
 } from "./schema.js";
 import { authService } from "./service.js";
@@ -47,6 +48,34 @@ export const authController = {
       payload.workspaceId,
     );
     appResponse.sendObject(res, 200, result);
+  },
+
+  async listSessions(req: Request, res: Response): Promise<void> {
+    if (!req.auth) {
+      throw createAppError(ERROR_CODES.common.MISSING_AUTHENTICATED_CONTEXT);
+    }
+
+    const result = await authService.listSessions(req.auth);
+    appResponse.sendList(res, 200, result);
+  },
+
+  async revokeSession(req: Request, res: Response): Promise<void> {
+    if (!req.auth) {
+      throw createAppError(ERROR_CODES.common.MISSING_AUTHENTICATED_CONTEXT);
+    }
+
+    const { sessionId } = sessionIdParamSchema.parse(req.params);
+    await authService.revokeSession(req.auth, sessionId);
+    appResponse.sendAction(res, 200, "revoked");
+  },
+
+  async revokeOtherSessions(req: Request, res: Response): Promise<void> {
+    if (!req.auth) {
+      throw createAppError(ERROR_CODES.common.MISSING_AUTHENTICATED_CONTEXT);
+    }
+
+    const count = await authService.revokeOtherSessions(req.auth);
+    appResponse.sendObject(res, 200, { action: "revoked", count });
   },
 
   async me(req: Request, res: Response): Promise<void> {

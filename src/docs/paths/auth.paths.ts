@@ -11,10 +11,13 @@ import {
   authResponseSchema,
   meResponseSchema,
   refreshResponseSchema,
+  revokeOtherSessionsResponseSchema,
+  sessionSummarySchema,
 } from "../schemas/auth.js";
 import {
   BEARER_AUTH,
   actionConfirmationSchema,
+  listEnvelope,
   successEnvelope,
   withErrors,
 } from "../schemas/common.js";
@@ -186,6 +189,69 @@ export const authPaths: ZodOpenApiPathsObject = {
         },
         ["400", "401", "403"],
         { "403": "Not a member of the target workspace" },
+      ),
+    },
+  },
+  [ROUTE_PATTERNS.auth.sessions]: {
+    get: {
+      tags: ["Auth"],
+      summary: "List the caller's active sessions",
+      description:
+        "Returns one row per active (non-revoked, non-expired) session across all workspaces the caller has logged into, each flagged with whether it's the session backing the current access token.",
+      security: [{ [BEARER_AUTH]: [] }],
+      responses: withErrors(
+        {
+          "200": {
+            description: "Active sessions",
+            content: {
+              "application/json": {
+                schema: listEnvelope(sessionSummarySchema),
+              },
+            },
+          },
+        },
+        ["401"],
+      ),
+    },
+    delete: {
+      tags: ["Auth"],
+      summary: "Revoke all sessions except the current one",
+      description:
+        "Signs the caller out everywhere except the device making this request. Useful for a lost/stolen device.",
+      security: [{ [BEARER_AUTH]: [] }],
+      responses: withErrors(
+        {
+          "200": {
+            description: "Other sessions revoked",
+            content: {
+              "application/json": {
+                schema: successEnvelope(revokeOtherSessionsResponseSchema),
+              },
+            },
+          },
+        },
+        ["401"],
+      ),
+    },
+  },
+  [ROUTE_PATTERNS.auth.sessionById]: {
+    delete: {
+      tags: ["Auth"],
+      summary: "Revoke a specific session",
+      description:
+        "Revokes one of the caller's own sessions by id (e.g. to sign out a lost device). Not scoped to the session backing the current request.",
+      security: [{ [BEARER_AUTH]: [] }],
+      responses: withErrors(
+        {
+          "200": {
+            description: "Session revoked",
+            content: {
+              "application/json": { schema: actionConfirmationSchema },
+            },
+          },
+        },
+        ["400", "401", "404"],
+        { "404": "Session not found" },
       ),
     },
   },

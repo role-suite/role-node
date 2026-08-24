@@ -53,6 +53,16 @@ type AuthContext = {
   role: AuthRole;
 };
 
+type SessionSummary = {
+  id: number;
+  workspaceId: number;
+  workspaceName: string;
+  workspaceSlug: string;
+  createdAt: Date;
+  expiresAt: Date;
+  current: boolean;
+};
+
 const createWorkspaceNameForSingleAccount = (name: string): string => {
   const [firstName] = name.split(" ");
   return `${firstName ?? "Personal"}'s Workspace`;
@@ -306,6 +316,46 @@ export const authService = {
     const tokens = await issueTokenPair(user.id, workspace.id);
 
     return toAuthResponse(user, workspace, role, tokens);
+  },
+
+  async listSessions(
+    context: Pick<AuthContext, "userId"> & { sessionId: number },
+  ): Promise<SessionSummary[]> {
+    const sessions = await authRepo.listActiveSessionsWithWorkspaceByUser(
+      context.userId,
+    );
+
+    return sessions.map((session) => ({
+      id: session.id,
+      workspaceId: session.workspaceId,
+      workspaceName: session.workspaceName,
+      workspaceSlug: session.workspaceSlug,
+      createdAt: session.createdAt,
+      expiresAt: session.expiresAt,
+      current: session.id === context.sessionId,
+    }));
+  },
+
+  async revokeSession(
+    context: Pick<AuthContext, "userId">,
+    sessionId: number,
+  ): Promise<void> {
+    const session = await authRepo.findSessionById(sessionId);
+
+    if (!session || session.userId !== context.userId) {
+      throw createAppError(ERROR_CODES.auth.SESSION_NOT_FOUND);
+    }
+
+    await authRepo.revokeSessionById(sessionId);
+  },
+
+  async revokeOtherSessions(
+    context: Pick<AuthContext, "userId"> & { sessionId: number },
+  ): Promise<number> {
+    return authRepo.revokeAllSessionsByUserExcept(
+      context.userId,
+      context.sessionId,
+    );
   },
 
   async logout(payload: RefreshTokenInput): Promise<void> {

@@ -29,3 +29,18 @@ authRouter.post(
   requireAuth,
   authController.switchWorkspace,
 );
+authRouter.get(
+  ROUTE_SEGMENTS.auth.sessions,
+  requireAuth,
+  authController.listSessions,
+);
+authRouter.delete(
+  ROUTE_SEGMENTS.auth.sessions,
+  requireAuth,
+  authController.revokeOtherSessions,
+);
+authRouter.delete(
+  ROUTE_SEGMENTS.auth.sessionById,
+  requireAuth,
+  authController.revokeSession,
+);

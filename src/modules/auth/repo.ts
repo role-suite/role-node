@@ -56,6 +56,11 @@ export type Session = {
   createdAt: Date;
 };
 
+export type SessionWithWorkspace = Session & {
+  workspaceName: string;
+  workspaceSlug: string;
+};
+
 export type WorkspaceEvent = {
   id: number;
   workspaceId: number;
@@ -144,6 +149,11 @@ type SessionRow = {
   expires_at: Date | string;
   revoked_at: Date | string | null;
   created_at: Date | string;
+};
+
+type SessionWithWorkspaceRow = SessionRow & {
+  workspace_name: string;
+  workspace_slug: string;
 };
 
 type WorkspaceEventRow = {
@@ -296,6 +306,16 @@ const mapSessionRow = (row: SessionRow): Session => {
     expiresAt: toDate(row.expires_at),
     revokedAt: row.revoked_at ? toDate(row.revoked_at) : null,
     createdAt: toDate(row.created_at),
+  };
+};
+
+const mapSessionWithWorkspaceRow = (
+  row: SessionWithWorkspaceRow,
+): SessionWithWorkspace => {
+  return {
+    ...mapSessionRow(row),
+    workspaceName: row.workspace_name,
+    workspaceSlug: row.workspace_slug,
   };
 };
 
@@ -684,6 +704,38 @@ export const authRepo = {
       `UPDATE ${SESSIONS_TABLE} SET revoked_at = CURRENT_TIMESTAMP WHERE id = ${sessionToken} AND revoked_at IS NULL`,
       [sessionId],
     );
+  },
+
+  async listActiveSessionsWithWorkspaceByUser(
+    userId: number,
+  ): Promise<SessionWithWorkspace[]> {
+    const userToken = resolveToken(1);
+    const result = await resolveDb().query<SessionWithWorkspaceRow>(
+      `SELECT s.id, s.user_id, s.workspace_id, s.refresh_token_hash, s.expires_at, s.revoked_at, s.created_at,
+              w.name AS workspace_name, w.slug AS workspace_slug
+       FROM ${SESSIONS_TABLE} s
+       JOIN ${WORKSPACES_TABLE} w ON w.id = s.workspace_id
+       WHERE s.user_id = ${userToken} AND s.revoked_at IS NULL AND s.expires_at > CURRENT_TIMESTAMP
+       ORDER BY s.created_at DESC`,
+      [userId],
+    );
+
+    return result.rows.map(mapSessionWithWorkspaceRow);
+  },
+
+  async revokeAllSessionsByUserExcept(
+    userId: number,
+    exceptSessionId: number,
+  ): Promise<number> {
+    const userToken = resolveToken(1);
+    const exceptToken = resolveToken(2);
+    const result = await resolveDb().query(
+      `UPDATE ${SESSIONS_TABLE} SET revoked_at = CURRENT_TIMESTAMP
+       WHERE user_id = ${userToken} AND id != ${exceptToken} AND revoked_at IS NULL`,
+      [userId, exceptSessionId],
+    );
+
+    return result.rowCount;
   },
 
   async createWorkspaceEvent(

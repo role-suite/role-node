@@ -44,7 +44,12 @@ export const switchWorkspaceSchema = z
   })
   .strict();
 
+export const sessionIdParamSchema = z.object({
+  sessionId: z.coerce.number().int().positive(),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>;
 export type SwitchWorkspaceInput = z.infer<typeof switchWorkspaceSchema>;
+export type SessionIdParam = z.infer<typeof sessionIdParamSchema>;

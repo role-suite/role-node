@@ -59,3 +59,22 @@ export const meResponseSchema = z
   .meta({ id: "MeResponse" });
 
 export const refreshResponseSchema = authTokensSchema;
+
+export const sessionSummarySchema = z
+  .object({
+    id: z.number().int(),
+    workspaceId: z.number().int(),
+    workspaceName: z.string(),
+    workspaceSlug: z.string(),
+    createdAt: z.iso.datetime(),
+    expiresAt: z.iso.datetime(),
+    current: z.boolean(),
+  })
+  .meta({ id: "SessionSummary" });
+
+export const revokeOtherSessionsResponseSchema = z
+  .object({
+    action: z.literal("revoked"),
+    count: z.number().int(),
+  })
+  .meta({ id: "RevokeOtherSessionsResponse" });

@@ -12,6 +12,7 @@ const ENVIRONMENT_ID_PARAM = ":environmentId" as const;
 const VARIABLE_ID_PARAM = ":variableId" as const;
 const JOB_ID_PARAM = ":jobId" as const;
 const MEMBER_USER_ID_PARAM = ":memberUserId" as const;
+const SESSION_ID_PARAM = ":sessionId" as const;
 
 export const API_MOUNTS = {
   auth: AUTH_BASE,
@@ -27,6 +28,8 @@ export const ROUTE_SEGMENTS = {
     logout: "/logout",
     me: "/me",
     switchWorkspace: "/switch-workspace",
+    sessions: "/sessions",
+    sessionById: `/sessions/${SESSION_ID_PARAM}`,
   },
   workspaces: {
     list: "/",
@@ -80,6 +83,8 @@ export const ROUTE_PATTERNS = {
     logout: `${AUTH_BASE}${ROUTE_SEGMENTS.auth.logout}`,
     me: `${AUTH_BASE}${ROUTE_SEGMENTS.auth.me}`,
     switchWorkspace: `${AUTH_BASE}${ROUTE_SEGMENTS.auth.switchWorkspace}`,
+    sessions: `${AUTH_BASE}${ROUTE_SEGMENTS.auth.sessions}`,
+    sessionById: `${AUTH_BASE}${ROUTE_SEGMENTS.auth.sessionById}`,
   },
   workspaces: {
     list: WORKSPACES_BASE,

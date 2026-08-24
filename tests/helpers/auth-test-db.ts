@@ -1291,6 +1291,64 @@ export const createAuthTestDb = (): DatabaseClient => {
 
     if (
       normalized.startsWith(
+        "select s.id, s.user_id, s.workspace_id, s.refresh_token_hash, s.expires_at, s.revoked_at, s.created_at, w.name as workspace_name, w.slug as workspace_slug from auth_sessions s join workspaces w on w.id = s.workspace_id where s.user_id =",
+      )
+    ) {
+      const user = expectParam<number>(params, 0);
+      const now = new Date();
+      const rows = sessions
+        .filter(
+          (item) =>
+            item.user_id === user &&
+            item.revoked_at === null &&
+            item.expires_at.getTime() > now.getTime(),
+        )
+        .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
+        .flatMap((session) => {
+          const workspace = workspaces.find(
+            (item) => item.id === session.workspace_id,
+          );
+
+          if (!workspace) {
+            return [];
+          }
+
+          return [
+            {
+              ...session,
+              workspace_name: workspace.name,
+              workspace_slug: workspace.slug,
+            },
+          ];
+        });
+      return { rows: castRows<TRow>(rows), rowCount: rows.length };
+    }
+
+    if (
+      normalized.startsWith(
+        "update auth_sessions set revoked_at = current_timestamp where user_id =",
+      )
+    ) {
+      const user = expectParam<number>(params, 0);
+      const exceptSessionId = expectParam<number>(params, 1);
+      let revokedCount = 0;
+
+      for (const item of sessions) {
+        if (
+          item.user_id === user &&
+          item.id !== exceptSessionId &&
+          item.revoked_at === null
+        ) {
+          item.revoked_at = new Date();
+          revokedCount += 1;
+        }
+      }
+
+      return { rows: [] as TRow[], rowCount: revokedCount };
+    }
+
+    if (
+      normalized.startsWith(
         "update auth_sessions set revoked_at = current_timestamp",
       )
     ) {

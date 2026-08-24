@@ -56,6 +56,7 @@ Source of truth: `src/shared/errors/error-codes.ts`.
 | `NO_WORKSPACE_MEMBERSHIP` | 403  | No workspace membership found |
 | `INVALID_REFRESH_TOKEN`   | 401  | Invalid refresh token         |
 | `REFRESH_SESSION_INVALID` | 401  | Refresh session is invalid    |
+| `AUTH_SESSION_NOT_FOUND`  | 404  | Session not found             |
 
 ### Workspaces
 
