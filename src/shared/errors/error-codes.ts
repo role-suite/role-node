@@ -9,6 +9,7 @@ export const ERROR_CODES = {
     INVALID_ACCESS_TOKEN: "INVALID_ACCESS_TOKEN",
     AUTH_CONTEXT_INVALID: "AUTH_CONTEXT_INVALID",
     USER_NOT_FOUND: "USER_NOT_FOUND",
+    RATE_LIMIT_EXCEEDED: "RATE_LIMIT_EXCEEDED",
   },
   auth: {
     EMAIL_ALREADY_IN_USE: "EMAIL_ALREADY_IN_USE",
@@ -115,6 +116,10 @@ export const ERROR_CODE_DEFINITIONS: Record<ErrorCode, ErrorCodeDefinition> = {
   USER_NOT_FOUND: {
     status: 404,
     message: "User not found",
+  },
+  RATE_LIMIT_EXCEEDED: {
+    status: 429,
+    message: "Too many requests, please try again later",
   },
   EMAIL_ALREADY_IN_USE: {
     status: 409,

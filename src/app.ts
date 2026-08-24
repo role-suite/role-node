@@ -8,6 +8,7 @@ import { appResponse } from "./shared/app-response.js";
 import { errorHandler } from "./shared/errors/error-handler.js";
 import { API_MOUNTS, ROUTE_SEGMENTS } from "./shared/routes.js";
 import { notFoundHandler } from "./shared/middleware/not-found.js";
+import { apiRateLimiter } from "./shared/middleware/rate-limit.js";
 import { requestIdMiddleware } from "./shared/middleware/request-id.js";
 import { requestLogger } from "./shared/middleware/request-logger.js";
 
@@ -25,8 +26,8 @@ if (env.NODE_ENV !== "production") {
   app.use("/docs", docsRouter);
 }
 
-app.use(API_MOUNTS.auth, authRouter);
-app.use(API_MOUNTS.workspaces, workspacesRouter);
+app.use(API_MOUNTS.auth, apiRateLimiter, authRouter);
+app.use(API_MOUNTS.workspaces, apiRateLimiter, workspacesRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
