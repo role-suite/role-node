@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { pbkdf2Sync } from "node:crypto";
 
 import { vi } from "vitest";
 
@@ -10,7 +10,7 @@ import { vi } from "vitest";
 // application source for a security scanner to (rightly) flag.
 vi.mock("argon2", () => {
   const digest = (value: string): string =>
-    createHash("sha256").update(value).digest("hex");
+    pbkdf2Sync(value, "test-only-salt", 10000, 32, "sha256").toString("hex");
 
   const impl = {
     argon2d: 0,
