@@ -1,6 +1,6 @@
 # Import/Export Module
 
-Base route: `/api/workspaces/:workspaceId/import-export`
+Base route: `/api/v1/workspaces/:workspaceId/import-export`
 
 This module exposes workspace-scoped import/export job endpoints and returns a job history timeline for each workspace.
 
@@ -18,11 +18,11 @@ This module exposes workspace-scoped import/export job endpoints and returns a j
 
 ## Endpoints
 
-### `GET /api/workspaces/:workspaceId/import-export/jobs`
+### `GET /api/v1/workspaces/:workspaceId/import-export/jobs`
 
 Lists jobs for the workspace, newest first.
 
-### `GET /api/workspaces/:workspaceId/import-export/jobs/:jobId`
+### `GET /api/v1/workspaces/:workspaceId/import-export/jobs/:jobId`
 
 Returns one job by id.
 
@@ -30,7 +30,7 @@ Errors:
 
 - `404 Import/export job not found` when the job id is not present in that workspace.
 
-### `POST /api/workspaces/:workspaceId/import-export/exports`
+### `POST /api/v1/workspaces/:workspaceId/import-export/exports`
 
 Creates an export job.
 
@@ -54,7 +54,7 @@ Authorization:
 
 - `member` gets `403 Only workspace owners and admins can run imports and exports`.
 
-### `POST /api/workspaces/:workspaceId/import-export/imports`
+### `POST /api/v1/workspaces/:workspaceId/import-export/imports`
 
 Creates an import job.
 
@@ -111,6 +111,16 @@ Each job in list/get/create responses contains:
   `environmentCount`.
 - Import jobs include `rootKeys` and `rootKeyCount` from `payload` top-level keys, plus
   `importedCollections` and `importedEnvironments` counts.
+
+## Workspace sync events
+
+A completed import publishes one `workspace_events` row (`entity: "import_export_job"`,
+`action: "completed"`, `entityId: <jobId>`, `payload: { importedCollections, importedEnvironments }`)
+inside the same transaction as the rest of the import. This is what makes an import visible to
+other clients polling `GET /api/v1/workspaces/:workspaceId/updates` — without it, a bulk import
+that adds many collections/environments in one call would be invisible to everyone else on the
+workspace until they happened to refetch. Export jobs don't publish an event: they don't mutate
+workspace state, so there's nothing for other clients to sync.
 
 ## Implementation notes
 

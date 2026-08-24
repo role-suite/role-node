@@ -14,6 +14,7 @@ import {
   withImportExportTransaction,
   type ImportExportJob,
 } from "./repo.js";
+import { workspaceEventsService } from "../workspaces/events.service.js";
 import type {
   CreateWorkspaceExportInput,
   CreateWorkspaceImportInput,
@@ -465,7 +466,7 @@ export const importExportService = {
         tx,
       );
 
-      return importExportRepo.createJob(
+      const createdJob = await importExportRepo.createJob(
         {
           workspaceId,
           createdByUserId: userId,
@@ -481,6 +482,27 @@ export const importExportService = {
         },
         tx,
       );
+
+      // Bulk import writes go straight through the repos, bypassing collections/environments
+      // service.create*, which is where those modules normally publish their own per-entity
+      // events - so without this, an import is invisible to anyone polling `/updates` for the
+      // workspace even though it can add many collections/environments in one shot.
+      await workspaceEventsService.publish(
+        {
+          workspaceId,
+          actorUserId: userId,
+          entity: "import_export_job",
+          action: "completed",
+          entityId: createdJob.id,
+          payload: {
+            importedCollections: imported.collections,
+            importedEnvironments: imported.environments,
+          },
+        },
+        tx,
+      );
+
+      return createdJob;
     });
 
     return mapJob(job);
