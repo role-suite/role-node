@@ -287,6 +287,27 @@ export const authService = {
     return toAuthResponse(user, workspace, role, tokens);
   },
 
+  async switchWorkspace(
+    context: AuthContext & { sessionId: number },
+    targetWorkspaceId: number,
+  ): Promise<AuthResponse> {
+    const authContext = await authRepo.findAuthContext(
+      context.userId,
+      targetWorkspaceId,
+    );
+
+    if (!authContext) {
+      throw createAppError(ERROR_CODES.workspaces.ACCESS_DENIED);
+    }
+
+    const { user, workspace, role } = authContext;
+
+    await authRepo.revokeSessionById(context.sessionId);
+    const tokens = await issueTokenPair(user.id, workspace.id);
+
+    return toAuthResponse(user, workspace, role, tokens);
+  },
+
   async logout(payload: RefreshTokenInput): Promise<void> {
     const tokenPayload = await verifyRefreshToken(
       payload.refreshToken,

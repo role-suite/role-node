@@ -38,6 +38,13 @@ export const refreshTokenSchema = z.object({
   refreshToken: z.string().min(1),
 });
 
+export const switchWorkspaceSchema = z
+  .object({
+    workspaceId: z.coerce.number().int().positive(),
+  })
+  .strict();
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>;
+export type SwitchWorkspaceInput = z.infer<typeof switchWorkspaceSchema>;

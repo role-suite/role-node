@@ -24,3 +24,8 @@ authRouter.post(
 );
 authRouter.post(ROUTE_SEGMENTS.auth.logout, authController.logout);
 authRouter.get(ROUTE_SEGMENTS.auth.me, requireAuth, authController.me);
+authRouter.post(
+  ROUTE_SEGMENTS.auth.switchWorkspace,
+  requireAuth,
+  authController.switchWorkspace,
+);

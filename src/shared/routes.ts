@@ -26,6 +26,7 @@ export const ROUTE_SEGMENTS = {
     refresh: "/refresh",
     logout: "/logout",
     me: "/me",
+    switchWorkspace: "/switch-workspace",
   },
   workspaces: {
     list: "/",
@@ -78,6 +79,7 @@ export const ROUTE_PATTERNS = {
     refresh: `${AUTH_BASE}${ROUTE_SEGMENTS.auth.refresh}`,
     logout: `${AUTH_BASE}${ROUTE_SEGMENTS.auth.logout}`,
     me: `${AUTH_BASE}${ROUTE_SEGMENTS.auth.me}`,
+    switchWorkspace: `${AUTH_BASE}${ROUTE_SEGMENTS.auth.switchWorkspace}`,
   },
   workspaces: {
     list: WORKSPACES_BASE,

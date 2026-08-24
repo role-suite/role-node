@@ -3,7 +3,12 @@ import type { Request, Response } from "express";
 import { appResponse } from "../../shared/app-response.js";
 import { createAppError } from "../../shared/errors/app-error.js";
 import { ERROR_CODES } from "../../shared/errors/error-codes.js";
-import { loginSchema, refreshTokenSchema, registerSchema } from "./schema.js";
+import {
+  loginSchema,
+  refreshTokenSchema,
+  registerSchema,
+  switchWorkspaceSchema,
+} from "./schema.js";
 import { authService } from "./service.js";
 
 export const authController = {
@@ -29,6 +34,19 @@ export const authController = {
     const payload = refreshTokenSchema.parse(req.body);
     await authService.logout(payload);
     appResponse.sendAction(res, 200, "revoked");
+  },
+
+  async switchWorkspace(req: Request, res: Response): Promise<void> {
+    if (!req.auth) {
+      throw createAppError(ERROR_CODES.common.MISSING_AUTHENTICATED_CONTEXT);
+    }
+
+    const payload = switchWorkspaceSchema.parse(req.body);
+    const result = await authService.switchWorkspace(
+      req.auth,
+      payload.workspaceId,
+    );
+    appResponse.sendObject(res, 200, result);
   },
 
   async me(req: Request, res: Response): Promise<void> {
