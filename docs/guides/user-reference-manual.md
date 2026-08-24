@@ -26,7 +26,7 @@ Access tokens are workspace-context-aware. If the authenticated context is inval
 
 ## Auth API
 
-### `POST /api/auth/register`
+### `POST /api/v1/auth/register`
 
 Creates user + initial workspace + token pair.
 
@@ -53,7 +53,7 @@ For team account:
 }
 ```
 
-### `POST /api/auth/login`
+### `POST /api/v1/auth/login`
 
 Request:
 
@@ -64,7 +64,7 @@ Request:
 }
 ```
 
-### `POST /api/auth/refresh`
+### `POST /api/v1/auth/refresh`
 
 Request:
 
@@ -74,7 +74,7 @@ Request:
 }
 ```
 
-### `POST /api/auth/logout`
+### `POST /api/v1/auth/logout`
 
 Request:
 
@@ -84,17 +84,17 @@ Request:
 }
 ```
 
-### `GET /api/auth/me`
+### `GET /api/v1/auth/me`
 
 Returns current user, active workspace context, and memberships.
 
 ## Workspace API
 
-### `GET /api/workspaces`
+### `GET /api/v1/workspaces`
 
 List workspaces where user is a member.
 
-### `POST /api/workspaces`
+### `POST /api/v1/workspaces`
 
 Create new team workspace.
 
@@ -104,17 +104,17 @@ Request:
 { "name": "API Team" }
 ```
 
-### `GET /api/workspaces/:workspaceId`
+### `GET /api/v1/workspaces/:workspaceId`
 
 Get single workspace summary for authenticated member.
 
 ### Members
 
-- `GET /api/workspaces/:workspaceId/members`
-- `POST /api/workspaces/:workspaceId/members`
-- `PATCH /api/workspaces/:workspaceId/members/:memberUserId`
-- `DELETE /api/workspaces/:workspaceId/members/:memberUserId`
-- `POST /api/workspaces/:workspaceId/leave`
+- `GET /api/v1/workspaces/:workspaceId/members`
+- `POST /api/v1/workspaces/:workspaceId/members`
+- `PATCH /api/v1/workspaces/:workspaceId/members/:memberUserId`
+- `DELETE /api/v1/workspaces/:workspaceId/members/:memberUserId`
+- `POST /api/v1/workspaces/:workspaceId/leave`
 
 Add member request:
 
@@ -135,11 +135,11 @@ Update role request:
 
 ### Collection CRUD
 
-- `GET /api/workspaces/:workspaceId/collections`
-- `GET /api/workspaces/:workspaceId/collections/:collectionId`
-- `POST /api/workspaces/:workspaceId/collections`
-- `PATCH /api/workspaces/:workspaceId/collections/:collectionId`
-- `DELETE /api/workspaces/:workspaceId/collections/:collectionId`
+- `GET /api/v1/workspaces/:workspaceId/collections`
+- `GET /api/v1/workspaces/:workspaceId/collections/:collectionId`
+- `POST /api/v1/workspaces/:workspaceId/collections`
+- `PATCH /api/v1/workspaces/:workspaceId/collections/:collectionId`
+- `DELETE /api/v1/workspaces/:workspaceId/collections/:collectionId`
 
 Create request:
 
@@ -152,10 +152,10 @@ Create request:
 
 ### Collection folders
 
-- `GET /api/workspaces/:workspaceId/collections/:collectionId/folders`
-- `POST /api/workspaces/:workspaceId/collections/:collectionId/folders`
-- `PATCH /api/workspaces/:workspaceId/collections/:collectionId/folders/:folderId`
-- `DELETE /api/workspaces/:workspaceId/collections/:collectionId/folders/:folderId`
+- `GET /api/v1/workspaces/:workspaceId/collections/:collectionId/folders`
+- `POST /api/v1/workspaces/:workspaceId/collections/:collectionId/folders`
+- `PATCH /api/v1/workspaces/:workspaceId/collections/:collectionId/folders/:folderId`
+- `DELETE /api/v1/workspaces/:workspaceId/collections/:collectionId/folders/:folderId`
 
 Create folder request:
 
@@ -169,11 +169,11 @@ Create folder request:
 
 ### Endpoints inside collection
 
-- `GET /api/workspaces/:workspaceId/collections/:collectionId/endpoints`
-- `GET /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
-- `POST /api/workspaces/:workspaceId/collections/:collectionId/endpoints`
-- `PATCH /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
-- `DELETE /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
+- `GET /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints`
+- `GET /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
+- `POST /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints`
+- `PATCH /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
+- `DELETE /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
 
 Create endpoint request:
 
@@ -199,10 +199,10 @@ Create endpoint request:
 
 ### Endpoint examples
 
-- `GET /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples`
-- `POST /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples`
-- `PATCH /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples/:exampleId`
-- `DELETE /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples/:exampleId`
+- `GET /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples`
+- `POST /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples`
+- `PATCH /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples/:exampleId`
+- `DELETE /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples/:exampleId`
 
 Create example request:
 
@@ -281,11 +281,11 @@ Supported in collection endpoint payloads.
 
 ### Environment CRUD
 
-- `GET /api/workspaces/:workspaceId/environments`
-- `GET /api/workspaces/:workspaceId/environments/:environmentId`
-- `POST /api/workspaces/:workspaceId/environments`
-- `PATCH /api/workspaces/:workspaceId/environments/:environmentId`
-- `DELETE /api/workspaces/:workspaceId/environments/:environmentId`
+- `GET /api/v1/workspaces/:workspaceId/environments`
+- `GET /api/v1/workspaces/:workspaceId/environments/:environmentId`
+- `POST /api/v1/workspaces/:workspaceId/environments`
+- `PATCH /api/v1/workspaces/:workspaceId/environments/:environmentId`
+- `DELETE /api/v1/workspaces/:workspaceId/environments/:environmentId`
 
 Create environment request:
 
@@ -295,11 +295,11 @@ Create environment request:
 
 ### Variables
 
-- `GET /api/workspaces/:workspaceId/environments/:environmentId/variables`
-- `GET /api/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
-- `POST /api/workspaces/:workspaceId/environments/:environmentId/variables`
-- `PATCH /api/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
-- `DELETE /api/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
+- `GET /api/v1/workspaces/:workspaceId/environments/:environmentId/variables`
+- `GET /api/v1/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
+- `POST /api/v1/workspaces/:workspaceId/environments/:environmentId/variables`
+- `PATCH /api/v1/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
+- `DELETE /api/v1/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
 
 Create variable request:
 
@@ -317,15 +317,15 @@ Create variable request:
 
 ### List jobs
 
-`GET /api/workspaces/:workspaceId/import-export/jobs`
+`GET /api/v1/workspaces/:workspaceId/import-export/jobs`
 
 ### Get single job
 
-`GET /api/workspaces/:workspaceId/import-export/jobs/:jobId`
+`GET /api/v1/workspaces/:workspaceId/import-export/jobs/:jobId`
 
 ### Create export job
 
-`POST /api/workspaces/:workspaceId/import-export/exports`
+`POST /api/v1/workspaces/:workspaceId/import-export/exports`
 
 Request:
 
@@ -339,7 +339,7 @@ Request:
 
 ### Create import job
 
-`POST /api/workspaces/:workspaceId/import-export/imports`
+`POST /api/v1/workspaces/:workspaceId/import-export/imports`
 
 Request:
 

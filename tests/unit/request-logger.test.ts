@@ -75,7 +75,7 @@ describe("request logger middleware", () => {
 
     const request = {
       method: "POST",
-      originalUrl: "/api/workspaces",
+      originalUrl: "/api/v1/workspaces",
       ip: "127.0.0.1",
       socket: { remoteAddress: "127.0.0.1" },
       header: () => undefined,
@@ -93,7 +93,7 @@ describe("request logger middleware", () => {
       expect.objectContaining({
         requestId,
         method: "POST",
-        path: "/api/workspaces",
+        path: "/api/v1/workspaces",
         ip: "127.0.0.1",
       }),
     );
@@ -144,7 +144,7 @@ describe("request logger middleware", () => {
 
     const request = {
       method: "GET",
-      originalUrl: "/api/workspaces",
+      originalUrl: "/api/v1/workspaces",
       ip: "127.0.0.1",
       socket: { remoteAddress: "127.0.0.1" },
       header: (name: string) =>
@@ -159,7 +159,7 @@ describe("request logger middleware", () => {
       expect.objectContaining({
         requestId: "closed-id",
         method: "GET",
-        path: "/api/workspaces",
+        path: "/api/v1/workspaces",
         ip: "127.0.0.1",
       }),
     );

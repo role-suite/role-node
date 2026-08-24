@@ -21,13 +21,13 @@ describe("workspace environments e2e flow", () => {
   });
 
   it("runs end-to-end collaboration with environments and variables", async () => {
-    const owner = await request(app).post("/api/auth/register").send({
+    const owner = await request(app).post("/api/v1/auth/register").send({
       name: "Owner",
       email: "owner@example.com",
       password: "password123",
       accountType: "single",
     });
-    const member = await request(app).post("/api/auth/register").send({
+    const member = await request(app).post("/api/v1/auth/register").send({
       name: "Member",
       email: "member@example.com",
       password: "password123",
@@ -38,20 +38,20 @@ describe("workspace environments e2e flow", () => {
     const memberToken = member.body.data.tokens.accessToken;
 
     const workspace = await request(app)
-      .post("/api/workspaces")
+      .post("/api/v1/workspaces")
       .set("Authorization", `Bearer ${ownerToken}`)
       .send({ name: "API Team" });
     expect(workspace.status).toBe(201);
     const workspaceId = workspace.body.data.id as number;
 
     const addMember = await request(app)
-      .post(`/api/workspaces/${workspaceId}/members`)
+      .post(`/api/v1/workspaces/${workspaceId}/members`)
       .set("Authorization", `Bearer ${ownerToken}`)
       .send({ email: "member@example.com", role: "member" });
     expect(addMember.status).toBe(201);
 
     const environment = await request(app)
-      .post(`/api/workspaces/${workspaceId}/environments`)
+      .post(`/api/v1/workspaces/${workspaceId}/environments`)
       .set("Authorization", `Bearer ${ownerToken}`)
       .send({ name: "Staging" });
     expect(environment.status).toBe(201);
@@ -59,7 +59,7 @@ describe("workspace environments e2e flow", () => {
 
     const variable = await request(app)
       .post(
-        `/api/workspaces/${workspaceId}/environments/${environmentId}/variables`,
+        `/api/v1/workspaces/${workspaceId}/environments/${environmentId}/variables`,
       )
       .set("Authorization", `Bearer ${ownerToken}`)
       .send({ key: "apiUrl", value: "https://staging.example.com" });
@@ -68,14 +68,14 @@ describe("workspace environments e2e flow", () => {
 
     const memberReadsVariable = await request(app)
       .get(
-        `/api/workspaces/${workspaceId}/environments/${environmentId}/variables/${variableId}`,
+        `/api/v1/workspaces/${workspaceId}/environments/${environmentId}/variables/${variableId}`,
       )
       .set("Authorization", `Bearer ${memberToken}`);
     expect(memberReadsVariable.status).toBe(200);
 
     const memberWritesVariable = await request(app)
       .patch(
-        `/api/workspaces/${workspaceId}/environments/${environmentId}/variables/${variableId}`,
+        `/api/v1/workspaces/${workspaceId}/environments/${environmentId}/variables/${variableId}`,
       )
       .set("Authorization", `Bearer ${memberToken}`)
       .send({ value: "https://blocked.example.com" });
@@ -83,7 +83,7 @@ describe("workspace environments e2e flow", () => {
 
     const ownerUpdatesVariable = await request(app)
       .patch(
-        `/api/workspaces/${workspaceId}/environments/${environmentId}/variables/${variableId}`,
+        `/api/v1/workspaces/${workspaceId}/environments/${environmentId}/variables/${variableId}`,
       )
       .set("Authorization", `Bearer ${ownerToken}`)
       .send({ value: "https://prod.example.com", isSecret: true });
@@ -91,7 +91,7 @@ describe("workspace environments e2e flow", () => {
 
     const ownerDeletesVariable = await request(app)
       .delete(
-        `/api/workspaces/${workspaceId}/environments/${environmentId}/variables/${variableId}`,
+        `/api/v1/workspaces/${workspaceId}/environments/${environmentId}/variables/${variableId}`,
       )
       .set("Authorization", `Bearer ${ownerToken}`);
     expect(ownerDeletesVariable.status).toBe(200);

@@ -1,4 +1,4 @@
-export const API_PREFIX = "/api" as const;
+export const API_PREFIX = "/api/v1" as const;
 
 const AUTH_BASE = `${API_PREFIX}/auth` as const;
 const WORKSPACES_BASE = `${API_PREFIX}/workspaces` as const;
@@ -124,30 +124,30 @@ export const ROUTE_PATTERNS = {
 
 export const routeBuilders = {
   workspaceMembers: (workspaceId: number | string): string => {
-    return `/api/workspaces/${workspaceId}/members`;
+    return `${WORKSPACES_BASE}/${workspaceId}/members`;
   },
   workspaceCollections: (workspaceId: number | string): string => {
-    return `/api/workspaces/${workspaceId}/collections`;
+    return `${WORKSPACES_BASE}/${workspaceId}/collections`;
   },
   workspaceCollectionEndpoints: (
     workspaceId: number | string,
     collectionId: number | string,
   ): string => {
-    return `/api/workspaces/${workspaceId}/collections/${collectionId}/endpoints`;
+    return `${WORKSPACES_BASE}/${workspaceId}/collections/${collectionId}/endpoints`;
   },
   workspaceImportExportExports: (workspaceId: number | string): string => {
-    return `/api/workspaces/${workspaceId}/import-export/exports`;
+    return `${WORKSPACES_BASE}/${workspaceId}/import-export/exports`;
   },
   workspaceImportExportImports: (workspaceId: number | string): string => {
-    return `/api/workspaces/${workspaceId}/import-export/imports`;
+    return `${WORKSPACES_BASE}/${workspaceId}/import-export/imports`;
   },
   workspaceImportExportJobs: (workspaceId: number | string): string => {
-    return `/api/workspaces/${workspaceId}/import-export/jobs`;
+    return `${WORKSPACES_BASE}/${workspaceId}/import-export/jobs`;
   },
   workspaceImportExportJobById: (
     workspaceId: number | string,
     jobId: number | string,
   ): string => {
-    return `/api/workspaces/${workspaceId}/import-export/jobs/${jobId}`;
+    return `${WORKSPACES_BASE}/${workspaceId}/import-export/jobs/${jobId}`;
   },
 } as const;

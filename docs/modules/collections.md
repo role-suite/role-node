@@ -1,6 +1,6 @@
 # Collections Module
 
-Base route: `/api/workspaces/:workspaceId/collections`
+Base route: `/api/v1/workspaces/:workspaceId/collections`
 
 This module stores API endpoint collections within a workspace.
 
@@ -22,33 +22,33 @@ Endpoint request body modes:
 
 ## Endpoints
 
-- `GET /api/workspaces/:workspaceId/collections`
-- `GET /api/workspaces/:workspaceId/collections/:collectionId`
-- `POST /api/workspaces/:workspaceId/collections`
-- `PATCH /api/workspaces/:workspaceId/collections/:collectionId`
-- `DELETE /api/workspaces/:workspaceId/collections/:collectionId`
+- `GET /api/v1/workspaces/:workspaceId/collections`
+- `GET /api/v1/workspaces/:workspaceId/collections/:collectionId`
+- `POST /api/v1/workspaces/:workspaceId/collections`
+- `PATCH /api/v1/workspaces/:workspaceId/collections/:collectionId`
+- `DELETE /api/v1/workspaces/:workspaceId/collections/:collectionId`
 
 ### Collection endpoint routes
 
-- `GET /api/workspaces/:workspaceId/collections/:collectionId/endpoints`
-- `GET /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
-- `POST /api/workspaces/:workspaceId/collections/:collectionId/endpoints`
-- `PATCH /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
-- `DELETE /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
+- `GET /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints`
+- `GET /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
+- `POST /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints`
+- `PATCH /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
+- `DELETE /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
 
 ### Folder routes
 
-- `GET /api/workspaces/:workspaceId/collections/:collectionId/folders`
-- `POST /api/workspaces/:workspaceId/collections/:collectionId/folders`
-- `PATCH /api/workspaces/:workspaceId/collections/:collectionId/folders/:folderId`
-- `DELETE /api/workspaces/:workspaceId/collections/:collectionId/folders/:folderId`
+- `GET /api/v1/workspaces/:workspaceId/collections/:collectionId/folders`
+- `POST /api/v1/workspaces/:workspaceId/collections/:collectionId/folders`
+- `PATCH /api/v1/workspaces/:workspaceId/collections/:collectionId/folders/:folderId`
+- `DELETE /api/v1/workspaces/:workspaceId/collections/:collectionId/folders/:folderId`
 
 ### Endpoint example routes
 
-- `GET /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples`
-- `POST /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples`
-- `PATCH /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples/:exampleId`
-- `DELETE /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples/:exampleId`
+- `GET /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples`
+- `POST /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples`
+- `PATCH /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples/:exampleId`
+- `DELETE /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples/:exampleId`
 
 ## Request payloads
 

@@ -1,6 +1,6 @@
 # Environments Module
 
-Base route: `/api/workspaces/:workspaceId/environments`
+Base route: `/api/v1/workspaces/:workspaceId/environments`
 
 This module stores workspace-scoped environments and their key/value variables.
 
@@ -22,19 +22,19 @@ This module stores workspace-scoped environments and their key/value variables.
 
 ## Endpoints
 
-- `GET /api/workspaces/:workspaceId/environments`
-- `GET /api/workspaces/:workspaceId/environments/:environmentId`
-- `POST /api/workspaces/:workspaceId/environments`
-- `PATCH /api/workspaces/:workspaceId/environments/:environmentId`
-- `DELETE /api/workspaces/:workspaceId/environments/:environmentId`
+- `GET /api/v1/workspaces/:workspaceId/environments`
+- `GET /api/v1/workspaces/:workspaceId/environments/:environmentId`
+- `POST /api/v1/workspaces/:workspaceId/environments`
+- `PATCH /api/v1/workspaces/:workspaceId/environments/:environmentId`
+- `DELETE /api/v1/workspaces/:workspaceId/environments/:environmentId`
 
 ### Variable routes
 
-- `GET /api/workspaces/:workspaceId/environments/:environmentId/variables`
-- `GET /api/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
-- `POST /api/workspaces/:workspaceId/environments/:environmentId/variables`
-- `PATCH /api/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
-- `DELETE /api/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
+- `GET /api/v1/workspaces/:workspaceId/environments/:environmentId/variables`
+- `GET /api/v1/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
+- `POST /api/v1/workspaces/:workspaceId/environments/:environmentId/variables`
+- `PATCH /api/v1/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
+- `DELETE /api/v1/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
 
 ## Request payloads
 

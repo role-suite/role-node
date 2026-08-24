@@ -19,7 +19,7 @@ describe("workspaces integration", () => {
 
   it("creates and lists workspaces for current user", async () => {
     const registerResponse = await request(app)
-      .post("/api/auth/register")
+      .post("/api/v1/auth/register")
       .send({
         name: "Altay",
         email: "altay@example.com",
@@ -29,7 +29,7 @@ describe("workspaces integration", () => {
     const accessToken = registerResponse.body.data.tokens.accessToken;
 
     const createResponse = await request(app)
-      .post("/api/workspaces")
+      .post("/api/v1/workspaces")
       .set("Authorization", `Bearer ${accessToken}`)
       .send({ name: "Platform Team" });
 
@@ -38,7 +38,7 @@ describe("workspaces integration", () => {
     expect(createResponse.body.data.role).toBe("owner");
 
     const listResponse = await request(app)
-      .get("/api/workspaces")
+      .get("/api/v1/workspaces")
       .set("Authorization", `Bearer ${accessToken}`);
 
     expect(listResponse.status).toBe(200);
@@ -47,7 +47,7 @@ describe("workspaces integration", () => {
 
   it("returns workspace details for member", async () => {
     const registerResponse = await request(app)
-      .post("/api/auth/register")
+      .post("/api/v1/auth/register")
       .send({
         name: "Altay",
         email: "altay@example.com",
@@ -58,7 +58,7 @@ describe("workspaces integration", () => {
     const workspaceId = registerResponse.body.data.workspace.id;
 
     const response = await request(app)
-      .get(`/api/workspaces/${workspaceId}`)
+      .get(`/api/v1/workspaces/${workspaceId}`)
       .set("Authorization", `Bearer ${accessToken}`);
 
     expect(response.status).toBe(200);
@@ -66,13 +66,13 @@ describe("workspaces integration", () => {
   });
 
   it("denies access for non-member", async () => {
-    const first = await request(app).post("/api/auth/register").send({
+    const first = await request(app).post("/api/v1/auth/register").send({
       name: "First",
       email: "first@example.com",
       password: "password123",
       accountType: "single",
     });
-    const second = await request(app).post("/api/auth/register").send({
+    const second = await request(app).post("/api/v1/auth/register").send({
       name: "Second",
       email: "second@example.com",
       password: "password123",
@@ -83,20 +83,20 @@ describe("workspaces integration", () => {
     const secondWorkspaceId = second.body.data.workspace.id;
 
     const response = await request(app)
-      .get(`/api/workspaces/${secondWorkspaceId}`)
+      .get(`/api/v1/workspaces/${secondWorkspaceId}`)
       .set("Authorization", `Bearer ${firstToken}`);
 
     expect(response.status).toBe(403);
   });
 
   it("manages members for team workspaces", async () => {
-    const owner = await request(app).post("/api/auth/register").send({
+    const owner = await request(app).post("/api/v1/auth/register").send({
       name: "Owner",
       email: "owner@example.com",
       password: "password123",
       accountType: "single",
     });
-    const member = await request(app).post("/api/auth/register").send({
+    const member = await request(app).post("/api/v1/auth/register").send({
       name: "Member",
       email: "member@example.com",
       password: "password123",
@@ -107,28 +107,28 @@ describe("workspaces integration", () => {
     const memberId = member.body.data.user.id as number;
 
     const created = await request(app)
-      .post("/api/workspaces")
+      .post("/api/v1/workspaces")
       .set("Authorization", `Bearer ${ownerToken}`)
       .send({ name: "Collab Team" });
 
     const workspaceId = created.body.data.id as number;
 
     const addMemberResponse = await request(app)
-      .post(`/api/workspaces/${workspaceId}/members`)
+      .post(`/api/v1/workspaces/${workspaceId}/members`)
       .set("Authorization", `Bearer ${ownerToken}`)
       .send({ email: "member@example.com", role: "member" });
 
     expect(addMemberResponse.status).toBe(201);
 
     const listMembersResponse = await request(app)
-      .get(`/api/workspaces/${workspaceId}/members`)
+      .get(`/api/v1/workspaces/${workspaceId}/members`)
       .set("Authorization", `Bearer ${ownerToken}`);
 
     expect(listMembersResponse.status).toBe(200);
     expect(listMembersResponse.body.data.items).toHaveLength(2);
 
     const updateRoleResponse = await request(app)
-      .patch(`/api/workspaces/${workspaceId}/members/${memberId}`)
+      .patch(`/api/v1/workspaces/${workspaceId}/members/${memberId}`)
       .set("Authorization", `Bearer ${ownerToken}`)
       .send({ role: "admin" });
 
@@ -136,20 +136,20 @@ describe("workspaces integration", () => {
     expect(updateRoleResponse.body.data.role).toBe("admin");
 
     const removeMemberResponse = await request(app)
-      .delete(`/api/workspaces/${workspaceId}/members/${memberId}`)
+      .delete(`/api/v1/workspaces/${workspaceId}/members/${memberId}`)
       .set("Authorization", `Bearer ${ownerToken}`);
 
     expect(removeMemberResponse.status).toBe(200);
   });
 
   it("invites and joins workspace via token", async () => {
-    const owner = await request(app).post("/api/auth/register").send({
+    const owner = await request(app).post("/api/v1/auth/register").send({
       name: "Owner",
       email: "owner@example.com",
       password: "password123",
       accountType: "single",
     });
-    const invitee = await request(app).post("/api/auth/register").send({
+    const invitee = await request(app).post("/api/v1/auth/register").send({
       name: "Invitee",
       email: "invitee@example.com",
       password: "password123",
@@ -160,14 +160,14 @@ describe("workspaces integration", () => {
     const inviteeToken = invitee.body.data.tokens.accessToken;
 
     const created = await request(app)
-      .post("/api/workspaces")
+      .post("/api/v1/workspaces")
       .set("Authorization", `Bearer ${ownerToken}`)
       .send({ name: "Invite Team" });
 
     const workspaceId = created.body.data.id as number;
 
     const inviteResponse = await request(app)
-      .post(`/api/workspaces/${workspaceId}/invitations`)
+      .post(`/api/v1/workspaces/${workspaceId}/invitations`)
       .set("Authorization", `Bearer ${ownerToken}`)
       .send({ email: "invitee@example.com", role: "member" });
 
@@ -175,7 +175,7 @@ describe("workspaces integration", () => {
     expect(inviteResponse.body.data.token).toBeTruthy();
 
     const joinResponse = await request(app)
-      .post("/api/workspaces/join")
+      .post("/api/v1/workspaces/join")
       .set("Authorization", `Bearer ${inviteeToken}`)
       .send({ token: inviteResponse.body.data.token });
 
@@ -185,7 +185,7 @@ describe("workspaces integration", () => {
 
   it("converts personal workspace to team", async () => {
     const registerResponse = await request(app)
-      .post("/api/auth/register")
+      .post("/api/v1/auth/register")
       .send({
         name: "Altay",
         email: "altay@example.com",
@@ -197,7 +197,7 @@ describe("workspaces integration", () => {
     const workspaceId = registerResponse.body.data.workspace.id;
 
     const convertResponse = await request(app)
-      .post(`/api/workspaces/${workspaceId}/convert-to-team`)
+      .post(`/api/v1/workspaces/${workspaceId}/convert-to-team`)
       .set("Authorization", `Bearer ${accessToken}`)
       .send({ name: "Altay Team" });
 
@@ -207,13 +207,13 @@ describe("workspaces integration", () => {
   });
 
   it("streams workspace updates by cursor polling", async () => {
-    const owner = await request(app).post("/api/auth/register").send({
+    const owner = await request(app).post("/api/v1/auth/register").send({
       name: "Owner",
       email: "owner@example.com",
       password: "password123",
       accountType: "single",
     });
-    const member = await request(app).post("/api/auth/register").send({
+    const member = await request(app).post("/api/v1/auth/register").send({
       name: "Member",
       email: "member@example.com",
       password: "password123",
@@ -224,19 +224,19 @@ describe("workspaces integration", () => {
     const memberId = member.body.data.user.id as number;
 
     const created = await request(app)
-      .post("/api/workspaces")
+      .post("/api/v1/workspaces")
       .set("Authorization", `Bearer ${ownerToken}`)
       .send({ name: "Realtime Team" });
 
     const workspaceId = created.body.data.id as number;
 
     await request(app)
-      .post(`/api/workspaces/${workspaceId}/members`)
+      .post(`/api/v1/workspaces/${workspaceId}/members`)
       .set("Authorization", `Bearer ${ownerToken}`)
       .send({ email: "member@example.com", role: "member" });
 
     const firstPoll = await request(app)
-      .get(`/api/workspaces/${workspaceId}/updates?since=0&limit=50`)
+      .get(`/api/v1/workspaces/${workspaceId}/updates?since=0&limit=50`)
       .set("Authorization", `Bearer ${ownerToken}`);
 
     expect(firstPoll.status).toBe(200);
@@ -246,13 +246,13 @@ describe("workspaces integration", () => {
     const nextCursor = firstPoll.body.data.cursor.next as number;
 
     await request(app)
-      .patch(`/api/workspaces/${workspaceId}/members/${memberId}`)
+      .patch(`/api/v1/workspaces/${workspaceId}/members/${memberId}`)
       .set("Authorization", `Bearer ${ownerToken}`)
       .send({ role: "admin" });
 
     const secondPoll = await request(app)
       .get(
-        `/api/workspaces/${workspaceId}/updates?since=${nextCursor}&limit=50`,
+        `/api/v1/workspaces/${workspaceId}/updates?since=${nextCursor}&limit=50`,
       )
       .set("Authorization", `Bearer ${ownerToken}`);
 

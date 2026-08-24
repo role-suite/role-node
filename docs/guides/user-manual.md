@@ -24,7 +24,7 @@ curl -s http://localhost:3000/health
 ## 2) Register and capture auth values
 
 ```bash
-curl -s -X POST http://localhost:3000/api/auth/register \
+curl -s -X POST http://localhost:3000/api/v1/auth/register \
   -H 'Content-Type: application/json' \
   -d '{
     "name": "Alice Example",
@@ -46,7 +46,7 @@ Save:
 ACCESS_TOKEN="<access-token>"
 WORKSPACE_ID="<workspace-id>"
 
-curl -s -X POST "http://localhost:3000/api/workspaces/${WORKSPACE_ID}/collections" \
+curl -s -X POST "http://localhost:3000/api/v1/workspaces/${WORKSPACE_ID}/collections" \
   -H "Authorization: Bearer ${ACCESS_TOKEN}" \
   -H 'Content-Type: application/json' \
   -d '{"name":"Orders API","description":"Orders endpoints"}'
@@ -57,7 +57,7 @@ curl -s -X POST "http://localhost:3000/api/workspaces/${WORKSPACE_ID}/collection
 ```bash
 COLLECTION_ID="<collection-id>"
 
-curl -s -X POST "http://localhost:3000/api/workspaces/${WORKSPACE_ID}/collections/${COLLECTION_ID}/endpoints" \
+curl -s -X POST "http://localhost:3000/api/v1/workspaces/${WORKSPACE_ID}/collections/${COLLECTION_ID}/endpoints" \
   -H "Authorization: Bearer ${ACCESS_TOKEN}" \
   -H 'Content-Type: application/json' \
   -d '{
@@ -74,7 +74,7 @@ curl -s -X POST "http://localhost:3000/api/workspaces/${WORKSPACE_ID}/collection
 Create environment:
 
 ```bash
-curl -s -X POST "http://localhost:3000/api/workspaces/${WORKSPACE_ID}/environments" \
+curl -s -X POST "http://localhost:3000/api/v1/workspaces/${WORKSPACE_ID}/environments" \
   -H "Authorization: Bearer ${ACCESS_TOKEN}" \
   -H 'Content-Type: application/json' \
   -d '{"name":"Dev"}'
@@ -82,14 +82,14 @@ curl -s -X POST "http://localhost:3000/api/workspaces/${WORKSPACE_ID}/environmen
 
 Then add variables using:
 
-- `POST /api/workspaces/:workspaceId/environments/:environmentId/variables`
+- `POST /api/v1/workspaces/:workspaceId/environments/:environmentId/variables`
 
 ## 6) Optional organization features
 
 - Folders:
-  - `GET/POST/PATCH/DELETE /api/workspaces/:workspaceId/collections/:collectionId/folders`
+  - `GET/POST/PATCH/DELETE /api/v1/workspaces/:workspaceId/collections/:collectionId/folders`
 - Endpoint examples:
-  - `GET/POST/PATCH/DELETE /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples`
+  - `GET/POST/PATCH/DELETE /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples`
 
 ## 7) Body modes quick reference
 

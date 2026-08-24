@@ -59,7 +59,7 @@ describe("error handler", () => {
       result.error,
       {
         method: "GET",
-        originalUrl: "/api/workspaces/unknown/collections",
+        originalUrl: "/api/v1/workspaces/unknown/collections",
         params: { workspaceId: "unknown" },
         query: {},
       } as never,
@@ -96,7 +96,7 @@ describe("error handler", () => {
       result.error,
       {
         method: "GET",
-        originalUrl: "/api/workspaces/1/collections/1774693508741-f8c1701d",
+        originalUrl: "/api/v1/workspaces/1/collections/1774693508741-f8c1701d",
         params: {},
         query: {},
       } as never,

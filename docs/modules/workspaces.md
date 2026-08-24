@@ -1,6 +1,6 @@
 # Workspaces Module
 
-Base route: `/api/workspaces`
+Base route: `/api/v1/workspaces`
 
 This module provides Postman-style workspace management for authenticated users.
 
@@ -17,7 +17,7 @@ This module provides Postman-style workspace management for authenticated users.
 
 ## Endpoints
 
-### `GET /api/workspaces`
+### `GET /api/v1/workspaces`
 
 Returns all workspaces for the current user.
 
@@ -29,7 +29,7 @@ Response item shape:
 - `type`
 - `role`
 
-### `POST /api/workspaces`
+### `POST /api/v1/workspaces`
 
 Creates a new team workspace.
 
@@ -45,7 +45,7 @@ Validation:
 
 - `name`: string, trimmed, min 2, max 120
 
-### `GET /api/workspaces/:workspaceId`
+### `GET /api/v1/workspaces/:workspaceId`
 
 Returns workspace summary for current user membership.
 
@@ -54,11 +54,11 @@ Errors:
 - `403 Workspace access denied` when user is not a member
 - `404 Workspace not found` when membership exists but workspace row is missing
 
-### `GET /api/workspaces/:workspaceId/members`
+### `GET /api/v1/workspaces/:workspaceId/members`
 
 Lists members of the workspace for any current workspace member.
 
-### `POST /api/workspaces/:workspaceId/members`
+### `POST /api/v1/workspaces/:workspaceId/members`
 
 Adds an existing user to a team workspace.
 
@@ -80,7 +80,7 @@ Rules:
   two requests race to add the same user at the same time (backed by the DB's
   `UNIQUE(user_id, workspace_id)` constraint, not just an app-level check).
 
-### `POST /api/workspaces/:workspaceId/invitations`
+### `POST /api/v1/workspaces/:workspaceId/invitations`
 
 Creates a join invitation for a team workspace.
 
@@ -102,7 +102,7 @@ Rules:
 
 Response includes a `token` that should be delivered to the invitee.
 
-### `POST /api/workspaces/join`
+### `POST /api/v1/workspaces/join`
 
 Accepts an invitation token and joins the workspace.
 
@@ -123,7 +123,7 @@ Rules:
   double-submitted join with the same token racing itself. The membership create and the
   invitation's accepted-at update run in one transaction.
 
-### `POST /api/workspaces/:workspaceId/convert-to-team`
+### `POST /api/v1/workspaces/:workspaceId/convert-to-team`
 
 Converts a personal workspace into a team workspace.
 
@@ -140,7 +140,7 @@ Rules:
 - Only workspace owners can convert.
 - Already-team workspaces cannot be converted.
 
-### `PATCH /api/workspaces/:workspaceId/members/:memberUserId`
+### `PATCH /api/v1/workspaces/:workspaceId/members/:memberUserId`
 
 Updates workspace role (`member` or `admin`) for an existing member.
 
@@ -149,7 +149,7 @@ Rules:
 - Only workspace owners can update roles.
 - Owner role cannot be reassigned through this endpoint.
 
-### `DELETE /api/workspaces/:workspaceId/members/:memberUserId`
+### `DELETE /api/v1/workspaces/:workspaceId/members/:memberUserId`
 
 Removes a member from the workspace.
 
@@ -159,7 +159,7 @@ Rules:
 - Owner cannot remove themselves here; use leave endpoint.
 - Last owner cannot be removed.
 
-### `POST /api/workspaces/:workspaceId/leave`
+### `POST /api/v1/workspaces/:workspaceId/leave`
 
 Current user leaves the workspace.
 
@@ -167,7 +167,7 @@ Rules:
 
 - Last workspace owner cannot leave.
 
-### `GET /api/workspaces/:workspaceId/updates`
+### `GET /api/v1/workspaces/:workspaceId/updates`
 
 Lists workspace events (member changes, invitations) by cursor.
 

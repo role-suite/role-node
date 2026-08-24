@@ -9,8 +9,8 @@ Core app wiring lives in `src/app.ts`.
 - `requestLogger` middleware runs first
 - `express.json()` parses JSON payloads
 - Routes:
-  - `/api/auth` (public + authenticated user profile)
-  - `/api/workspaces` (auth required)
+  - `/api/v1/auth` (public + authenticated user profile)
+  - `/api/v1/workspaces` (auth required)
 - `notFoundHandler` and `errorHandler` are terminal middleware
 
 The system follows module boundaries:

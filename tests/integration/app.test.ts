@@ -68,7 +68,7 @@ describe("App integration", () => {
   });
 
   it("returns 404 for removed users endpoint", async () => {
-    const listResponse = await request(app).get("/api/users");
+    const listResponse = await request(app).get("/api/v1/users");
 
     expect(listResponse.status).toBe(404);
     expect(listResponse.body.success).toBe(false);
