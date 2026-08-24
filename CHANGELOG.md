@@ -35,6 +35,19 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ### Added
 
+- `POST /api/v1/auth/switch-workspace`: reissues a token pair scoped to a different workspace
+  the caller is a member of (a token's `wid` claim previously pinned it to one workspace for its
+  whole lifetime, with no way to move to another one short of a fresh login — and login always
+  landed on the same earliest-created membership regardless of which workspace was wanted).
+  Revokes the session backing the access token used to call it, matching `refresh()`'s
+  rotate-and-revoke pattern. Returns `403 WORKSPACE_ACCESS_DENIED` for a non-member workspace.
+- Session/device management: `GET /api/v1/auth/sessions` (lists the caller's active sessions
+  across every workspace they've logged into, flagging which one backs the current request),
+  `DELETE /api/v1/auth/sessions/:sessionId` (revoke one session by id, ownership-checked, `404
+AUTH_SESSION_NOT_FOUND` otherwise), and `DELETE /api/v1/auth/sessions` (bulk "sign out
+  everywhere else", returns `{ action: "revoked", count }`). Previously `/api/auth/logout` could
+  only revoke the session tied to the refresh token it was given — there was no way to see what
+  else was logged in or remotely sign out a lost/stolen device.
 - `docs/guides/client-integration.md`: cross-links the per-module reference docs
   (`docs/modules/*.md`), points to the OpenAPI spec (`/docs/openapi.json`, `/docs`) as the
   fastest path to a generated typed client, flags that `role-sdk`/`role-client`'s
