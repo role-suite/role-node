@@ -54,4 +54,25 @@ describe("request id middleware", () => {
       (req as { requestId?: string }).requestId,
     );
   });
+
+  it("generates request id when incoming id is invalid", () => {
+    const res = createResponse();
+    const next = vi.fn();
+    const req = {
+      header: (name: string) =>
+        name.toLowerCase() === REQUEST_ID_HEADER
+          ? "invalid request id with spaces"
+          : undefined,
+    };
+
+    requestIdMiddleware(req as never, res as never, next);
+
+    expect(next).toHaveBeenCalledOnce();
+    expect((req as { requestId?: string }).requestId).not.toBe(
+      "invalid request id with spaces",
+    );
+    expect(String((req as { requestId?: string }).requestId)).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    );
+  });
 });

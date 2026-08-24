@@ -1,5 +1,4 @@
 node_modules/
 dist/
 coverage/
-.grpc-tmp/
-src/grpc/generated/
+pnpm-lock.yaml

@@ -56,6 +56,7 @@ Source of truth: `src/shared/errors/error-codes.ts`.
 | `NO_WORKSPACE_MEMBERSHIP` | 403  | No workspace membership found |
 | `INVALID_REFRESH_TOKEN`   | 401  | Invalid refresh token         |
 | `REFRESH_SESSION_INVALID` | 401  | Refresh session is invalid    |
+| `AUTH_SESSION_NOT_FOUND`  | 404  | Session not found             |
 
 ### Workspaces
 
@@ -101,27 +102,13 @@ Source of truth: `src/shared/errors/error-codes.ts`.
 | `ENVIRONMENT_NAME_ALREADY_EXISTS`         | 409  | Environment name already exists                          |
 | `ENVIRONMENT_VARIABLE_KEY_ALREADY_EXISTS` | 409  | Environment variable key already exists                  |
 
-### Runs
-
-| Code                     | HTTP | Default message        |
-| ------------------------ | ---- | ---------------------- |
-| `RUN_NOT_FOUND`          | 404  | Run not found          |
-| `RUN_VALIDATION_FAILED`  | 400  | Run validation failed  |
-| `RUN_ACCESS_DENIED`      | 403  | Run access denied      |
-| `RUN_SOURCE_NOT_FOUND`   | 404  | Run source not found   |
-| `RUN_POLICY_BLOCKED`     | 422  | Run blocked by policy  |
-| `RUN_TIMEOUT`            | 408  | Run timeout            |
-| `RUN_NETWORK_ERROR`      | 502  | Run network error      |
-| `RUN_RESPONSE_TOO_LARGE` | 413  | Run response too large |
-| `RUN_CANCELLED`          | 409  | Run cancelled          |
-| `RUN_INTERNAL_ERROR`     | 500  | Run internal error     |
-
 ### Import/Export
 
-| Code                          | HTTP | Default message                                              |
-| ----------------------------- | ---- | ------------------------------------------------------------ |
-| `IMPORT_EXPORT_RUN_FORBIDDEN` | 403  | Only workspace owners and admins can run imports and exports |
-| `IMPORT_EXPORT_JOB_NOT_FOUND` | 404  | Import/export job not found                                  |
+| Code                                     | HTTP | Default message                                              |
+| ---------------------------------------- | ---- | ------------------------------------------------------------ |
+| `IMPORT_EXPORT_RUN_FORBIDDEN`            | 403  | Only workspace owners and admins can run imports and exports |
+| `IMPORT_EXPORT_JOB_NOT_FOUND`            | 404  | Import/export job not found                                  |
+| `IMPORT_EXPORT_INVALID_SOURCE_REFERENCE` | 400  | Import payload references an unknown sourceId                |
 
 ### System
 

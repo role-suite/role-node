@@ -6,11 +6,17 @@ import { runWithRequestContext } from "../request-context.js";
 
 export const REQUEST_ID_HEADER = "x-request-id";
 
+export const REQUEST_ID_PATTERN = /^[a-zA-Z0-9._:-]{1,128}$/;
+
 const resolveRequestId = (req: Request): string => {
   const incomingRequestId = req.header(REQUEST_ID_HEADER);
 
-  if (incomingRequestId && incomingRequestId.trim().length > 0) {
-    return incomingRequestId;
+  if (incomingRequestId) {
+    const trimmedRequestId = incomingRequestId.trim();
+
+    if (REQUEST_ID_PATTERN.test(trimmedRequestId)) {
+      return trimmedRequestId;
+    }
   }
 
   return randomUUID();

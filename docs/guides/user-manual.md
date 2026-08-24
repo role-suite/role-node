@@ -4,7 +4,7 @@ This guide is a short onboarding path for first-time users.
 
 For complete endpoint and payload reference, use `docs/guides/user-reference-manual.md`.
 
-Note: this quickstart uses REST examples (`curl`). The same product capabilities are also available via gRPC (`role.v1`) when `GRPC_ENABLED=true`.
+This quickstart uses REST examples (`curl`).
 
 ## 1) Start the backend
 
@@ -24,7 +24,7 @@ curl -s http://localhost:3000/health
 ## 2) Register and capture auth values
 
 ```bash
-curl -s -X POST http://localhost:3000/api/auth/register \
+curl -s -X POST http://localhost:3000/api/v1/auth/register \
   -H 'Content-Type: application/json' \
   -d '{
     "name": "Alice Example",
@@ -46,7 +46,7 @@ Save:
 ACCESS_TOKEN="<access-token>"
 WORKSPACE_ID="<workspace-id>"
 
-curl -s -X POST "http://localhost:3000/api/workspaces/${WORKSPACE_ID}/collections" \
+curl -s -X POST "http://localhost:3000/api/v1/workspaces/${WORKSPACE_ID}/collections" \
   -H "Authorization: Bearer ${ACCESS_TOKEN}" \
   -H 'Content-Type: application/json' \
   -d '{"name":"Orders API","description":"Orders endpoints"}'
@@ -57,7 +57,7 @@ curl -s -X POST "http://localhost:3000/api/workspaces/${WORKSPACE_ID}/collection
 ```bash
 COLLECTION_ID="<collection-id>"
 
-curl -s -X POST "http://localhost:3000/api/workspaces/${WORKSPACE_ID}/collections/${COLLECTION_ID}/endpoints" \
+curl -s -X POST "http://localhost:3000/api/v1/workspaces/${WORKSPACE_ID}/collections/${COLLECTION_ID}/endpoints" \
   -H "Authorization: Bearer ${ACCESS_TOKEN}" \
   -H 'Content-Type: application/json' \
   -d '{
@@ -74,7 +74,7 @@ curl -s -X POST "http://localhost:3000/api/workspaces/${WORKSPACE_ID}/collection
 Create environment:
 
 ```bash
-curl -s -X POST "http://localhost:3000/api/workspaces/${WORKSPACE_ID}/environments" \
+curl -s -X POST "http://localhost:3000/api/v1/workspaces/${WORKSPACE_ID}/environments" \
   -H "Authorization: Bearer ${ACCESS_TOKEN}" \
   -H 'Content-Type: application/json' \
   -d '{"name":"Dev"}'
@@ -82,41 +82,18 @@ curl -s -X POST "http://localhost:3000/api/workspaces/${WORKSPACE_ID}/environmen
 
 Then add variables using:
 
-- `POST /api/workspaces/:workspaceId/environments/:environmentId/variables`
+- `POST /api/v1/workspaces/:workspaceId/environments/:environmentId/variables`
 
-## 6) Execute a run
-
-Ad-hoc run:
-
-```bash
-curl -s -X POST "http://localhost:3000/api/workspaces/${WORKSPACE_ID}/runs" \
-  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "source": {
-      "type": "adhoc",
-      "request": {
-        "method": "GET",
-        "url": "https://api.example.com/orders",
-        "headers": [{"key":"accept","value":"application/json"}],
-        "auth": {"type": "none"}
-      }
-    }
-  }'
-```
-
-Get run details:
-
-- `GET /api/workspaces/:workspaceId/runs/:runId`
-
-## 7) Optional organization features
+## 6) Optional organization features
 
 - Folders:
-  - `GET/POST/PATCH/DELETE /api/workspaces/:workspaceId/collections/:collectionId/folders`
+  - `GET/POST/PATCH/DELETE /api/v1/workspaces/:workspaceId/collections/:collectionId/folders`
 - Endpoint examples:
-  - `GET/POST/PATCH/DELETE /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples`
+  - `GET/POST/PATCH/DELETE /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples`
 
-## 8) Body modes quick reference
+## 7) Body modes quick reference
+
+Endpoint bodies (saved on collection endpoints) support:
 
 - `raw`
 - `urlencoded`
@@ -124,14 +101,13 @@ Get run details:
 - `binary`
 - `none`
 
-## 9) Common error map
+## 8) Common error map
 
 - `401`: missing or invalid token
 - `403`: no access or insufficient role
 - `404`: resource not found in workspace scope
-- `422`: request run blocked by policy
 
-## 10) Next docs
+## 9) Next docs
 
 - Full API reference: `docs/guides/user-reference-manual.md`
 - Developer guide: `docs/guides/developer-manual.md`

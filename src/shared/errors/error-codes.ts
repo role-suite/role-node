@@ -9,6 +9,7 @@ export const ERROR_CODES = {
     INVALID_ACCESS_TOKEN: "INVALID_ACCESS_TOKEN",
     AUTH_CONTEXT_INVALID: "AUTH_CONTEXT_INVALID",
     USER_NOT_FOUND: "USER_NOT_FOUND",
+    RATE_LIMIT_EXCEEDED: "RATE_LIMIT_EXCEEDED",
   },
   auth: {
     EMAIL_ALREADY_IN_USE: "EMAIL_ALREADY_IN_USE",
@@ -16,10 +17,11 @@ export const ERROR_CODES = {
     NO_WORKSPACE_MEMBERSHIP: "NO_WORKSPACE_MEMBERSHIP",
     INVALID_REFRESH_TOKEN: "INVALID_REFRESH_TOKEN",
     REFRESH_SESSION_INVALID: "REFRESH_SESSION_INVALID",
+    SESSION_NOT_FOUND: "AUTH_SESSION_NOT_FOUND",
   },
   workspaces: {
-    WORKSPACE_ACCESS_DENIED: "WORKSPACE_ACCESS_DENIED",
-    WORKSPACE_NOT_FOUND: "WORKSPACE_NOT_FOUND",
+    ACCESS_DENIED: "WORKSPACE_ACCESS_DENIED",
+    NOT_FOUND: "WORKSPACE_NOT_FOUND",
     MEMBERS_MANAGE_FORBIDDEN: "WORKSPACE_MEMBERS_MANAGE_FORBIDDEN",
     PERSONAL_MEMBERS_UNSUPPORTED: "WORKSPACE_PERSONAL_MEMBERS_UNSUPPORTED",
     PERSONAL_INVITATIONS_UNSUPPORTED:
@@ -53,21 +55,10 @@ export const ERROR_CODES = {
     NAME_ALREADY_EXISTS: "ENVIRONMENT_NAME_ALREADY_EXISTS",
     VARIABLE_KEY_ALREADY_EXISTS: "ENVIRONMENT_VARIABLE_KEY_ALREADY_EXISTS",
   },
-  runs: {
-    RUN_NOT_FOUND: "RUN_NOT_FOUND",
-    RUN_VALIDATION_FAILED: "RUN_VALIDATION_FAILED",
-    RUN_ACCESS_DENIED: "RUN_ACCESS_DENIED",
-    RUN_SOURCE_NOT_FOUND: "RUN_SOURCE_NOT_FOUND",
-    RUN_POLICY_BLOCKED: "RUN_POLICY_BLOCKED",
-    RUN_TIMEOUT: "RUN_TIMEOUT",
-    RUN_NETWORK_ERROR: "RUN_NETWORK_ERROR",
-    RUN_RESPONSE_TOO_LARGE: "RUN_RESPONSE_TOO_LARGE",
-    RUN_CANCELLED: "RUN_CANCELLED",
-    RUN_INTERNAL_ERROR: "RUN_INTERNAL_ERROR",
-  },
   importExport: {
     RUN_FORBIDDEN: "IMPORT_EXPORT_RUN_FORBIDDEN",
     JOB_NOT_FOUND: "IMPORT_EXPORT_JOB_NOT_FOUND",
+    INVALID_SOURCE_REFERENCE: "IMPORT_EXPORT_INVALID_SOURCE_REFERENCE",
   },
   system: {
     DATABASE_ERROR: "DATABASE_ERROR",
@@ -127,6 +118,10 @@ export const ERROR_CODE_DEFINITIONS: Record<ErrorCode, ErrorCodeDefinition> = {
     status: 404,
     message: "User not found",
   },
+  RATE_LIMIT_EXCEEDED: {
+    status: 429,
+    message: "Too many requests, please try again later",
+  },
   EMAIL_ALREADY_IN_USE: {
     status: 409,
     message: "Email already in use",
@@ -146,6 +141,10 @@ export const ERROR_CODE_DEFINITIONS: Record<ErrorCode, ErrorCodeDefinition> = {
   REFRESH_SESSION_INVALID: {
     status: 401,
     message: "Refresh session is invalid",
+  },
+  AUTH_SESSION_NOT_FOUND: {
+    status: 404,
+    message: "Session not found",
   },
   WORKSPACE_ACCESS_DENIED: {
     status: 403,
@@ -263,46 +262,6 @@ export const ERROR_CODE_DEFINITIONS: Record<ErrorCode, ErrorCodeDefinition> = {
     status: 409,
     message: "Environment variable key already exists",
   },
-  RUN_NOT_FOUND: {
-    status: 404,
-    message: "Run not found",
-  },
-  RUN_VALIDATION_FAILED: {
-    status: 400,
-    message: "Run validation failed",
-  },
-  RUN_ACCESS_DENIED: {
-    status: 403,
-    message: "Run access denied",
-  },
-  RUN_SOURCE_NOT_FOUND: {
-    status: 404,
-    message: "Run source not found",
-  },
-  RUN_POLICY_BLOCKED: {
-    status: 422,
-    message: "Run blocked by policy",
-  },
-  RUN_TIMEOUT: {
-    status: 408,
-    message: "Run timeout",
-  },
-  RUN_NETWORK_ERROR: {
-    status: 502,
-    message: "Run network error",
-  },
-  RUN_RESPONSE_TOO_LARGE: {
-    status: 413,
-    message: "Run response too large",
-  },
-  RUN_CANCELLED: {
-    status: 409,
-    message: "Run cancelled",
-  },
-  RUN_INTERNAL_ERROR: {
-    status: 500,
-    message: "Run internal error",
-  },
   IMPORT_EXPORT_RUN_FORBIDDEN: {
     status: 403,
     message: "Only workspace owners and admins can run imports and exports",
@@ -310,6 +269,10 @@ export const ERROR_CODE_DEFINITIONS: Record<ErrorCode, ErrorCodeDefinition> = {
   IMPORT_EXPORT_JOB_NOT_FOUND: {
     status: 404,
     message: "Import/export job not found",
+  },
+  IMPORT_EXPORT_INVALID_SOURCE_REFERENCE: {
+    status: 400,
+    message: "Import payload references an unknown sourceId",
   },
   DATABASE_ERROR: {
     status: 500,

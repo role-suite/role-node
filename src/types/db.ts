@@ -1,5 +1,3 @@
-export type DbDialect = "postgres" | "mysql" | "mariadb";
-
 export type QueryValue = string | number | boolean | Date | Buffer | null;
 
 export type QueryParams = readonly QueryValue[] | QueryValue[];
@@ -23,7 +21,6 @@ export type DatabaseConfig = {
 };
 
 export interface DatabaseClient {
-  readonly dialect: DbDialect;
   query<TRow extends QueryRow = QueryRow>(
     sql: string,
     params?: QueryParams,

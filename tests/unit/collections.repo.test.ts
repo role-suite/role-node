@@ -3,7 +3,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import {
   collectionsRepo,
   setCollectionsRepoDbClient,
-} from "../../src/modules/collections/collections.repo.js";
+} from "../../src/modules/collections/repo.js";
 import { createAuthTestDb } from "../helpers/auth-test-db.js";
 
 const testDb = createAuthTestDb();

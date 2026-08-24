@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DbError } from "../../src/shared/errors/db-error.js";
-import { createPostgresClient } from "../../src/shared/db/adapters/postgres.adapter.js";
+import { createPostgresClient } from "../../src/shared/db/postgres-client.js";
 import type { DatabaseConfig } from "../../src/types/db.js";
 
 const { poolState, MockPool } = vi.hoisted(() => {
@@ -32,7 +32,7 @@ vi.mock("pg", () => ({
 describe("postgres adapter", () => {
   const config: DatabaseConfig = {
     host: "localhost",
-    port: 5432,
+    port: 6321,
     user: "db-user",
     password: "db-pass",
     database: "app",
@@ -98,7 +98,6 @@ describe("postgres adapter", () => {
     );
     await expect(client.query("select now()", [])).rejects.toMatchObject({
       message: "PostgreSQL query failed",
-      dialect: "postgres",
     });
   });
 
@@ -145,7 +144,6 @@ describe("postgres adapter", () => {
       client.transaction(async (tx) => tx.query("select * from users", [])),
     ).rejects.toMatchObject({
       message: "PostgreSQL transaction query failed",
-      dialect: "postgres",
     });
     expect(txQuery).toHaveBeenNthCalledWith(3, "ROLLBACK");
   });
@@ -175,7 +173,7 @@ describe("postgres adapter", () => {
   it("rethrows DbError from transaction callback", async () => {
     const txQuery = vi.fn();
     const release = vi.fn();
-    const dbError = new DbError("custom db error", { dialect: "postgres" });
+    const dbError = new DbError("custom db error");
 
     txQuery.mockResolvedValueOnce(undefined);
     txQuery.mockResolvedValueOnce(undefined);

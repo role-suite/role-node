@@ -4,7 +4,7 @@ import {
   loginSchema,
   refreshTokenSchema,
   registerSchema,
-} from "../../src/modules/auth/auth.schema.js";
+} from "../../src/modules/auth/schema.js";
 
 describe("auth schema", () => {
   it("parses valid single-account register payload", () => {
@@ -36,6 +36,22 @@ describe("auth schema", () => {
     });
 
     expect(parsed.email).toBe("member@example.com");
+  });
+
+  it("lowercases email on register and login", () => {
+    const registered = registerSchema.parse({
+      name: "Altay",
+      email: "Altay@Example.COM",
+      password: "password123",
+      accountType: "single",
+    });
+    const loggedIn = loginSchema.parse({
+      email: "Altay@Example.COM",
+      password: "password123",
+    });
+
+    expect(registered.email).toBe("altay@example.com");
+    expect(loggedIn.email).toBe("altay@example.com");
   });
 
   it("rejects extra fields in login payload", () => {

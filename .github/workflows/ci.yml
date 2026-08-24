@@ -13,82 +13,55 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
+env:
+  NODE_ENV: test
+  PORT: 3000
+  DB_HOST: localhost
+  DB_PORT: 6321
+  DB_USER: role_user
+  DB_PASSWORD: role_pass
+  DB_NAME: role_node
+  DB_POOL_MIN: 0
+  DB_POOL_MAX: 10
+  DB_SSL: "false"
+  ENABLE_STARTUP_VALIDATION: "false"
+  AUTH_ACCESS_TOKEN_SECRET: test-access-secret-123456
+  AUTH_REFRESH_TOKEN_SECRET: test-refresh-secret-123456
+  AUTH_ACCESS_TOKEN_TTL_SECONDS: 900
+  AUTH_REFRESH_TOKEN_TTL_SECONDS: 604800
+
 jobs:
   format:
     name: 1. Format
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    env:
-      NODE_ENV: test
-      PORT: 3000
-      DB_DIALECT: postgres
-      DB_HOST: localhost
-      DB_PORT: 5432
-      DB_USER: role_user
-      DB_PASSWORD: role_pass
-      DB_NAME: role_node
-      DB_POOL_MIN: 0
-      DB_POOL_MAX: 10
-      DB_SSL: "false"
-      ENABLE_STARTUP_VALIDATION: "false"
-      AUTH_ACCESS_TOKEN_SECRET: test-access-secret-123456
-      AUTH_REFRESH_TOKEN_SECRET: test-refresh-secret-123456
-      AUTH_ACCESS_TOKEN_TTL_SECONDS: 900
-      AUTH_REFRESH_TOKEN_TTL_SECONDS: 604800
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.33.0
+      - name: Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Check formatting
-        run: pnpm dlx prettier@3.8.3 --check .
+        run: pnpm format:check
 
   lint:
     name: 2. Lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: format
-    env:
-      NODE_ENV: test
-      PORT: 3000
-      DB_DIALECT: postgres
-      DB_HOST: localhost
-      DB_PORT: 5432
-      DB_USER: role_user
-      DB_PASSWORD: role_pass
-      DB_NAME: role_node
-      DB_POOL_MIN: 0
-      DB_POOL_MAX: 10
-      DB_SSL: "false"
-      ENABLE_STARTUP_VALIDATION: "false"
-      AUTH_ACCESS_TOKEN_SECRET: test-access-secret-123456
-      AUTH_REFRESH_TOKEN_SECRET: test-refresh-secret-123456
-      AUTH_ACCESS_TOKEN_TTL_SECONDS: 900
-      AUTH_REFRESH_TOKEN_TTL_SECONDS: 604800
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.33.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
+      - name: Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -99,184 +72,23 @@ jobs:
       - name: Run typecheck
         run: pnpm typecheck
 
-  contract-check:
-    name: 3. Contract Check
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: lint
-    env:
-      NODE_ENV: test
-      PORT: 3000
-      DB_DIALECT: postgres
-      DB_HOST: localhost
-      DB_PORT: 5432
-      DB_USER: role_user
-      DB_PASSWORD: role_pass
-      DB_NAME: role_node
-      DB_POOL_MIN: 0
-      DB_POOL_MAX: 10
-      DB_SSL: "false"
-      ENABLE_STARTUP_VALIDATION: "false"
-      AUTH_ACCESS_TOKEN_SECRET: test-access-secret-123456
-      AUTH_REFRESH_TOKEN_SECRET: test-refresh-secret-123456
-      AUTH_ACCESS_TOKEN_TTL_SECONDS: 900
-      AUTH_REFRESH_TOKEN_TTL_SECONDS: 604800
-      CONTRACT_BASE_REF: origin/main
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.33.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Generate contract snapshot
-        run: pnpm contracts:generate
-
-      - name: Generate OpenAPI artifact
-        run: pnpm contracts:openapi:generate
-
-      - name: Check contract drift
-        run: pnpm contracts:check
-
-      - name: Check OpenAPI drift
-        run: pnpm contracts:openapi:check
-
-      - name: Lint OpenAPI artifact
-        run: pnpm contracts:openapi:lint
-
-      - name: Check gRPC artifact drift
-        run: pnpm grpc:check
-
-      - name: Build proto bundle artifact
-        run: pnpm grpc:bundle
-
-      - name: Check incompatible contract changes
-        run: pnpm contracts:breaking-check
-
-      - name: Require docs updates for contract changes
-        run: pnpm contracts:docs-check
-
-      - name: Upload contract snapshot artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: contract-snapshot
-          path: contracts/generated/public-api.snapshot.json
-          if-no-files-found: error
-
-      - name: Upload OpenAPI artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: openapi-artifact
-          path: contracts/generated/openapi.json
-          if-no-files-found: error
-
-      - name: Upload gRPC proto bundle artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: grpc-proto-bundle
-          path: artifacts/grpc-proto/
-          if-no-files-found: error
-
-  grpc-impact:
-    name: 3.1 gRPC Impact Check
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: contract-check
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Validate SDK impact docs for proto changes
-        run: |
-          set -euo pipefail
-
-          if [ "${{ github.event_name }}" != "pull_request" ]; then
-            echo "Not a pull_request event. Skipping proto-impact enforcement."
-            exit 0
-          fi
-
-          CHANGED_FILES="$(git diff --name-only origin/main...HEAD)"
-
-          if ! printf '%s\n' "$CHANGED_FILES" | grep -q '^proto/'; then
-            echo "No proto changes detected."
-            exit 0
-          fi
-
-          echo "Proto changes detected. Verifying required SDK-impact documentation updates..."
-          REQUIRED_DOCS_REGEX='^(docs/api-versioning.md|docs/guides/grpc-proto-distribution.md|docs/guides/grpc-sdk-integration-contract.md|docs/guides/grpc-transport-parity.md|docs/guides/grpc-typed-payload-migration.md|docs/guides/grpc-sdk-readiness.md|docs/guides/grpc-governance-ownership.md|README.md|.github/PULL_REQUEST_TEMPLATE.md)$'
-
-          if printf '%s\n' "$CHANGED_FILES" | grep -Eq "$REQUIRED_DOCS_REGEX"; then
-            echo "Proto changes include required SDK-impact documentation updates."
-            exit 0
-          fi
-
-          echo "Proto files changed but required SDK-impact docs were not updated."
-          echo "Update at least one of: docs/api-versioning.md, docs/guides/grpc-*.md, README.md, .github/PULL_REQUEST_TEMPLATE.md"
-          exit 1
-
   test:
-    name: 4. Test
+    name: 3. Test
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [contract-check, grpc-impact]
-    env:
-      NODE_ENV: test
-      PORT: 3000
-      DB_DIALECT: postgres
-      DB_HOST: localhost
-      DB_PORT: 5432
-      DB_USER: role_user
-      DB_PASSWORD: role_pass
-      DB_NAME: role_node
-      DB_POOL_MIN: 0
-      DB_POOL_MAX: 10
-      DB_SSL: "false"
-      ENABLE_STARTUP_VALIDATION: "false"
-      AUTH_ACCESS_TOKEN_SECRET: test-access-secret-123456
-      AUTH_REFRESH_TOKEN_SECRET: test-refresh-secret-123456
-      AUTH_ACCESS_TOKEN_TTL_SECONDS: 900
-      AUTH_REFRESH_TOKEN_TTL_SECONDS: 604800
+    needs: lint
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.33.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
+      - name: Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Run test suite
         run: pnpm test:run
-
-      - name: Run gRPC unit tests
-        run: pnpm grpc:test
 
       - name: Run coverage
         run: pnpm test:coverage
@@ -290,41 +102,16 @@ jobs:
           if-no-files-found: ignore
 
   build:
-    name: 5. Build
+    name: 4. Build
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [test, telemetry]
-    env:
-      NODE_ENV: test
-      PORT: 3000
-      DB_DIALECT: postgres
-      DB_HOST: localhost
-      DB_PORT: 5432
-      DB_USER: role_user
-      DB_PASSWORD: role_pass
-      DB_NAME: role_node
-      DB_POOL_MIN: 0
-      DB_POOL_MAX: 10
-      DB_SSL: "false"
-      ENABLE_STARTUP_VALIDATION: "false"
-      AUTH_ACCESS_TOKEN_SECRET: test-access-secret-123456
-      AUTH_REFRESH_TOKEN_SECRET: test-refresh-secret-123456
-      AUTH_ACCESS_TOKEN_TTL_SECONDS: 900
-      AUTH_REFRESH_TOKEN_TTL_SECONDS: 604800
+    needs: test
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.33.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
+      - name: Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -332,68 +119,15 @@ jobs:
       - name: Build
         run: pnpm build
 
-  telemetry:
-    name: 4.5 Telemetry
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: test
-    env:
-      NODE_ENV: test
-      PORT: 3000
-      DB_DIALECT: postgres
-      DB_HOST: localhost
-      DB_PORT: 5432
-      DB_USER: role_user
-      DB_PASSWORD: role_pass
-      DB_NAME: role_node
-      DB_POOL_MIN: 0
-      DB_POOL_MAX: 10
-      DB_SSL: "false"
-      ENABLE_STARTUP_VALIDATION: "false"
-      AUTH_ACCESS_TOKEN_SECRET: test-access-secret-123456
-      AUTH_REFRESH_TOKEN_SECRET: test-refresh-secret-123456
-      AUTH_ACCESS_TOKEN_TTL_SECONDS: 900
-      AUTH_REFRESH_TOKEN_TTL_SECONDS: 604800
-      OTEL_ENABLED: "true"
-      OTEL_SERVICE_NAME: role-node-ci
-      OTEL_SERVICE_VERSION: ci
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4318
-      OTEL_METRICS_EXPORT_INTERVAL_MS: 30000
-      OTEL_TRACES_SAMPLER: ratio
-      OTEL_TRACES_SAMPLER_RATIO: 0.25
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.33.0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Run telemetry smoke tests
-        run: pnpm telemetry:test
-
-      - name: Validate telemetry configs
-        run: pnpm telemetry:validate
-
   ci-status:
     name: CI Status
     runs-on: ubuntu-latest
-    needs: [format, lint, contract-check, grpc-impact, test, telemetry, build]
+    needs: [format, lint, test, build]
     if: always()
     steps:
       - name: Validate all required jobs passed
         run: |
-          if [ "${{ needs.format.result }}" != "success" ] || [ "${{ needs.lint.result }}" != "success" ] || [ "${{ needs.contract-check.result }}" != "success" ] || [ "${{ needs.grpc-impact.result }}" != "success" ] || [ "${{ needs.test.result }}" != "success" ] || [ "${{ needs.telemetry.result }}" != "success" ] || [ "${{ needs.build.result }}" != "success" ]; then
+          if [ "${{ needs.format.result }}" != "success" ] || [ "${{ needs.lint.result }}" != "success" ] || [ "${{ needs.test.result }}" != "success" ] || [ "${{ needs.build.result }}" != "success" ]; then
             echo "One or more required CI jobs failed."
             exit 1
           fi

@@ -20,7 +20,7 @@ const {
   deleteExampleForEndpointMock: vi.fn(),
 }));
 
-vi.mock("../../src/modules/collections/collections.service.js", () => ({
+vi.mock("../../src/modules/collections/service.js", () => ({
   collectionsService: {
     listFoldersForCollection: listFoldersForCollectionMock,
     createFolderForCollection: createFolderForCollectionMock,
@@ -33,7 +33,7 @@ vi.mock("../../src/modules/collections/collections.service.js", () => ({
   },
 }));
 
-import { collectionsController } from "../../src/modules/collections/collections.controller.js";
+import { collectionsController } from "../../src/modules/collections/controller.js";
 
 const createResponse = () => {
   return {

@@ -2,7 +2,7 @@
 
 This is the full reference manual for using the current backend API.
 
-This document focuses on REST endpoint usage. Equivalent gRPC services are available in package `role.v1` and defined in `proto/*.proto`.
+This document focuses on REST endpoint usage.
 
 It is intended for frontend developers, API integrators, and QA automation engineers.
 
@@ -26,7 +26,7 @@ Access tokens are workspace-context-aware. If the authenticated context is inval
 
 ## Auth API
 
-### `POST /api/auth/register`
+### `POST /api/v1/auth/register`
 
 Creates user + initial workspace + token pair.
 
@@ -53,7 +53,7 @@ For team account:
 }
 ```
 
-### `POST /api/auth/login`
+### `POST /api/v1/auth/login`
 
 Request:
 
@@ -64,7 +64,7 @@ Request:
 }
 ```
 
-### `POST /api/auth/refresh`
+### `POST /api/v1/auth/refresh`
 
 Request:
 
@@ -74,7 +74,7 @@ Request:
 }
 ```
 
-### `POST /api/auth/logout`
+### `POST /api/v1/auth/logout`
 
 Request:
 
@@ -84,17 +84,17 @@ Request:
 }
 ```
 
-### `GET /api/auth/me`
+### `GET /api/v1/auth/me`
 
 Returns current user, active workspace context, and memberships.
 
 ## Workspace API
 
-### `GET /api/workspaces`
+### `GET /api/v1/workspaces`
 
 List workspaces where user is a member.
 
-### `POST /api/workspaces`
+### `POST /api/v1/workspaces`
 
 Create new team workspace.
 
@@ -104,17 +104,17 @@ Request:
 { "name": "API Team" }
 ```
 
-### `GET /api/workspaces/:workspaceId`
+### `GET /api/v1/workspaces/:workspaceId`
 
 Get single workspace summary for authenticated member.
 
 ### Members
 
-- `GET /api/workspaces/:workspaceId/members`
-- `POST /api/workspaces/:workspaceId/members`
-- `PATCH /api/workspaces/:workspaceId/members/:memberUserId`
-- `DELETE /api/workspaces/:workspaceId/members/:memberUserId`
-- `POST /api/workspaces/:workspaceId/leave`
+- `GET /api/v1/workspaces/:workspaceId/members`
+- `POST /api/v1/workspaces/:workspaceId/members`
+- `PATCH /api/v1/workspaces/:workspaceId/members/:memberUserId`
+- `DELETE /api/v1/workspaces/:workspaceId/members/:memberUserId`
+- `POST /api/v1/workspaces/:workspaceId/leave`
 
 Add member request:
 
@@ -135,11 +135,11 @@ Update role request:
 
 ### Collection CRUD
 
-- `GET /api/workspaces/:workspaceId/collections`
-- `GET /api/workspaces/:workspaceId/collections/:collectionId`
-- `POST /api/workspaces/:workspaceId/collections`
-- `PATCH /api/workspaces/:workspaceId/collections/:collectionId`
-- `DELETE /api/workspaces/:workspaceId/collections/:collectionId`
+- `GET /api/v1/workspaces/:workspaceId/collections`
+- `GET /api/v1/workspaces/:workspaceId/collections/:collectionId`
+- `POST /api/v1/workspaces/:workspaceId/collections`
+- `PATCH /api/v1/workspaces/:workspaceId/collections/:collectionId`
+- `DELETE /api/v1/workspaces/:workspaceId/collections/:collectionId`
 
 Create request:
 
@@ -152,10 +152,10 @@ Create request:
 
 ### Collection folders
 
-- `GET /api/workspaces/:workspaceId/collections/:collectionId/folders`
-- `POST /api/workspaces/:workspaceId/collections/:collectionId/folders`
-- `PATCH /api/workspaces/:workspaceId/collections/:collectionId/folders/:folderId`
-- `DELETE /api/workspaces/:workspaceId/collections/:collectionId/folders/:folderId`
+- `GET /api/v1/workspaces/:workspaceId/collections/:collectionId/folders`
+- `POST /api/v1/workspaces/:workspaceId/collections/:collectionId/folders`
+- `PATCH /api/v1/workspaces/:workspaceId/collections/:collectionId/folders/:folderId`
+- `DELETE /api/v1/workspaces/:workspaceId/collections/:collectionId/folders/:folderId`
 
 Create folder request:
 
@@ -169,11 +169,11 @@ Create folder request:
 
 ### Endpoints inside collection
 
-- `GET /api/workspaces/:workspaceId/collections/:collectionId/endpoints`
-- `GET /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
-- `POST /api/workspaces/:workspaceId/collections/:collectionId/endpoints`
-- `PATCH /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
-- `DELETE /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
+- `GET /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints`
+- `GET /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
+- `POST /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints`
+- `PATCH /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
+- `DELETE /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
 
 Create endpoint request:
 
@@ -199,10 +199,10 @@ Create endpoint request:
 
 ### Endpoint examples
 
-- `GET /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples`
-- `POST /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples`
-- `PATCH /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples/:exampleId`
-- `DELETE /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples/:exampleId`
+- `GET /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples`
+- `POST /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples`
+- `PATCH /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples/:exampleId`
+- `DELETE /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples/:exampleId`
 
 Create example request:
 
@@ -218,7 +218,7 @@ Create example request:
 
 ## Request body mode reference
 
-Supported in collection endpoint payloads and run `adhoc` requests.
+Supported in collection endpoint payloads.
 
 ### `raw`
 
@@ -281,11 +281,11 @@ Supported in collection endpoint payloads and run `adhoc` requests.
 
 ### Environment CRUD
 
-- `GET /api/workspaces/:workspaceId/environments`
-- `GET /api/workspaces/:workspaceId/environments/:environmentId`
-- `POST /api/workspaces/:workspaceId/environments`
-- `PATCH /api/workspaces/:workspaceId/environments/:environmentId`
-- `DELETE /api/workspaces/:workspaceId/environments/:environmentId`
+- `GET /api/v1/workspaces/:workspaceId/environments`
+- `GET /api/v1/workspaces/:workspaceId/environments/:environmentId`
+- `POST /api/v1/workspaces/:workspaceId/environments`
+- `PATCH /api/v1/workspaces/:workspaceId/environments/:environmentId`
+- `DELETE /api/v1/workspaces/:workspaceId/environments/:environmentId`
 
 Create environment request:
 
@@ -295,11 +295,11 @@ Create environment request:
 
 ### Variables
 
-- `GET /api/workspaces/:workspaceId/environments/:environmentId/variables`
-- `GET /api/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
-- `POST /api/workspaces/:workspaceId/environments/:environmentId/variables`
-- `PATCH /api/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
-- `DELETE /api/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
+- `GET /api/v1/workspaces/:workspaceId/environments/:environmentId/variables`
+- `GET /api/v1/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
+- `POST /api/v1/workspaces/:workspaceId/environments/:environmentId/variables`
+- `PATCH /api/v1/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
+- `DELETE /api/v1/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
 
 Create variable request:
 
@@ -313,79 +313,19 @@ Create variable request:
 }
 ```
 
-## Runs API
-
-### Create run
-
-`POST /api/workspaces/:workspaceId/runs`
-
-Two source types:
-
-1. `adhoc`
-2. `collectionEndpoint`
-
-Ad-hoc example:
-
-```json
-{
-  "source": {
-    "type": "adhoc",
-    "request": {
-      "method": "POST",
-      "url": "https://api.example.com/orders",
-      "headers": [{ "key": "accept", "value": "application/json" }],
-      "queryParams": [],
-      "body": {
-        "mode": "urlencoded",
-        "entries": [{ "key": "region", "value": "eu-west-1" }]
-      },
-      "auth": { "type": "none" }
-    }
-  },
-  "environmentId": 10,
-  "variableOverrides": [{ "key": "region", "value": "eu-west-1" }],
-  "options": {
-    "timeoutMs": 10000,
-    "followRedirects": true,
-    "maxResponseBytes": 200000
-  }
-}
-```
-
-Collection endpoint source example:
-
-```json
-{
-  "source": {
-    "type": "collectionEndpoint",
-    "collectionId": 15,
-    "endpointId": 51
-  },
-  "environmentId": 10
-}
-```
-
-### Get run by id
-
-`GET /api/workspaces/:workspaceId/runs/:runId`
-
-### Cancel run
-
-`POST /api/workspaces/:workspaceId/runs/:runId/cancel`
-
 ## Import/Export API
 
 ### List jobs
 
-`GET /api/workspaces/:workspaceId/import-export/jobs`
+`GET /api/v1/workspaces/:workspaceId/import-export/jobs`
 
 ### Get single job
 
-`GET /api/workspaces/:workspaceId/import-export/jobs/:jobId`
+`GET /api/v1/workspaces/:workspaceId/import-export/jobs/:jobId`
 
 ### Create export job
 
-`POST /api/workspaces/:workspaceId/import-export/exports`
+`POST /api/v1/workspaces/:workspaceId/import-export/exports`
 
 Request:
 
@@ -393,14 +333,13 @@ Request:
 {
   "format": "json",
   "includeCollections": true,
-  "includeEnvironments": true,
-  "includeRuns": false
+  "includeEnvironments": true
 }
 ```
 
 ### Create import job
 
-`POST /api/workspaces/:workspaceId/import-export/imports`
+`POST /api/v1/workspaces/:workspaceId/import-export/imports`
 
 Request:
 
@@ -416,7 +355,7 @@ Request:
 
 ## Permission summary
 
-- `owner` and `admin` can write in collections/environments/runs/import-export
+- `owner` and `admin` can write in collections/environments/import-export
 - `member` has read access but write restrictions in collection/environment/import-export modules
 - member management operations are owner-only
 
@@ -427,7 +366,6 @@ Request:
 - `403`: missing workspace membership or insufficient role
 - `404`: scoped resource not found
 - `409`: conflict scenarios
-- `422`: run blocked by policy
 - `500`: unexpected server errors
 
 ## Operational tips
@@ -435,10 +373,8 @@ Request:
 - Prefer creating folders before endpoints for cleaner organization
 - Use endpoint examples to keep API behavior documented per request
 - Use environment `isSecret=true` for sensitive variable values
-- Use variable overrides in runs for one-off executions
 
 ## Current limitations
 
 - No version snapshots and no fork/merge for collections yet
-- No list endpoint for run history yet (only fetch by run id)
 - Import/export currently tracks jobs and summaries, not full async file lifecycle

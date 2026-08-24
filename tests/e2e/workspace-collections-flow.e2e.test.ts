@@ -2,11 +2,8 @@ import request from "supertest";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { app } from "../../src/app.js";
-import {
-  authRepo,
-  setAuthRepoDbClient,
-} from "../../src/modules/auth/auth.repo.js";
-import { setCollectionsRepoDbClient } from "../../src/modules/collections/collections.repo.js";
+import { authRepo, setAuthRepoDbClient } from "../../src/modules/auth/repo.js";
+import { setCollectionsRepoDbClient } from "../../src/modules/collections/repo.js";
 import { createAuthTestDb } from "../helpers/auth-test-db.js";
 
 const testDb = createAuthTestDb();
@@ -24,13 +21,13 @@ describe("workspace collections e2e flow", () => {
   });
 
   it("runs end-to-end workspace collaboration with collection endpoints", async () => {
-    const owner = await request(app).post("/api/auth/register").send({
+    const owner = await request(app).post("/api/v1/auth/register").send({
       name: "Owner",
       email: "owner@example.com",
       password: "password123",
       accountType: "single",
     });
-    const member = await request(app).post("/api/auth/register").send({
+    const member = await request(app).post("/api/v1/auth/register").send({
       name: "Member",
       email: "member@example.com",
       password: "password123",
@@ -41,20 +38,20 @@ describe("workspace collections e2e flow", () => {
     const memberToken = member.body.data.tokens.accessToken;
 
     const workspace = await request(app)
-      .post("/api/workspaces")
+      .post("/api/v1/workspaces")
       .set("Authorization", `Bearer ${ownerToken}`)
       .send({ name: "API Team" });
     expect(workspace.status).toBe(201);
     const workspaceId = workspace.body.data.id as number;
 
     const addMember = await request(app)
-      .post(`/api/workspaces/${workspaceId}/members`)
+      .post(`/api/v1/workspaces/${workspaceId}/members`)
       .set("Authorization", `Bearer ${ownerToken}`)
       .send({ email: "member@example.com", role: "member" });
     expect(addMember.status).toBe(201);
 
     const collection = await request(app)
-      .post(`/api/workspaces/${workspaceId}/collections`)
+      .post(`/api/v1/workspaces/${workspaceId}/collections`)
       .set("Authorization", `Bearer ${ownerToken}`)
       .send({ name: "Orders API", description: "Orders endpoints" });
     expect(collection.status).toBe(201);
@@ -62,7 +59,7 @@ describe("workspace collections e2e flow", () => {
 
     const endpoint = await request(app)
       .post(
-        `/api/workspaces/${workspaceId}/collections/${collectionId}/endpoints`,
+        `/api/v1/workspaces/${workspaceId}/collections/${collectionId}/endpoints`,
       )
       .set("Authorization", `Bearer ${ownerToken}`)
       .send({
@@ -76,14 +73,14 @@ describe("workspace collections e2e flow", () => {
 
     const memberReadsEndpoint = await request(app)
       .get(
-        `/api/workspaces/${workspaceId}/collections/${collectionId}/endpoints/${endpointId}`,
+        `/api/v1/workspaces/${workspaceId}/collections/${collectionId}/endpoints/${endpointId}`,
       )
       .set("Authorization", `Bearer ${memberToken}`);
     expect(memberReadsEndpoint.status).toBe(200);
 
     const memberWritesEndpoint = await request(app)
       .patch(
-        `/api/workspaces/${workspaceId}/collections/${collectionId}/endpoints/${endpointId}`,
+        `/api/v1/workspaces/${workspaceId}/collections/${collectionId}/endpoints/${endpointId}`,
       )
       .set("Authorization", `Bearer ${memberToken}`)
       .send({ method: "POST" });
@@ -91,7 +88,7 @@ describe("workspace collections e2e flow", () => {
 
     const ownerUpdatesEndpoint = await request(app)
       .patch(
-        `/api/workspaces/${workspaceId}/collections/${collectionId}/endpoints/${endpointId}`,
+        `/api/v1/workspaces/${workspaceId}/collections/${collectionId}/endpoints/${endpointId}`,
       )
       .set("Authorization", `Bearer ${ownerToken}`)
       .send({ method: "POST", body: { raw: "{}" } });
@@ -99,7 +96,7 @@ describe("workspace collections e2e flow", () => {
 
     const ownerDeletesEndpoint = await request(app)
       .delete(
-        `/api/workspaces/${workspaceId}/collections/${collectionId}/endpoints/${endpointId}`,
+        `/api/v1/workspaces/${workspaceId}/collections/${collectionId}/endpoints/${endpointId}`,
       )
       .set("Authorization", `Bearer ${ownerToken}`);
     expect(ownerDeletesEndpoint.status).toBe(200);

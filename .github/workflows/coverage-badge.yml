@@ -17,9 +17,8 @@ jobs:
     env:
       NODE_ENV: test
       PORT: 3000
-      DB_DIALECT: postgres
       DB_HOST: localhost
-      DB_PORT: 5432
+      DB_PORT: 6321
       DB_USER: role_user
       DB_PASSWORD: role_pass
       DB_NAME: role_node
@@ -36,14 +35,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
+      - name: Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -61,15 +54,15 @@ jobs:
           node -e "const fs=require('node:fs'); const s=JSON.parse(fs.readFileSync('coverage/coverage-summary.json','utf8')); const p=Math.round(s.total.lines.pct); const c=p>=90?'green':p>=80?'yellow':p>=70?'orange':'red'; console.log('pct=' + p); console.log('color=' + c);" >> "$GITHUB_OUTPUT"
 
       - name: Generate coverage badge
-        uses: emibcn/badge-action@v2
+        uses: emibcn/badge-action@a3657a79b3cf224ad6b98f4891b8656e524c46f9 # v2
         with:
           label: coverage
           status: ${{ steps.coverage.outputs.pct }}%
           color: ${{ steps.coverage.outputs.color }}
-          path: badges/coverage.svg
+          path: docs/badges/coverage.svg
 
       - name: Commit updated coverage badge
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@b863ae1933cb653a53c021fe36dbb774e1fb9403 # v5
         with:
           commit_message: "chore(ci): update coverage badge"
-          file_pattern: badges/coverage.svg
+          file_pattern: docs/badges/coverage.svg

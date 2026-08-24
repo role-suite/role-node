@@ -27,7 +27,7 @@ Write explicit answers before coding:
 - What data is persisted?
 - What are expected error cases?
 
-### Step 2: Schema-first contract
+### Step 2: Schema-first payloads
 
 Start in `<module>.schema.ts`.
 
@@ -45,7 +45,7 @@ Add or extend repository methods in `<module>.repo.ts`.
 
 Checklist:
 
-- support postgres and mysql/mariadb token syntax
+- use Postgres parameter syntax
 - map row types to domain types with explicit mappers
 - sort deterministic list queries
 - avoid business logic in SQL layer
@@ -80,7 +80,7 @@ Create migration in `migrations/`.
 
 Checklist:
 
-- `up` path for postgres and mysql/mariadb
+- `up` path for Postgres
 - `down` path rollback compatibility
 - index frequently filtered columns
 - foreign key behavior is explicit (`CASCADE`, `SET NULL`, etc.)
@@ -150,19 +150,15 @@ Example pattern: adding `examples` under collection endpoints.
 - invalid cross-collection parent
 - write denied for member role
 
-## 5. Playbook C: Extend request runner payloads
+## 5. Playbook C: Extend collection endpoint body/auth payloads
 
-When adding a request body/auth mode, update all related layers.
+When adding a request body/auth mode for saved collection endpoints, update all related layers.
 
 Required touchpoints:
 
-- `src/modules/runs/runs.schema.ts`
-- `src/modules/collections/collections.schema.ts` if collection endpoint contract changes
-- `src/internal/runner/core/types.ts`
-- `src/internal/runner/planning/*` (source parsing, variable resolution)
-- `src/internal/runner/execution/http-client.ts`
-- `src/internal/runner/policy/*` (limits and redaction)
-- `src/modules/runs/runs.repo.ts` persistence serialization
+- `src/modules/collections/schema.ts`
+- `src/modules/collections/service.ts` (mapping/validation)
+- `src/modules/collections/repo.ts` (persistence serialization)
 
 Backward compatibility strategy:
 
@@ -195,7 +191,7 @@ When resource shape changes (for example folders/examples/body modes):
 ## 8. Pull request checklist
 
 - [ ] schemas updated and strict
-- [ ] repos updated for both SQL dialect paths
+- [ ] repos updated for Postgres
 - [ ] service guards include access + ownership checks
 - [ ] routes/controllers wired and tested
 - [ ] migrations added with rollback path
@@ -207,17 +203,16 @@ When resource shape changes (for example folders/examples/body modes):
 
 - skipping schema validation for optional nested payloads
 - putting permission checks in controller instead of service
-- missing mysql/mariadb SQL path while adding postgres-only query
+- using non-Postgres SQL syntax
 - forgetting to serialize/deserialize JSON columns consistently
 - not updating test DB helper (`tests/helpers/auth-test-db.ts`) after SQL query changes
-- changing API contract without documenting backward compatibility behavior
+- changing API behavior without documenting backward compatibility behavior
 
 ## 10. Suggested implementation order for roadmap features
 
 For pending high-value features:
 
-1. run listing/pagination
-2. collection versioning snapshots
-3. fork/merge workflow
-4. import/export full-fidelity payloads
-5. OpenAPI publication and CI pipeline hardening
+1. collection versioning snapshots
+2. fork/merge workflow
+3. import/export full-fidelity payloads
+4. CI pipeline hardening

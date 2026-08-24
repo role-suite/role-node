@@ -2,12 +2,9 @@ import request from "supertest";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { app } from "../../src/app.js";
-import {
-  authRepo,
-  setAuthRepoDbClient,
-} from "../../src/modules/auth/auth.repo.js";
+import { authRepo, setAuthRepoDbClient } from "../../src/modules/auth/repo.js";
 import { createAuthTestDb } from "../helpers/auth-test-db.js";
-import { ROUTE_PATTERNS } from "../../src/shared/http/routes.js";
+import { ROUTE_PATTERNS } from "../../src/shared/routes.js";
 
 const testDb = createAuthTestDb();
 
@@ -21,11 +18,23 @@ describe("App integration", () => {
     setAuthRepoDbClient(null);
   });
 
+  it("does not trust proxy headers by default", () => {
+    expect(app.get("trust proxy")).toBe(false);
+  });
+
   it("returns health status", async () => {
     const response = await request(app).get("/health");
 
     expect(response.status).toBe(200);
     expect(response.headers["x-request-id"]).toBeDefined();
+    expect(response.headers["x-powered-by"]).toBeUndefined();
+    expect(response.headers["x-content-type-options"]).toBe("nosniff");
+    expect(response.headers["x-frame-options"]).toBe("DENY");
+    expect(response.headers["x-permitted-cross-domain-policies"]).toBe("none");
+    expect(response.headers["referrer-policy"]).toBe("no-referrer");
+    expect(response.headers["permissions-policy"]).toBe(
+      "camera=(), microphone=(), geolocation=()",
+    );
     expect(response.body).toEqual({
       success: true,
       data: { status: "ok" },
@@ -59,7 +68,7 @@ describe("App integration", () => {
   });
 
   it("returns 404 for removed users endpoint", async () => {
-    const listResponse = await request(app).get("/api/users");
+    const listResponse = await request(app).get("/api/v1/users");
 
     expect(listResponse.status).toBe(404);
     expect(listResponse.body.success).toBe(false);

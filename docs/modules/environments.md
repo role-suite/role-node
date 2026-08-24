@@ -1,6 +1,6 @@
 # Environments Module
 
-Base route: `/api/workspaces/:workspaceId/environments`
+Base route: `/api/v1/workspaces/:workspaceId/environments`
 
 This module stores workspace-scoped environments and their key/value variables.
 
@@ -10,21 +10,31 @@ This module stores workspace-scoped environments and their key/value variables.
 - Workspace `member` can list and read environments and variables.
 - Any non-member gets `403 Workspace access denied`.
 
+## Errors
+
+- `409 Environment name already exists` when creating/renaming an environment to a name already
+  used in the workspace.
+- `409 Environment variable key already exists` when creating/renaming a variable to a key
+  already used in the environment.
+- Both conflicts are enforced by the DB's `UNIQUE` constraints (see Persistence below), not just
+  an application-level check, so they resolve correctly even when two requests race to create the
+  same name/key at the same time.
+
 ## Endpoints
 
-- `GET /api/workspaces/:workspaceId/environments`
-- `GET /api/workspaces/:workspaceId/environments/:environmentId`
-- `POST /api/workspaces/:workspaceId/environments`
-- `PATCH /api/workspaces/:workspaceId/environments/:environmentId`
-- `DELETE /api/workspaces/:workspaceId/environments/:environmentId`
+- `GET /api/v1/workspaces/:workspaceId/environments`
+- `GET /api/v1/workspaces/:workspaceId/environments/:environmentId`
+- `POST /api/v1/workspaces/:workspaceId/environments`
+- `PATCH /api/v1/workspaces/:workspaceId/environments/:environmentId`
+- `DELETE /api/v1/workspaces/:workspaceId/environments/:environmentId`
 
 ### Variable routes
 
-- `GET /api/workspaces/:workspaceId/environments/:environmentId/variables`
-- `GET /api/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
-- `POST /api/workspaces/:workspaceId/environments/:environmentId/variables`
-- `PATCH /api/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
-- `DELETE /api/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
+- `GET /api/v1/workspaces/:workspaceId/environments/:environmentId/variables`
+- `GET /api/v1/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
+- `POST /api/v1/workspaces/:workspaceId/environments/:environmentId/variables`
+- `PATCH /api/v1/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
+- `DELETE /api/v1/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
 
 ## Request payloads
 
@@ -67,7 +77,7 @@ Table: `environments`
 - `created_at`
 - `updated_at`
 
-Migration: `migrations/20260321_004_create_environments_table.migration.ts`
+Migration: `migrations/20260321_003_create_environments_schema.migration.ts` (also creates `environment_variables`).
 
 ### Variable persistence
 
@@ -83,5 +93,3 @@ Table: `environment_variables`
 - `created_by_user_id` (FK -> `auth_users.id`)
 - `created_at`
 - `updated_at`
-
-Migration: `migrations/20260321_005_create_environment_variables_table.migration.ts`

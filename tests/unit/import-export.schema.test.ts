@@ -4,14 +4,13 @@ import {
   createWorkspaceExportSchema,
   createWorkspaceImportSchema,
   workspaceImportExportJobByIdParamsSchema,
-} from "../../src/modules/import-export/import-export.schema.js";
+} from "../../src/modules/import-export/schema.js";
 
 describe("import-export schema", () => {
   it("parses export payload", () => {
     const parsed = createWorkspaceExportSchema.parse({
       format: "json",
       includeCollections: true,
-      includeRuns: false,
     });
 
     expect(parsed.format).toBe("json");

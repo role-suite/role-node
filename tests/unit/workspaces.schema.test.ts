@@ -9,7 +9,7 @@ import {
   updateWorkspaceMemberRoleSchema,
   workspaceIdSchema,
   workspaceUpdatesQuerySchema,
-} from "../../src/modules/workspaces/workspaces.schema.js";
+} from "../../src/modules/workspaces/schema.js";
 
 describe("workspaces schema", () => {
   it("parses valid create payload", () => {

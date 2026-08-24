@@ -27,7 +27,7 @@ What happened instead?
 
 - OS:
 - Node version:
-- DB dialect:
+- Postgres version:
 - Commit or tag:
 
 ## Additional context

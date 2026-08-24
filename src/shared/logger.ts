@@ -1,8 +1,6 @@
-import { trace } from "@opentelemetry/api";
-
 import { env } from "../config/env.js";
+import { redactLogPayload } from "./log-redaction.js";
 import { getRequestIdFromContext } from "./request-context.js";
-import { redactTelemetryPayload } from "./telemetry-redaction.js";
 
 type LogLevel = "debug" | "info" | "warn" | "error";
 
@@ -29,7 +27,7 @@ const normalizePayload = (payload: unknown): unknown => {
         }
       : payload;
 
-  return redactTelemetryPayload(normalized);
+  return redactLogPayload(normalized);
 };
 
 const logDevelopment = (
@@ -39,12 +37,8 @@ const logDevelopment = (
 ): void => {
   const timestamp = new Date().toISOString();
   const requestId = getRequestIdFromContext();
-  const spanContext = trace.getActiveSpan()?.spanContext();
   const requestIdSegment = requestId ? ` [requestId=${requestId}]` : "";
-  const traceSegment = spanContext
-    ? ` [traceId=${spanContext.traceId} spanId=${spanContext.spanId}]`
-    : "";
-  const prefix = `[${timestamp}] ${level.toUpperCase()} ${message}${requestIdSegment}${traceSegment}`;
+  const prefix = `[${timestamp}] ${level.toUpperCase()} ${message}${requestIdSegment}`;
 
   if (payload === undefined) {
     if (level === "error") {
@@ -70,7 +64,6 @@ const logProduction = (
   payload: unknown,
 ): void => {
   const requestId = getRequestIdFromContext();
-  const spanContext = trace.getActiveSpan()?.spanContext();
   const entry = {
     level,
     message,
@@ -78,8 +71,6 @@ const logProduction = (
     env: env.NODE_ENV,
     pid: process.pid,
     requestId,
-    traceId: spanContext?.traceId,
-    spanId: spanContext?.spanId,
     payload,
   };
 

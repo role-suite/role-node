@@ -2,6 +2,7 @@ import { EventEmitter } from "node:events";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { env } from "../../src/config/env.js";
 import { logger } from "../../src/shared/logger.js";
 import { requestLogger } from "../../src/shared/middleware/request-logger.js";
 
@@ -74,7 +75,7 @@ describe("request logger middleware", () => {
 
     const request = {
       method: "POST",
-      originalUrl: "/api/workspaces",
+      originalUrl: "/api/v1/workspaces",
       ip: "127.0.0.1",
       socket: { remoteAddress: "127.0.0.1" },
       header: () => undefined,
@@ -92,8 +93,41 @@ describe("request logger middleware", () => {
       expect.objectContaining({
         requestId,
         method: "POST",
-        path: "/api/workspaces",
+        path: "/api/v1/workspaces",
         ip: "127.0.0.1",
+      }),
+    );
+  });
+
+  it("generates request id when incoming id is invalid", () => {
+    const infoSpy = vi
+      .spyOn(logger, "info")
+      .mockImplementation(() => undefined);
+    const next = vi.fn();
+    const response = new MockResponse();
+
+    const request = {
+      method: "GET",
+      originalUrl: "/health",
+      ip: "127.0.0.1",
+      socket: { remoteAddress: "127.0.0.1" },
+      header: (name: string) =>
+        name.toLowerCase() === "x-request-id"
+          ? "invalid request id with spaces"
+          : undefined,
+    };
+
+    requestLogger(request as never, response as never, next);
+    response.emit("finish");
+
+    const requestId = String(response.getHeader("x-request-id"));
+    expect(requestId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    );
+    expect(infoSpy).toHaveBeenCalledWith(
+      "HTTP request completed",
+      expect.objectContaining({
+        requestId,
       }),
     );
   });
@@ -110,7 +144,7 @@ describe("request logger middleware", () => {
 
     const request = {
       method: "GET",
-      originalUrl: "/api/workspaces",
+      originalUrl: "/api/v1/workspaces",
       ip: "127.0.0.1",
       socket: { remoteAddress: "127.0.0.1" },
       header: (name: string) =>
@@ -125,7 +159,7 @@ describe("request logger middleware", () => {
       expect.objectContaining({
         requestId: "closed-id",
         method: "GET",
-        path: "/api/workspaces",
+        path: "/api/v1/workspaces",
         ip: "127.0.0.1",
       }),
     );
@@ -158,7 +192,7 @@ describe("request logger middleware", () => {
     );
   });
 
-  it("prefers forwarded client IP when available", () => {
+  it("ignores forwarded client IP header when proxy is not trusted", () => {
     const infoSpy = vi
       .spyOn(logger, "info")
       .mockImplementation(() => undefined);
@@ -168,8 +202,8 @@ describe("request logger middleware", () => {
     const request = {
       method: "GET",
       originalUrl: "/health",
-      ip: "::1",
-      socket: { remoteAddress: "::1" },
+      ip: "203.0.113.9",
+      socket: { remoteAddress: "203.0.113.9" },
       header: (name: string) => {
         if (name.toLowerCase() === "x-forwarded-for") {
           return "192.168.1.25, 10.0.0.2";
@@ -185,8 +219,48 @@ describe("request logger middleware", () => {
     expect(infoSpy).toHaveBeenCalledWith(
       "HTTP request completed",
       expect.objectContaining({
-        ip: "192.168.1.25",
+        ip: "203.0.113.9",
       }),
     );
+  });
+
+  it("uses Express-resolved forwarded IP when proxy is trusted", () => {
+    const originalTrustProxy = env.TRUST_PROXY;
+    (env as { TRUST_PROXY: boolean | number | string }).TRUST_PROXY = true;
+
+    try {
+      const infoSpy = vi
+        .spyOn(logger, "info")
+        .mockImplementation(() => undefined);
+      const next = vi.fn();
+      const response = new MockResponse();
+
+      const request = {
+        method: "GET",
+        originalUrl: "/health",
+        ip: "192.168.1.25",
+        socket: { remoteAddress: "203.0.113.9" },
+        header: (name: string) => {
+          if (name.toLowerCase() === "x-forwarded-for") {
+            return "192.168.1.25, 10.0.0.2";
+          }
+
+          return undefined;
+        },
+      };
+
+      requestLogger(request as never, response as never, next);
+      response.emit("finish");
+
+      expect(infoSpy).toHaveBeenCalledWith(
+        "HTTP request completed",
+        expect.objectContaining({
+          ip: "192.168.1.25",
+        }),
+      );
+    } finally {
+      (env as { TRUST_PROXY: boolean | number | string }).TRUST_PROXY =
+        originalTrustProxy;
+    }
   });
 });

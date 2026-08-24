@@ -1,6 +1,6 @@
 # Workspaces Module
 
-Base route: `/api/workspaces`
+Base route: `/api/v1/workspaces`
 
 This module provides Postman-style workspace management for authenticated users.
 
@@ -8,14 +8,16 @@ This module provides Postman-style workspace management for authenticated users.
 
 - Every endpoint requires `Authorization: Bearer <access-token>`.
 - Listing returns workspaces where the authenticated user is a member.
-- Creating a workspace always creates a `team` workspace and adds the creator as `owner`.
+- Creating a workspace always creates a `team` workspace and adds the creator as `owner`. The
+  workspace row and the owner membership are created in a single DB transaction, so a failure
+  partway through can't leave an ownerless, orphaned workspace behind.
 - Getting workspace details requires membership in that workspace.
 - Owners can manage team workspace members.
 - Invitations are required for members to self-join a team workspace.
 
 ## Endpoints
 
-### `GET /api/workspaces`
+### `GET /api/v1/workspaces`
 
 Returns all workspaces for the current user.
 
@@ -27,7 +29,7 @@ Response item shape:
 - `type`
 - `role`
 
-### `POST /api/workspaces`
+### `POST /api/v1/workspaces`
 
 Creates a new team workspace.
 
@@ -43,7 +45,7 @@ Validation:
 
 - `name`: string, trimmed, min 2, max 120
 
-### `GET /api/workspaces/:workspaceId`
+### `GET /api/v1/workspaces/:workspaceId`
 
 Returns workspace summary for current user membership.
 
@@ -52,11 +54,11 @@ Errors:
 - `403 Workspace access denied` when user is not a member
 - `404 Workspace not found` when membership exists but workspace row is missing
 
-### `GET /api/workspaces/:workspaceId/members`
+### `GET /api/v1/workspaces/:workspaceId/members`
 
 Lists members of the workspace for any current workspace member.
 
-### `POST /api/workspaces/:workspaceId/members`
+### `POST /api/v1/workspaces/:workspaceId/members`
 
 Adds an existing user to a team workspace.
 
@@ -74,8 +76,11 @@ Rules:
 - Only workspace owners can add members.
 - Personal workspaces cannot accept additional members.
 - Target user must already exist.
+- `409 User is already a workspace member` if the target already has a membership, including when
+  two requests race to add the same user at the same time (backed by the DB's
+  `UNIQUE(user_id, workspace_id)` constraint, not just an app-level check).
 
-### `POST /api/workspaces/:workspaceId/invitations`
+### `POST /api/v1/workspaces/:workspaceId/invitations`
 
 Creates a join invitation for a team workspace.
 
@@ -97,7 +102,7 @@ Rules:
 
 Response includes a `token` that should be delivered to the invitee.
 
-### `POST /api/workspaces/join`
+### `POST /api/v1/workspaces/join`
 
 Accepts an invitation token and joins the workspace.
 
@@ -114,8 +119,11 @@ Rules:
 - Invitation must exist, be unexpired, and unused.
 - Invite email must match the authenticated user.
 - Personal workspaces cannot accept members.
+- `409 User is already a workspace member` if the invitee already has a membership - including a
+  double-submitted join with the same token racing itself. The membership create and the
+  invitation's accepted-at update run in one transaction.
 
-### `POST /api/workspaces/:workspaceId/convert-to-team`
+### `POST /api/v1/workspaces/:workspaceId/convert-to-team`
 
 Converts a personal workspace into a team workspace.
 
@@ -132,7 +140,7 @@ Rules:
 - Only workspace owners can convert.
 - Already-team workspaces cannot be converted.
 
-### `PATCH /api/workspaces/:workspaceId/members/:memberUserId`
+### `PATCH /api/v1/workspaces/:workspaceId/members/:memberUserId`
 
 Updates workspace role (`member` or `admin`) for an existing member.
 
@@ -141,7 +149,7 @@ Rules:
 - Only workspace owners can update roles.
 - Owner role cannot be reassigned through this endpoint.
 
-### `DELETE /api/workspaces/:workspaceId/members/:memberUserId`
+### `DELETE /api/v1/workspaces/:workspaceId/members/:memberUserId`
 
 Removes a member from the workspace.
 
@@ -151,7 +159,7 @@ Rules:
 - Owner cannot remove themselves here; use leave endpoint.
 - Last owner cannot be removed.
 
-### `POST /api/workspaces/:workspaceId/leave`
+### `POST /api/v1/workspaces/:workspaceId/leave`
 
 Current user leaves the workspace.
 
@@ -159,7 +167,7 @@ Rules:
 
 - Last workspace owner cannot leave.
 
-### `GET /api/workspaces/:workspaceId/updates`
+### `GET /api/v1/workspaces/:workspaceId/updates`
 
 Lists workspace events (member changes, invitations) by cursor.
 
@@ -171,9 +179,10 @@ Query params:
 ## Implementation notes
 
 - Module files:
-  - `src/modules/workspaces/workspaces.route.ts`
-  - `src/modules/workspaces/workspaces.controller.ts`
-  - `src/modules/workspaces/workspaces.service.ts`
-  - `src/modules/workspaces/workspaces.repo.ts`
-  - `src/modules/workspaces/workspaces.schema.ts`
-- Persistence is delegated through auth-backed workspace/membership repo functions.
+  - `src/modules/workspaces/route.ts`
+  - `src/modules/workspaces/controller.ts`
+  - `src/modules/workspaces/service.ts`
+  - `src/modules/workspaces/events.service.ts`
+  - `src/modules/workspaces/schema.ts`
+- There is no `workspaces/repo.ts`; persistence is delegated entirely through `authRepo`
+  (`src/modules/auth/repo.ts`), including `withAuthTransaction` for the multi-write paths above.

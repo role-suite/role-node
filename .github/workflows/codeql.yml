@@ -34,16 +34,9 @@ jobs:
         with:
           languages: ${{ matrix.language }}
 
-      - name: Setup pnpm
+      - name: Setup Node.js and pnpm
         if: matrix.language == 'javascript-typescript'
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        if: matrix.language == 'javascript-typescript'
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
+        uses: ./.github/actions/setup-node-pnpm
 
       - name: Install dependencies
         if: matrix.language == 'javascript-typescript'

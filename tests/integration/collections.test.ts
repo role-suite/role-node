@@ -2,11 +2,8 @@ import request from "supertest";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { app } from "../../src/app.js";
-import {
-  authRepo,
-  setAuthRepoDbClient,
-} from "../../src/modules/auth/auth.repo.js";
-import { setCollectionsRepoDbClient } from "../../src/modules/collections/collections.repo.js";
+import { authRepo, setAuthRepoDbClient } from "../../src/modules/auth/repo.js";
+import { setCollectionsRepoDbClient } from "../../src/modules/collections/repo.js";
 import { createAuthTestDb } from "../helpers/auth-test-db.js";
 
 const testDb = createAuthTestDb();
@@ -24,7 +21,7 @@ describe("collections integration", () => {
   });
 
   it("supports collection CRUD for workspace owners", async () => {
-    const owner = await request(app).post("/api/auth/register").send({
+    const owner = await request(app).post("/api/v1/auth/register").send({
       name: "Owner",
       email: "owner@example.com",
       password: "password123",
@@ -33,14 +30,14 @@ describe("collections integration", () => {
     const token = owner.body.data.tokens.accessToken;
 
     const workspace = await request(app)
-      .post("/api/workspaces")
+      .post("/api/v1/workspaces")
       .set("Authorization", `Bearer ${token}`)
       .send({ name: "Collections Team" });
 
     const workspaceId = workspace.body.data.id as number;
 
     const createResponse = await request(app)
-      .post(`/api/workspaces/${workspaceId}/collections`)
+      .post(`/api/v1/workspaces/${workspaceId}/collections`)
       .set("Authorization", `Bearer ${token}`)
       .send({ name: "Orders", description: "Orders endpoints" });
 
@@ -48,14 +45,14 @@ describe("collections integration", () => {
     const collectionId = createResponse.body.data.id as number;
 
     const listResponse = await request(app)
-      .get(`/api/workspaces/${workspaceId}/collections`)
+      .get(`/api/v1/workspaces/${workspaceId}/collections`)
       .set("Authorization", `Bearer ${token}`);
 
     expect(listResponse.status).toBe(200);
     expect(listResponse.body.data.items).toHaveLength(1);
 
     const updateResponse = await request(app)
-      .patch(`/api/workspaces/${workspaceId}/collections/${collectionId}`)
+      .patch(`/api/v1/workspaces/${workspaceId}/collections/${collectionId}`)
       .set("Authorization", `Bearer ${token}`)
       .send({ name: "Orders v2" });
 
@@ -63,20 +60,20 @@ describe("collections integration", () => {
     expect(updateResponse.body.data.name).toBe("Orders v2");
 
     const deleteResponse = await request(app)
-      .delete(`/api/workspaces/${workspaceId}/collections/${collectionId}`)
+      .delete(`/api/v1/workspaces/${workspaceId}/collections/${collectionId}`)
       .set("Authorization", `Bearer ${token}`);
 
     expect(deleteResponse.status).toBe(200);
   });
 
   it("allows members to read but blocks write operations", async () => {
-    const owner = await request(app).post("/api/auth/register").send({
+    const owner = await request(app).post("/api/v1/auth/register").send({
       name: "Owner",
       email: "owner@example.com",
       password: "password123",
       accountType: "single",
     });
-    const member = await request(app).post("/api/auth/register").send({
+    const member = await request(app).post("/api/v1/auth/register").send({
       name: "Member",
       email: "member@example.com",
       password: "password123",
@@ -87,31 +84,31 @@ describe("collections integration", () => {
     const memberToken = member.body.data.tokens.accessToken;
 
     const workspace = await request(app)
-      .post("/api/workspaces")
+      .post("/api/v1/workspaces")
       .set("Authorization", `Bearer ${ownerToken}`)
       .send({ name: "Shared Team" });
 
     const workspaceId = workspace.body.data.id as number;
 
     await request(app)
-      .post(`/api/workspaces/${workspaceId}/members`)
+      .post(`/api/v1/workspaces/${workspaceId}/members`)
       .set("Authorization", `Bearer ${ownerToken}`)
       .send({ email: "member@example.com", role: "member" });
 
     await request(app)
-      .post(`/api/workspaces/${workspaceId}/collections`)
+      .post(`/api/v1/workspaces/${workspaceId}/collections`)
       .set("Authorization", `Bearer ${ownerToken}`)
       .send({ name: "Payments" });
 
     const listResponse = await request(app)
-      .get(`/api/workspaces/${workspaceId}/collections`)
+      .get(`/api/v1/workspaces/${workspaceId}/collections`)
       .set("Authorization", `Bearer ${memberToken}`);
 
     expect(listResponse.status).toBe(200);
     expect(listResponse.body.data.items).toHaveLength(1);
 
     const createDenied = await request(app)
-      .post(`/api/workspaces/${workspaceId}/collections`)
+      .post(`/api/v1/workspaces/${workspaceId}/collections`)
       .set("Authorization", `Bearer ${memberToken}`)
       .send({ name: "Denied" });
 
@@ -119,7 +116,7 @@ describe("collections integration", () => {
   });
 
   it("supports endpoint CRUD inside a collection", async () => {
-    const owner = await request(app).post("/api/auth/register").send({
+    const owner = await request(app).post("/api/v1/auth/register").send({
       name: "Owner",
       email: "owner@example.com",
       password: "password123",
@@ -128,20 +125,20 @@ describe("collections integration", () => {
     const token = owner.body.data.tokens.accessToken;
 
     const workspace = await request(app)
-      .post("/api/workspaces")
+      .post("/api/v1/workspaces")
       .set("Authorization", `Bearer ${token}`)
       .send({ name: "Endpoints Team" });
     const workspaceId = workspace.body.data.id as number;
 
     const collection = await request(app)
-      .post(`/api/workspaces/${workspaceId}/collections`)
+      .post(`/api/v1/workspaces/${workspaceId}/collections`)
       .set("Authorization", `Bearer ${token}`)
       .send({ name: "Orders API" });
     const collectionId = collection.body.data.id as number;
 
     const createEndpoint = await request(app)
       .post(
-        `/api/workspaces/${workspaceId}/collections/${collectionId}/endpoints`,
+        `/api/v1/workspaces/${workspaceId}/collections/${collectionId}/endpoints`,
       )
       .set("Authorization", `Bearer ${token}`)
       .send({
@@ -156,7 +153,7 @@ describe("collections integration", () => {
 
     const listEndpoints = await request(app)
       .get(
-        `/api/workspaces/${workspaceId}/collections/${collectionId}/endpoints`,
+        `/api/v1/workspaces/${workspaceId}/collections/${collectionId}/endpoints`,
       )
       .set("Authorization", `Bearer ${token}`);
 
@@ -165,7 +162,7 @@ describe("collections integration", () => {
 
     const updateEndpoint = await request(app)
       .patch(
-        `/api/workspaces/${workspaceId}/collections/${collectionId}/endpoints/${endpointId}`,
+        `/api/v1/workspaces/${workspaceId}/collections/${collectionId}/endpoints/${endpointId}`,
       )
       .set("Authorization", `Bearer ${token}`)
       .send({ method: "POST", body: { raw: "{}" } });
@@ -175,7 +172,7 @@ describe("collections integration", () => {
 
     const getEndpoint = await request(app)
       .get(
-        `/api/workspaces/${workspaceId}/collections/${collectionId}/endpoints/${endpointId}`,
+        `/api/v1/workspaces/${workspaceId}/collections/${collectionId}/endpoints/${endpointId}`,
       )
       .set("Authorization", `Bearer ${token}`);
 
@@ -184,7 +181,7 @@ describe("collections integration", () => {
 
     const deleteEndpoint = await request(app)
       .delete(
-        `/api/workspaces/${workspaceId}/collections/${collectionId}/endpoints/${endpointId}`,
+        `/api/v1/workspaces/${workspaceId}/collections/${collectionId}/endpoints/${endpointId}`,
       )
       .set("Authorization", `Bearer ${token}`);
 
@@ -192,13 +189,13 @@ describe("collections integration", () => {
   });
 
   it("allows members to read endpoints but blocks endpoint writes", async () => {
-    const owner = await request(app).post("/api/auth/register").send({
+    const owner = await request(app).post("/api/v1/auth/register").send({
       name: "Owner",
       email: "owner@example.com",
       password: "password123",
       accountType: "single",
     });
-    const member = await request(app).post("/api/auth/register").send({
+    const member = await request(app).post("/api/v1/auth/register").send({
       name: "Member",
       email: "member@example.com",
       password: "password123",
@@ -209,25 +206,25 @@ describe("collections integration", () => {
     const memberToken = member.body.data.tokens.accessToken;
 
     const workspace = await request(app)
-      .post("/api/workspaces")
+      .post("/api/v1/workspaces")
       .set("Authorization", `Bearer ${ownerToken}`)
       .send({ name: "Shared Endpoints Team" });
     const workspaceId = workspace.body.data.id as number;
 
     await request(app)
-      .post(`/api/workspaces/${workspaceId}/members`)
+      .post(`/api/v1/workspaces/${workspaceId}/members`)
       .set("Authorization", `Bearer ${ownerToken}`)
       .send({ email: "member@example.com", role: "member" });
 
     const collection = await request(app)
-      .post(`/api/workspaces/${workspaceId}/collections`)
+      .post(`/api/v1/workspaces/${workspaceId}/collections`)
       .set("Authorization", `Bearer ${ownerToken}`)
       .send({ name: "Catalog API" });
     const collectionId = collection.body.data.id as number;
 
     const endpoint = await request(app)
       .post(
-        `/api/workspaces/${workspaceId}/collections/${collectionId}/endpoints`,
+        `/api/v1/workspaces/${workspaceId}/collections/${collectionId}/endpoints`,
       )
       .set("Authorization", `Bearer ${ownerToken}`)
       .send({
@@ -239,7 +236,7 @@ describe("collections integration", () => {
 
     const readResponse = await request(app)
       .get(
-        `/api/workspaces/${workspaceId}/collections/${collectionId}/endpoints/${endpointId}`,
+        `/api/v1/workspaces/${workspaceId}/collections/${collectionId}/endpoints/${endpointId}`,
       )
       .set("Authorization", `Bearer ${memberToken}`);
 
@@ -247,7 +244,7 @@ describe("collections integration", () => {
 
     const createDenied = await request(app)
       .post(
-        `/api/workspaces/${workspaceId}/collections/${collectionId}/endpoints`,
+        `/api/v1/workspaces/${workspaceId}/collections/${collectionId}/endpoints`,
       )
       .set("Authorization", `Bearer ${memberToken}`)
       .send({
@@ -257,5 +254,74 @@ describe("collections integration", () => {
       });
 
     expect(createDenied.status).toBe(403);
+  });
+
+  it("supports folder and saved example single-resource reads", async () => {
+    const owner = await request(app).post("/api/v1/auth/register").send({
+      name: "Owner",
+      email: "owner@example.com",
+      password: "password123",
+      accountType: "single",
+    });
+    const token = owner.body.data.tokens.accessToken;
+
+    const workspace = await request(app)
+      .post("/api/v1/workspaces")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "Read Details Team" });
+    const workspaceId = workspace.body.data.id as number;
+
+    const collection = await request(app)
+      .post(`/api/v1/workspaces/${workspaceId}/collections`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "Details API" });
+    const collectionId = collection.body.data.id as number;
+
+    const folder = await request(app)
+      .post(
+        `/api/v1/workspaces/${workspaceId}/collections/${collectionId}/folders`,
+      )
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "Orders" });
+    const folderId = folder.body.data.id as number;
+
+    const readFolder = await request(app)
+      .get(
+        `/api/v1/workspaces/${workspaceId}/collections/${collectionId}/folders/${folderId}`,
+      )
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(readFolder.status).toBe(200);
+    expect(readFolder.body.data.id).toBe(folderId);
+
+    const endpoint = await request(app)
+      .post(
+        `/api/v1/workspaces/${workspaceId}/collections/${collectionId}/endpoints`,
+      )
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        name: "Get Orders",
+        method: "GET",
+        url: "https://api.example.com/orders",
+        folderId,
+      });
+    const endpointId = endpoint.body.data.id as number;
+
+    const example = await request(app)
+      .post(
+        `/api/v1/workspaces/${workspaceId}/collections/${collectionId}/endpoints/${endpointId}/examples`,
+      )
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "200 OK", statusCode: 200, body: "[]" });
+    const exampleId = example.body.data.id as number;
+
+    const readExample = await request(app)
+      .get(
+        `/api/v1/workspaces/${workspaceId}/collections/${collectionId}/endpoints/${endpointId}/examples/${exampleId}`,
+      )
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(readExample.status).toBe(200);
+    expect(readExample.body.data.id).toBe(exampleId);
   });
 });

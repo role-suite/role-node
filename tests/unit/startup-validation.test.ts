@@ -16,9 +16,8 @@ describe("startup validation", () => {
       env: {
         NODE_ENV: "development",
         PORT: 3000,
-        DB_DIALECT: "postgres",
         DB_HOST: "localhost",
-        DB_PORT: 5432,
+        DB_PORT: 6321,
         DB_USER: "db-user",
         DB_PASSWORD: "db-pass",
         DB_NAME: "app",
@@ -47,7 +46,7 @@ describe("startup validation", () => {
     expect(query).toHaveBeenCalledWith("SELECT 1");
     expect(loggerInfo).toHaveBeenCalledWith(
       "Startup validation passed",
-      expect.objectContaining({ dbDialect: "postgres", dbHost: "localhost" }),
+      expect.objectContaining({ dbHost: "localhost" }),
     );
   });
 
@@ -56,9 +55,8 @@ describe("startup validation", () => {
       env: {
         NODE_ENV: "development",
         PORT: 70000,
-        DB_DIALECT: "postgres",
         DB_HOST: "localhost",
-        DB_PORT: 5432,
+        DB_PORT: 6321,
         DB_USER: "db-user",
         DB_PASSWORD: "db-pass",
         DB_NAME: "app",
@@ -95,9 +93,8 @@ describe("startup validation", () => {
       env: {
         NODE_ENV: "production",
         PORT: 3000,
-        DB_DIALECT: "postgres",
         DB_HOST: "localhost",
-        DB_PORT: 5432,
+        DB_PORT: 6321,
         DB_USER: "db-user",
         DB_PASSWORD: "db-pass",
         DB_NAME: "app",

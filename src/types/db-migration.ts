@@ -1,8 +1,7 @@
-import type { DatabaseClient, DbDialect } from "./db.js";
+import type { DatabaseClient } from "./db.js";
 
 export type MigrationContext = {
   db: DatabaseClient;
-  dialect: DbDialect;
 };
 
 export type MigrationHandler = (context: MigrationContext) => Promise<void>;

@@ -1,39 +1,22 @@
-import {
-  randomBytes,
-  scryptSync,
-  timingSafeEqual,
-  createHash,
-} from "node:crypto";
+import { createHash } from "node:crypto";
 
-const SCRYPT_KEY_LENGTH = 64;
+import argon2 from "argon2";
 
-export const hashPassword = (password: string): string => {
-  const salt = randomBytes(16).toString("hex");
-  const hash = scryptSync(password, salt, SCRYPT_KEY_LENGTH).toString("hex");
-  return `scrypt$${salt}$${hash}`;
+export const hashPassword = async (password: string): Promise<string> => {
+  return argon2.hash(password, {
+    type: argon2.argon2id,
+  });
 };
 
-export const verifyPassword = (
+export const verifyPassword = async (
   password: string,
   passwordHash: string,
-): boolean => {
-  const [algorithm, salt, storedHash] = passwordHash.split("$");
-
-  if (algorithm !== "scrypt" || !salt || !storedHash) {
+): Promise<boolean> => {
+  try {
+    return await argon2.verify(passwordHash, password);
+  } catch {
     return false;
   }
-
-  const computedHash = scryptSync(password, salt, SCRYPT_KEY_LENGTH).toString(
-    "hex",
-  );
-  const computedBuffer = Buffer.from(computedHash, "hex");
-  const storedBuffer = Buffer.from(storedHash, "hex");
-
-  if (computedBuffer.length !== storedBuffer.length) {
-    return false;
-  }
-
-  return timingSafeEqual(computedBuffer, storedBuffer);
 };
 
 export const hashToken = (token: string): string => {

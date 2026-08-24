@@ -11,7 +11,7 @@ import {
   updateCollectionSchema,
   workspaceCollectionByIdParamsSchema,
   workspaceCollectionParamsSchema,
-} from "../../src/modules/collections/collections.schema.js";
+} from "../../src/modules/collections/schema.js";
 
 describe("collections schema", () => {
   it("parses create payload", () => {

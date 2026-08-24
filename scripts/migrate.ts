@@ -3,12 +3,12 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { env } from "../src/config/env.js";
-import { createDatabaseClient } from "../src/shared/db/client-factory.js";
+import { createPostgresClient } from "../src/shared/db/postgres-client.js";
 import {
   applyMigrations,
   getMigrationStatus,
   rollbackMigrations,
-} from "../src/shared/db/migrations/runner.js";
+} from "../src/shared/db/migration-runner.js";
 import type {
   MigrationDefinition,
   MigrationHandler,
@@ -120,7 +120,7 @@ const run = async (): Promise<void> => {
     throw new Error(`Unsupported migration command: ${command}`);
   }
 
-  const db = createDatabaseClient(env.DB_DIALECT, {
+  const db = createPostgresClient({
     host: env.DB_HOST,
     port: env.DB_PORT,
     user: env.DB_USER,
@@ -135,30 +135,20 @@ const run = async (): Promise<void> => {
     const migrations = await loadMigrations();
 
     if (command === "status") {
-      const status = await getMigrationStatus(db, env.DB_DIALECT, migrations);
+      const status = await getMigrationStatus(db, migrations);
       console.log(JSON.stringify(status, null, 2));
       return;
     }
 
     if (command === "down") {
-      const rolledBack = await rollbackMigrations(
-        db,
-        env.DB_DIALECT,
-        migrations,
-        count ?? 1,
-      );
+      const rolledBack = await rollbackMigrations(db, migrations, count ?? 1);
       console.log(
         `Rolled back migrations: ${rolledBack.length > 0 ? rolledBack.join(", ") : "none"}`,
       );
       return;
     }
 
-    const applied = await applyMigrations(
-      db,
-      env.DB_DIALECT,
-      migrations,
-      count,
-    );
+    const applied = await applyMigrations(db, migrations, count);
     console.log(
       `Applied migrations: ${applied.length > 0 ? applied.join(", ") : "none"}`,
     );

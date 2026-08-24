@@ -4,17 +4,12 @@ import { app } from "./app.js";
 import { closeDb } from "./config/db.js";
 import { env } from "./config/env.js";
 import { validateStartupOrThrow } from "./config/startup-validation.js";
-import { startGrpcServer } from "./grpc/server.js";
 import { logger } from "./shared/logger.js";
-import { shutdownTelemetry, startTelemetry } from "./shared/telemetry.js";
 
 let httpServer: HttpServer | null = null;
-let grpcServerHandle: Awaited<ReturnType<typeof startGrpcServer>> = null;
 
 const startServer = async (): Promise<void> => {
   try {
-    await startTelemetry();
-
     if (env.ENABLE_STARTUP_VALIDATION) {
       await validateStartupOrThrow();
     } else {
@@ -23,16 +18,17 @@ const startServer = async (): Promise<void> => {
       );
     }
 
-    grpcServerHandle = await startGrpcServer();
-
     httpServer = app.listen(env.PORT, () => {
       logger.info(`REST API Server is running on port ${env.PORT}`, {
         localUrl: `http://localhost:${env.PORT}`,
       });
     });
+
+    httpServer.keepAliveTimeout = env.SERVER_KEEP_ALIVE_TIMEOUT_MS;
+    httpServer.headersTimeout = env.SERVER_HEADERS_TIMEOUT_MS;
+    httpServer.requestTimeout = env.SERVER_REQUEST_TIMEOUT_MS;
   } catch (error) {
     logger.error("Startup validation failed", error);
-    await shutdownTelemetry();
     await closeDb();
     process.exit(1);
   }
@@ -57,12 +53,7 @@ const handleShutdown = async (signal: NodeJS.Signals): Promise<void> => {
       });
     }
 
-    if (grpcServerHandle) {
-      await grpcServerHandle.close();
-    }
-
     await closeDb();
-    await shutdownTelemetry();
   } catch (error) {
     logger.error("Error while closing database connections", error);
     process.exit(1);

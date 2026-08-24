@@ -4,10 +4,9 @@ import {
   applyMigrations,
   getMigrationStatus,
   rollbackMigrations,
-} from "../../src/shared/db/migrations/runner.js";
+} from "../../src/shared/db/migration-runner.js";
 import type {
   DatabaseClient,
-  DbDialect,
   QueryParams,
   QueryResult,
   QueryRow,
@@ -20,10 +19,7 @@ type FakeDbState = {
   queryLog: string[];
 };
 
-const createFakeDb = (
-  dialect: DbDialect,
-  state: FakeDbState,
-): DatabaseClient => {
+const createFakeDb = (state: FakeDbState): DatabaseClient => {
   const query = async <TRow extends QueryRow = QueryRow>(
     sql: string,
     params: QueryParams = [],
@@ -79,7 +75,6 @@ const createFakeDb = (
   };
 
   const db: DatabaseClient = {
-    dialect,
     query,
     transaction: async <T>(
       callback: (tx: DatabaseClient) => Promise<T>,
@@ -108,15 +103,15 @@ describe("migration runner", () => {
       ensureTableCalls: 0,
       queryLog: [],
     };
-    db = createFakeDb("postgres", state);
+    db = createFakeDb(state);
   });
 
   it("applies pending migrations and respects limit", async () => {
     const first = createMigration("001_init");
     const second = createMigration("002_add_users");
 
-    const firstRun = await applyMigrations(db, "postgres", [first, second], 1);
-    const secondRun = await applyMigrations(db, "postgres", [first, second]);
+    const firstRun = await applyMigrations(db, [first, second], 1);
+    const secondRun = await applyMigrations(db, [first, second]);
 
     expect(firstRun).toEqual(["001_init"]);
     expect(secondRun).toEqual(["002_add_users"]);
@@ -130,7 +125,7 @@ describe("migration runner", () => {
     const first = createMigration("001_init");
     const second = createMigration("002_add_users");
 
-    const status = await getMigrationStatus(db, "postgres", [first, second]);
+    const status = await getMigrationStatus(db, [first, second]);
 
     expect(status).toEqual({
       applied: ["001_init"],
@@ -143,12 +138,7 @@ describe("migration runner", () => {
     const second = createMigration("002_add_users");
     state.applied = ["001_init", "002_add_users"];
 
-    const rolledBack = await rollbackMigrations(
-      db,
-      "postgres",
-      [first, second],
-      1,
-    );
+    const rolledBack = await rollbackMigrations(db, [first, second], 1);
 
     expect(rolledBack).toEqual(["002_add_users"]);
     expect(second.down).toHaveBeenCalledOnce();
@@ -160,38 +150,9 @@ describe("migration runner", () => {
     state.applied = ["999_missing"];
 
     await expect(
-      rollbackMigrations(db, "postgres", [createMigration("001_init")], 1),
+      rollbackMigrations(db, [createMigration("001_init")], 1),
     ).rejects.toThrowError(
       "Cannot rollback migration '999_missing': definition file not found",
     );
-  });
-
-  it("uses mysql parameter placeholders for migration records", async () => {
-    const mysqlState: FakeDbState = {
-      applied: ["001_init"],
-      ensureTableCalls: 0,
-      queryLog: [],
-    };
-    const mysqlDb = createFakeDb("mysql", mysqlState);
-    const first = createMigration("001_init");
-    const second = createMigration("002_add_users");
-
-    await applyMigrations(mysqlDb, "mysql", [first, second]);
-    await rollbackMigrations(mysqlDb, "mysql", [first, second], 0);
-
-    const normalizedLog = mysqlState.queryLog.map((sql) =>
-      sql.replace(/\s+/g, " ").trim().toLowerCase(),
-    );
-
-    expect(
-      normalizedLog.some((sql) =>
-        sql.includes("insert into app_migrations (id) values (?)"),
-      ),
-    ).toBe(true);
-    expect(
-      normalizedLog.some((sql) =>
-        sql.includes("delete from app_migrations where id = ?"),
-      ),
-    ).toBe(true);
   });
 });
