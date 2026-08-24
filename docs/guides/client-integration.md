@@ -37,6 +37,8 @@ Supported `data` shapes:
 - List: `{ "items": [...] }`
 - Cursor page: `{ "items": [...], "cursor": { "next": 12, "hasMore": true } }`
 - Action confirmation: `{ "action": "deleted" }` (or `left`, `revoked`, `cancelled`)
+- Action confirmation with count (one endpoint only —
+  `DELETE /api/v1/auth/sessions`): `{ "action": "revoked", "count": 3 }`
 
 ### Error envelope
 
@@ -94,7 +96,7 @@ Authorization: Bearer <accessToken>
 
 When access token is expired or close to expiry, call:
 
-`POST /api/auth/refresh`
+`POST /api/v1/auth/refresh`
 
 Example request (copied from `tests/integration/auth.test.ts`):
 
@@ -104,14 +106,14 @@ Example request (copied from `tests/integration/auth.test.ts`):
 
 ### 4) Logout (session revoke)
 
-`POST /api/auth/logout` with current refresh token revokes that session.
+`POST /api/v1/auth/logout` with current refresh token revokes that session.
 
 ### 5) Switch workspace
 
 A token pair is scoped to one workspace (`data.workspace`). A user who belongs to more than
 one workspace (see `data.memberships`) switches into another with:
 
-`POST /api/auth/switch-workspace`
+`POST /api/v1/auth/switch-workspace`
 
 Requires the current access token:
 
@@ -131,6 +133,48 @@ switch — treat the response's `data.tokens` as a full replacement, exactly lik
 Switching to a workspace the caller is not a member of returns
 `403 WORKSPACE_ACCESS_DENIED`.
 
+### 6) Session / device management
+
+Every login/register/refresh/switch-workspace call creates a new session row. A user can list
+and revoke their own sessions independently of the device that's currently calling the API —
+useful for "sign out my other phone."
+
+`GET /api/v1/auth/sessions` — list the caller's active (non-revoked, non-expired) sessions across
+every workspace they've logged into:
+
+```json
+{
+  "success": true,
+  "data": {
+    "items": [
+      {
+        "id": 12,
+        "workspaceId": 1,
+        "workspaceName": "Altay's Workspace",
+        "workspaceSlug": "altays-workspace",
+        "createdAt": "2026-08-24T10:00:00.000Z",
+        "expiresAt": "2026-08-31T10:00:00.000Z",
+        "current": true
+      }
+    ]
+  }
+}
+```
+
+`current: true` marks the session backing the access token used for the request. Never
+returned: `refreshTokenHash` or any other session secret.
+
+`DELETE /api/v1/auth/sessions/:sessionId` — revoke one of the caller's own sessions by id. Returns
+`404 AUTH_SESSION_NOT_FOUND` for an unknown id or a session belonging to another user.
+
+`DELETE /api/v1/auth/sessions` — "sign out everywhere else": revokes every session for the caller
+except the one backing the current request. Returns `{ "action": "revoked", "count": <n> }`.
+
+Revoking a session blocks it from refreshing again, but does **not** invalidate an
+already-issued access token before its natural (short) expiry — the same behavior as
+`/api/v1/auth/logout`. Clients relying on remote sign-out should treat it as "this device stops
+being able to refresh," not "this device is instantly logged out."
+
 ## Token refresh rules
 
 Based on `src/modules/auth/service.ts`:
@@ -146,6 +190,16 @@ Client behavior:
 - Persist the latest refresh token after every successful refresh.
 - Replace access token and refresh token atomically.
 - If refresh fails with `401` (`INVALID_REFRESH_TOKEN` or `REFRESH_SESSION_INVALID`), clear auth state and force re-authentication.
+
+## Real-time sync
+
+There is no push/websocket transport. `GET /api/v1/workspaces/:workspaceId/updates` cursor polling
+(below) is the supported sync mechanism for every client platform for this phase — poll it on
+an interval while the app is foregrounded/running; there is currently no server-initiated
+notification when the app is backgrounded or closed. Every workspace mutation (collections,
+folders, endpoints, examples, environments, variables, membership changes, and completed
+import jobs) publishes a row to this feed, so a full poll cycle is sufficient to catch up
+regardless of who made the change or from which device.
 
 ## Pagination and cursor semantics
 
@@ -170,7 +224,7 @@ Examples validated in tests:
 
 ### Cursor endpoint
 
-`GET /api/workspaces/:workspaceId/updates?since=<number>&limit=<number>` uses cursor paging.
+`GET /api/v1/workspaces/:workspaceId/updates?since=<number>&limit=<number>` uses cursor paging.
 
 Request sequence copied from `tests/integration/workspaces.test.ts`:
 
@@ -223,6 +277,8 @@ Use `error.code` for branching logic (not `error.message`).
 | `REFRESH_SESSION_INVALID` | 401  | Force login                                                                                          |
 | `WORKSPACE_ACCESS_DENIED` | 403  | Do not retry; show permission state (also returned by `switch-workspace` for a non-member workspace) |
 | `WORKSPACE_NOT_FOUND`     | 404  | Do not retry until resource selection changes                                                        |
+| `AUTH_SESSION_NOT_FOUND`  | 404  | Session already gone/not the caller's; refresh the session list, don't retry the same id             |
+| `RATE_LIMIT_EXCEEDED`     | 429  | Wait for `Retry-After` seconds, then retry                                                           |
 
 For complete registry see `docs/errors.md`.
 
@@ -231,7 +287,10 @@ For complete registry see `docs/errors.md`.
 Default SDK strategy:
 
 - `401 INVALID_ACCESS_TOKEN`: refresh once, then replay original request once.
-- `500 INTERNAL_SERVER_ERROR`: retry cautiously (1-2 times) for idempotent operations.
+- `429 RATE_LIMIT_EXCEEDED`: wait for the `Retry-After` header value, then retry once.
+- `500 INTERNAL_SERVER_ERROR`: retry cautiously (1-2 times) for idempotent operations. Exception:
+  if the request had a large body, check it against the 1mb limit first (see "Request size
+  limits") instead of retrying blindly.
 - `400/403/404/409/410/422`: no automatic retry without user or payload changes.
 
 Backoff example:
@@ -244,8 +303,70 @@ Backoff example:
 
 ### Rate limiting
 
-- No built-in API rate limit is currently published.
-- Apply client-side throttling and exponential backoff to protect upstreams.
+Enforced by `src/shared/middleware/rate-limit.ts`, mounted at the `/api/v1/auth` and
+`/api/v1/workspaces` routers (so it covers every endpoint in this API, including collections,
+environments, and import-export, which are nested under `/api/v1/workspaces`):
+
+- **General limit**: `RATE_LIMIT_MAX` requests per `RATE_LIMIT_WINDOW_MS` window, default
+  **300 requests / 60s**, applied to every request.
+- **Auth limit**: `AUTH_RATE_LIMIT_MAX` requests per `AUTH_RATE_LIMIT_WINDOW_MS` window, default
+  **10 requests / 60s**, applied _in addition_ to the general limit, and only on
+  `POST /api/v1/auth/register`, `POST /api/v1/auth/login`, and `POST /api/v1/auth/refresh`. `/logout`,
+  `/switch-workspace`, `/sessions*`, and `/me` are only subject to the general limit.
+- Limits are keyed by client IP (`express-rate-limit` default), not by user or token.
+- Both limits are disabled in the server's own `test` environment; expect them to be enforced in
+  every other environment.
+
+On every response, expect the `RateLimit-Policy` and `RateLimit` response headers (draft-7
+format, e.g. `RateLimit: limit=300, remaining=299, reset=60`), where `reset` is seconds until
+the window resets, not an epoch timestamp. Deprecated `X-RateLimit-*` headers are not sent.
+
+When a limit is exceeded, the response is:
+
+```
+HTTP/1.1 429 Too Many Requests
+Retry-After: 60
+```
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "message": "Too many requests, please try again later",
+    "details": {},
+    "requestId": "..."
+  }
+}
+```
+
+Client behavior:
+
+- Read `Retry-After` (seconds) and wait at least that long before retrying.
+- Apply client-side throttling and exponential backoff in addition to respecting `Retry-After`,
+  to avoid tripping the limit in the first place — this matters more for a mobile/desktop client
+  polling `GET /api/v1/workspaces/:workspaceId/updates` than it does for one-off requests.
+
+### Request size limits
+
+- JSON request bodies are capped by `REQUEST_BODY_LIMIT`, default **1mb**
+  (`express.json({ limit: ... })` in `src/app.ts`).
+- **Known rough edge**: exceeding this limit currently surfaces as `500 INTERNAL_SERVER_ERROR`,
+  not a clean `413`, because the error handler (`src/shared/errors/error-handler.ts`) only
+  special-cases `ZodError` and the app's own `AppError` — a raw body-parser `PayloadTooLargeError`
+  falls through to the generic 500 branch. Treat an unexpected `500` on a payload-heavy request
+  (e.g. a large import-export import) as a signal to check payload size against 1mb before
+  assuming a server bug.
+
+### Time limits
+
+- **Access token TTL**: `AUTH_ACCESS_TOKEN_TTL_SECONDS`, default **900s (15 min)**.
+- **Refresh token TTL**: `AUTH_REFRESH_TOKEN_TTL_SECONDS`, default **604800s (7 days)**. A
+  refresh token unused for longer than this can no longer be refreshed — the session's
+  `expires_at` will have passed, returning `401 REFRESH_SESSION_INVALID`.
+- **Server request timeout**: `SERVER_REQUEST_TIMEOUT_MS`, default **300000ms (5 min)** — the
+  max time Node's HTTP server allows to receive a full request. Relevant mainly to large
+  import/export payloads sent over a slow connection.
 
 ## Fixture-backed request examples
 
@@ -272,16 +393,35 @@ These request payloads are copied from integration tests:
 
 ```json
 {
-  "firstPoll": "/api/workspaces/1/updates?since=0&limit=50",
-  "secondPoll": "/api/workspaces/1/updates?since=<nextCursor>&limit=50"
+  "firstPoll": "/api/v1/workspaces/1/updates?since=0&limit=50",
+  "secondPoll": "/api/v1/workspaces/1/updates?since=<nextCursor>&limit=50"
+}
+```
+
+### Switch workspace (`tests/integration/auth.test.ts`)
+
+```json
+{ "workspaceId": 2 }
+```
+
+### Revoke a session (`tests/integration/auth.test.ts`)
+
+```json
+{
+  "method": "DELETE",
+  "url": "/api/v1/auth/sessions/<sessionId>"
 }
 ```
 
 ## Implementation checklist (SDK/client)
 
-- Parse success envelopes by `data` shape (`object`, `items`, `cursor`, `action`).
+- Parse success envelopes by `data` shape (`object`, `items`, `cursor`, `action`, and the one
+  `action` + `count` case from bulk session revoke).
 - Parse and propagate `x-request-id` for support/diagnostics.
 - Branch on `error.code` instead of message text.
 - Implement token rotation with atomic token replacement.
 - Implement cursor polling with `since=cursor.next`.
 - Add idempotency-aware retry policy with capped exponential backoff.
+- Handle `429 RATE_LIMIT_EXCEEDED` by waiting for `Retry-After` before retrying.
+- Surface session list/revoke (`GET /api/v1/auth/sessions`, `DELETE /api/v1/auth/sessions[/:id]`) if
+  the client offers a "manage devices" or "sign out everywhere" UI.

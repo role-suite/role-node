@@ -2,7 +2,7 @@
 
 This module implements authentication for a workspace-aware system.
 
-Base route: `/api/auth`
+Base route: `/api/v1/auth`
 
 ## What this module does
 
@@ -25,7 +25,7 @@ Base route: `/api/auth`
 
 ## API endpoints
 
-### `POST /api/auth/register`
+### `POST /api/v1/auth/register`
 
 Creates a user account, creates a workspace, and creates an owner membership in a single DB
 transaction, then returns an auth payload with a token pair. If any of the three inserts fail,
@@ -73,7 +73,7 @@ Domain errors:
 
 - `409`: `Email already in use`
 
-### `POST /api/auth/login`
+### `POST /api/v1/auth/login`
 
 Authenticates credentials and issues a new token pair.
 
@@ -104,7 +104,7 @@ Domain errors:
 - `403`: `No workspace membership found`
 - `404`: `Workspace not found`
 
-### `POST /api/auth/refresh`
+### `POST /api/v1/auth/refresh`
 
 Validates refresh token, validates current session record, revokes old session, and issues a new token pair.
 
@@ -126,7 +126,7 @@ Domain errors:
 - `401`: `Invalid refresh token`
 - `401`: `Refresh session is invalid`
 
-### `POST /api/auth/logout`
+### `POST /api/v1/auth/logout`
 
 Revokes the session referenced by the provided refresh token.
 
@@ -147,7 +147,7 @@ Notes:
 
 - Invalid/expired refresh token is treated as a no-op and still returns success.
 
-### `GET /api/auth/me`
+### `GET /api/v1/auth/me`
 
 Returns authenticated user + workspace + memberships.
 

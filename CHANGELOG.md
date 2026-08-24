@@ -35,6 +35,11 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ### Added
 
+- Import/export: a completed import (`POST /import-export/imports`) now publishes a
+  `workspace_events` row (`entity: "import_export_job"`, `action: "completed"`) inside the same
+  transaction as the rest of the import. Previously a bulk import could add many
+  collections/environments in one call with no trace in `GET /workspaces/:workspaceId/updates`,
+  so other clients/teammates polling that feed had no way to learn the import happened.
 - Interactive API docs at `/docs` (disabled in production): an OpenAPI 3.1 spec generated from
   the existing zod request/response schemas, served through Swagger UI so every endpoint is
   directly testable ("Try it out") with a real bearer token. Every request body ships a realistic
@@ -43,6 +48,12 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ### Changed
 
+- **Breaking:** every REST route now lives under `/api/v1` instead of `/api` (`API_PREFIX` in
+  `src/shared/routes.ts`). Added ahead of any real client so the seam exists before there's an
+  installed base to break: once a published mobile/desktop app is in the field, old versions
+  keep calling the API for weeks after a server release (app store review lag, users who don't
+  update), so future breaking changes need a version bump (`/api/v2`) rather than an in-place
+  change to `/api/v1`. See `docs/compatibility.md` for the version-bump policy.
 - Auth registration (`POST /api/auth/register`) now creates the user, workspace, and owner
   membership inside a single DB transaction, so a partial failure can no longer leave an
   orphaned user without a workspace.

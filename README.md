@@ -155,68 +155,71 @@ This section lists REST endpoints.
 
 ### Auth
 
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `POST /api/auth/refresh`
-- `POST /api/auth/logout`
-- `GET /api/auth/me`
-- `POST /api/auth/switch-workspace`
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/login`
+- `POST /api/v1/auth/refresh`
+- `POST /api/v1/auth/logout`
+- `GET /api/v1/auth/me`
+- `POST /api/v1/auth/switch-workspace`
+- `GET /api/v1/auth/sessions`
+- `DELETE /api/v1/auth/sessions`
+- `DELETE /api/v1/auth/sessions/:sessionId`
 
 ### Workspaces
 
-- `GET /api/workspaces`
-- `POST /api/workspaces`
-- `GET /api/workspaces/:workspaceId`
-- `GET /api/workspaces/:workspaceId/members`
-- `POST /api/workspaces/:workspaceId/members`
-- `PATCH /api/workspaces/:workspaceId/members/:memberUserId`
-- `DELETE /api/workspaces/:workspaceId/members/:memberUserId`
-- `POST /api/workspaces/:workspaceId/invitations`
-- `POST /api/workspaces/join`
-- `POST /api/workspaces/:workspaceId/leave`
-- `POST /api/workspaces/:workspaceId/convert-to-team`
-- `GET /api/workspaces/:workspaceId/updates`
+- `GET /api/v1/workspaces`
+- `POST /api/v1/workspaces`
+- `GET /api/v1/workspaces/:workspaceId`
+- `GET /api/v1/workspaces/:workspaceId/members`
+- `POST /api/v1/workspaces/:workspaceId/members`
+- `PATCH /api/v1/workspaces/:workspaceId/members/:memberUserId`
+- `DELETE /api/v1/workspaces/:workspaceId/members/:memberUserId`
+- `POST /api/v1/workspaces/:workspaceId/invitations`
+- `POST /api/v1/workspaces/join`
+- `POST /api/v1/workspaces/:workspaceId/leave`
+- `POST /api/v1/workspaces/:workspaceId/convert-to-team`
+- `GET /api/v1/workspaces/:workspaceId/updates`
 
 ### Collections
 
-- `GET /api/workspaces/:workspaceId/collections`
-- `GET /api/workspaces/:workspaceId/collections/:collectionId`
-- `POST /api/workspaces/:workspaceId/collections`
-- `PATCH /api/workspaces/:workspaceId/collections/:collectionId`
-- `DELETE /api/workspaces/:workspaceId/collections/:collectionId`
-- `GET /api/workspaces/:workspaceId/collections/:collectionId/endpoints`
-- `GET /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
-- `POST /api/workspaces/:workspaceId/collections/:collectionId/endpoints`
-- `PATCH /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
-- `DELETE /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
-- `GET /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples`
-- `POST /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples`
-- `PATCH /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples/:exampleId`
-- `DELETE /api/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples/:exampleId`
-- `GET /api/workspaces/:workspaceId/collections/:collectionId/folders`
-- `POST /api/workspaces/:workspaceId/collections/:collectionId/folders`
-- `PATCH /api/workspaces/:workspaceId/collections/:collectionId/folders/:folderId`
-- `DELETE /api/workspaces/:workspaceId/collections/:collectionId/folders/:folderId`
+- `GET /api/v1/workspaces/:workspaceId/collections`
+- `GET /api/v1/workspaces/:workspaceId/collections/:collectionId`
+- `POST /api/v1/workspaces/:workspaceId/collections`
+- `PATCH /api/v1/workspaces/:workspaceId/collections/:collectionId`
+- `DELETE /api/v1/workspaces/:workspaceId/collections/:collectionId`
+- `GET /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints`
+- `GET /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
+- `POST /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints`
+- `PATCH /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
+- `DELETE /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId`
+- `GET /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples`
+- `POST /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples`
+- `PATCH /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples/:exampleId`
+- `DELETE /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples/:exampleId`
+- `GET /api/v1/workspaces/:workspaceId/collections/:collectionId/folders`
+- `POST /api/v1/workspaces/:workspaceId/collections/:collectionId/folders`
+- `PATCH /api/v1/workspaces/:workspaceId/collections/:collectionId/folders/:folderId`
+- `DELETE /api/v1/workspaces/:workspaceId/collections/:collectionId/folders/:folderId`
 
 ### Environments
 
-- `GET /api/workspaces/:workspaceId/environments`
-- `GET /api/workspaces/:workspaceId/environments/:environmentId`
-- `POST /api/workspaces/:workspaceId/environments`
-- `PATCH /api/workspaces/:workspaceId/environments/:environmentId`
-- `DELETE /api/workspaces/:workspaceId/environments/:environmentId`
-- `GET /api/workspaces/:workspaceId/environments/:environmentId/variables`
-- `GET /api/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
-- `POST /api/workspaces/:workspaceId/environments/:environmentId/variables`
-- `PATCH /api/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
-- `DELETE /api/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
+- `GET /api/v1/workspaces/:workspaceId/environments`
+- `GET /api/v1/workspaces/:workspaceId/environments/:environmentId`
+- `POST /api/v1/workspaces/:workspaceId/environments`
+- `PATCH /api/v1/workspaces/:workspaceId/environments/:environmentId`
+- `DELETE /api/v1/workspaces/:workspaceId/environments/:environmentId`
+- `GET /api/v1/workspaces/:workspaceId/environments/:environmentId/variables`
+- `GET /api/v1/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
+- `POST /api/v1/workspaces/:workspaceId/environments/:environmentId/variables`
+- `PATCH /api/v1/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
+- `DELETE /api/v1/workspaces/:workspaceId/environments/:environmentId/variables/:variableId`
 
 ### Import/Export
 
-- `GET /api/workspaces/:workspaceId/import-export/jobs`
-- `GET /api/workspaces/:workspaceId/import-export/jobs/:jobId`
-- `POST /api/workspaces/:workspaceId/import-export/exports`
-- `POST /api/workspaces/:workspaceId/import-export/imports`
+- `GET /api/v1/workspaces/:workspaceId/import-export/jobs`
+- `GET /api/v1/workspaces/:workspaceId/import-export/jobs/:jobId`
+- `POST /api/v1/workspaces/:workspaceId/import-export/exports`
+- `POST /api/v1/workspaces/:workspaceId/import-export/imports`
 
 ## 📚 Documentation
 
