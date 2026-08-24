@@ -13,6 +13,41 @@ Source of truth:
   - `tests/integration/auth.test.ts`
   - `tests/integration/workspaces.test.ts`
   - `tests/integration/app.test.ts`
+- Full per-endpoint reference (request/response shapes, validation rules, error codes) beyond
+  what this guide covers:
+  - `docs/modules/auth.md`
+  - `docs/modules/workspaces.md`
+  - `docs/modules/collections.md`
+  - `docs/modules/environments.md`
+  - `docs/modules/import-export.md`
+  - This guide covers cross-cutting patterns (auth lifecycle, envelopes, errors, sync,
+    pagination, limits); the module docs cover what each individual endpoint accepts/returns.
+
+## Machine-readable spec
+
+An OpenAPI 3.1 document is generated from the same Zod schemas the server validates against, so
+it can't drift from runtime behavior the way hand-written docs can:
+
+- `GET /docs/openapi.json` — the raw spec.
+- `GET /docs` — the same spec rendered as an interactive Swagger UI, with a realistic example
+  value on every request body and "Try it out" support against a real bearer token.
+- **Only served when `NODE_ENV !== "production"`** (`src/app.ts`) — fetch/generate from a
+  non-production environment, not from the live API.
+
+This is the fastest path to a typed client: point an OpenAPI generator
+(`openapi-generator-cli`, `swagger_dart_code_generator`/`openapi_generator` on pub.dev, etc.) at
+the JSON to generate Dart models and a request client instead of hand-writing every DTO from
+this guide's prose examples. Regenerate whenever `role-node` bumps a minor/major version (see
+`docs/compatibility.md`).
+
+### About `role-sdk` / `role-client`
+
+`docs/compatibility.md` tracks version compatibility with two sibling repos, `role-sdk` and
+`role-client`, but neither this repo nor its docs state what language/platform they target. If
+you're building a new client (e.g. a Flutter/Dart app) and can't confirm those repos are
+Dart-compatible, don't assume they're a starting point — treat `role-node` as a plain REST/JSON
+API and either generate a client from `/docs/openapi.json` or hand-roll one against this guide
+and the module docs above.
 
 ## Base behavior
 
@@ -221,6 +256,23 @@ Examples validated in tests:
 - collections list (`tests/integration/collections.test.ts`)
 - environments list (`tests/integration/environments.test.ts`)
 - import-export jobs list (`tests/integration/import-export.test.ts`)
+
+**These list routes are not paginated — `items` is the complete list, every call, with no
+`limit`/`offset`/cursor.** Confirmed against the actual queries (`src/modules/*/repo.ts`): none
+of the following endpoints have a `LIMIT` clause, so a large workspace returns everything in one
+response:
+
+- `GET /workspaces`, `GET /workspaces/:workspaceId/members`
+- `GET /workspaces/:workspaceId/collections`, and the nested `endpoints`/`folders`/`examples`
+  list routes under a collection
+- `GET /workspaces/:workspaceId/environments`, and the nested `variables` list route
+- `GET /workspaces/:workspaceId/import-export/jobs`
+
+Only `GET /workspaces/:workspaceId/updates` (below) is cursor-paginated. Client implication: for
+these unbounded lists, fetch once and cache/filter client-side rather than building
+pagination UI around them — there's no server-side page to request. If a workspace ever grows
+large enough for this to matter (hundreds of imported endpoints, for example), that's a backend
+capacity question to raise, not something the client can work around with request parameters.
 
 ### Cursor endpoint
 

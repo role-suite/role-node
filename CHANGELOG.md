@@ -35,6 +35,13 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ### Added
 
+- `docs/guides/client-integration.md`: cross-links the per-module reference docs
+  (`docs/modules/*.md`), points to the OpenAPI spec (`/docs/openapi.json`, `/docs`) as the
+  fastest path to a generated typed client, flags that `role-sdk`/`role-client`'s
+  language/platform isn't documented anywhere in this repo (don't assume they apply to a new
+  client without confirming), and documents that `collections`/`environments`/`workspaces`
+  list endpoints are unbounded (no `limit`/`offset`/cursor) — only
+  `GET /workspaces/:workspaceId/updates` is paginated.
 - Import/export: a completed import (`POST /import-export/imports`) now publishes a
   `workspace_events` row (`entity: "import_export_job"`, `action: "completed"`) inside the same
   transaction as the rest of the import. Previously a bulk import could add many
