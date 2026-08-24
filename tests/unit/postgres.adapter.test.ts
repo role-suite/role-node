@@ -32,7 +32,7 @@ vi.mock("pg", () => ({
 describe("postgres adapter", () => {
   const config: DatabaseConfig = {
     host: "localhost",
-    port: 5432,
+    port: 6321,
     user: "db-user",
     password: "db-pass",
     database: "app",

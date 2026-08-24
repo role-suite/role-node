@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: role_pass
       POSTGRES_DB: role_node
     ports:
-      - "5432:5432"
+      - "6321:5432"
     volumes:
       - role_postgres_data:/var/lib/postgresql/data
 

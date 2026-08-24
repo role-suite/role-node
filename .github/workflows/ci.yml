@@ -22,7 +22,7 @@ jobs:
       NODE_ENV: test
       PORT: 3000
       DB_HOST: localhost
-      DB_PORT: 5432
+      DB_PORT: 6321
       DB_USER: role_user
       DB_PASSWORD: role_pass
       DB_NAME: role_node
@@ -61,7 +61,7 @@ jobs:
       NODE_ENV: test
       PORT: 3000
       DB_HOST: localhost
-      DB_PORT: 5432
+      DB_PORT: 6321
       DB_USER: role_user
       DB_PASSWORD: role_pass
       DB_NAME: role_node
@@ -106,7 +106,7 @@ jobs:
       NODE_ENV: test
       PORT: 3000
       DB_HOST: localhost
-      DB_PORT: 5432
+      DB_PORT: 6321
       DB_USER: role_user
       DB_PASSWORD: role_pass
       DB_NAME: role_node
@@ -159,7 +159,7 @@ jobs:
       NODE_ENV: test
       PORT: 3000
       DB_HOST: localhost
-      DB_PORT: 5432
+      DB_PORT: 6321
       DB_USER: role_user
       DB_PASSWORD: role_pass
       DB_NAME: role_node

@@ -29,7 +29,7 @@ describe("config db", () => {
     vi.doMock("../../src/config/env.js", () => ({
       env: {
         DB_HOST: "localhost",
-        DB_PORT: 5432,
+        DB_PORT: 6321,
         DB_USER: "db-user",
         DB_PASSWORD: "db-pass",
         DB_NAME: "app",
@@ -48,7 +48,7 @@ describe("config db", () => {
     expect(createPostgresClientMock).toHaveBeenCalledOnce();
     expect(createPostgresClientMock).toHaveBeenCalledWith({
       host: "localhost",
-      port: 5432,
+      port: 6321,
       user: "db-user",
       password: "db-pass",
       database: "app",
@@ -68,7 +68,7 @@ describe("config db", () => {
     vi.doMock("../../src/config/env.js", () => ({
       env: {
         DB_HOST: "localhost",
-        DB_PORT: 5432,
+        DB_PORT: 6321,
         DB_USER: "db-user",
         DB_PASSWORD: "db-pass",
         DB_NAME: "app",
