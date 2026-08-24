@@ -16,11 +16,13 @@ import { securityHeaders } from "./shared/middleware/security-headers.js";
 export const app = express();
 
 app.disable("x-powered-by");
+app.set("trust proxy", env.TRUST_PROXY);
+
 app.use(requestIdMiddleware);
 app.use(requestLogger);
+app.use(securityHeaders);
 app.use(express.json({ limit: env.REQUEST_BODY_LIMIT }));
 
-app.use(securityHeaders);
 app.get(ROUTE_SEGMENTS.health, (_req, res) => {
   appResponse.sendObject(res, 200, { status: "ok" });
 });

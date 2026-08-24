@@ -18,15 +18,15 @@ describe("App integration", () => {
     setAuthRepoDbClient(null);
   });
 
+  it("does not trust proxy headers by default", () => {
+    expect(app.get("trust proxy")).toBe(false);
+  });
+
   it("returns health status", async () => {
     const response = await request(app).get("/health");
 
     expect(response.status).toBe(200);
     expect(response.headers["x-request-id"]).toBeDefined();
-    expect(response.body).toEqual({
-      success: true,
-      data: { status: "ok" },
-    });
     expect(response.headers["x-powered-by"]).toBeUndefined();
     expect(response.headers["x-content-type-options"]).toBe("nosniff");
     expect(response.headers["x-frame-options"]).toBe("DENY");
@@ -35,6 +35,10 @@ describe("App integration", () => {
     expect(response.headers["permissions-policy"]).toBe(
       "camera=(), microphone=(), geolocation=()",
     );
+    expect(response.body).toEqual({
+      success: true,
+      data: { status: "ok" },
+    });
   });
 
   it("registers and logs in a user", async () => {

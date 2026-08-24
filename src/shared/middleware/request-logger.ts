@@ -2,9 +2,9 @@ import { randomUUID } from "node:crypto";
 
 import type { NextFunction, Request, Response } from "express";
 
+import { env } from "../../config/env.js";
 import { logger } from "../logger.js";
-
-const REQUEST_ID_HEADER = "x-request-id";
+import { REQUEST_ID_HEADER, REQUEST_ID_PATTERN } from "./request-id.js";
 
 const resolveRequestId = (req: Request): string => {
   if (req.requestId && req.requestId.trim().length > 0) {
@@ -13,8 +13,12 @@ const resolveRequestId = (req: Request): string => {
 
   const incomingRequestId = req.header(REQUEST_ID_HEADER);
 
-  if (incomingRequestId && incomingRequestId.trim().length > 0) {
-    return incomingRequestId;
+  if (incomingRequestId) {
+    const trimmedRequestId = incomingRequestId.trim();
+
+    if (REQUEST_ID_PATTERN.test(trimmedRequestId)) {
+      return trimmedRequestId;
+    }
   }
 
   return randomUUID();
@@ -33,29 +37,11 @@ const normalizeIp = (ip: string): string => {
 };
 
 const resolveClientIp = (req: Request): string => {
-  const forwardedFor = req.header("x-forwarded-for");
-
-  if (forwardedFor) {
-    const firstForwardedIp = forwardedFor.split(",")[0]?.trim();
-
-    if (firstForwardedIp) {
-      return normalizeIp(firstForwardedIp);
-    }
+  if (env.TRUST_PROXY) {
+    return normalizeIp(req.ip ?? req.socket?.remoteAddress ?? "unknown");
   }
 
-  const realIp = req.header("x-real-ip");
-
-  if (realIp && realIp.trim().length > 0) {
-    return normalizeIp(realIp.trim());
-  }
-
-  const socketIp = req.socket?.remoteAddress;
-
-  if (socketIp) {
-    return normalizeIp(socketIp);
-  }
-
-  return normalizeIp(req.ip ?? "unknown");
+  return normalizeIp(req.socket?.remoteAddress ?? "unknown");
 };
 
 export const requestLogger = (
