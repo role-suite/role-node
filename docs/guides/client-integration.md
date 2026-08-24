@@ -106,6 +106,31 @@ Example request (copied from `tests/integration/auth.test.ts`):
 
 `POST /api/auth/logout` with current refresh token revokes that session.
 
+### 5) Switch workspace
+
+A token pair is scoped to one workspace (`data.workspace`). A user who belongs to more than
+one workspace (see `data.memberships`) switches into another with:
+
+`POST /api/auth/switch-workspace`
+
+Requires the current access token:
+
+```
+Authorization: Bearer <accessToken>
+```
+
+Request body:
+
+```json
+{ "workspaceId": 2 }
+```
+
+Returns the same `AuthResponse` shape as register/login/refresh, scoped to the new workspace.
+The session backing the access token used to call this endpoint is revoked as part of the
+switch — treat the response's `data.tokens` as a full replacement, exactly like a refresh.
+Switching to a workspace the caller is not a member of returns
+`403 WORKSPACE_ACCESS_DENIED`.
+
 ## Token refresh rules
 
 Based on `src/modules/auth/service.ts`:
@@ -189,15 +214,15 @@ Cursor rules:
 
 Use `error.code` for branching logic (not `error.message`).
 
-| Code                      | HTTP | Typical handling                                     |
-| ------------------------- | ---- | ---------------------------------------------------- |
-| `VALIDATION_FAILED`       | 400  | Do not retry unchanged payload; surface field errors |
-| `MISSING_ACCESS_TOKEN`    | 401  | Acquire/login, then retry once with token            |
-| `INVALID_ACCESS_TOKEN`    | 401  | Attempt refresh; if refresh fails, force login       |
-| `INVALID_REFRESH_TOKEN`   | 401  | Force login                                          |
-| `REFRESH_SESSION_INVALID` | 401  | Force login                                          |
-| `WORKSPACE_ACCESS_DENIED` | 403  | Do not retry; show permission state                  |
-| `WORKSPACE_NOT_FOUND`     | 404  | Do not retry until resource selection changes        |
+| Code                      | HTTP | Typical handling                                                                                     |
+| ------------------------- | ---- | ---------------------------------------------------------------------------------------------------- |
+| `VALIDATION_FAILED`       | 400  | Do not retry unchanged payload; surface field errors                                                 |
+| `MISSING_ACCESS_TOKEN`    | 401  | Acquire/login, then retry once with token                                                            |
+| `INVALID_ACCESS_TOKEN`    | 401  | Attempt refresh; if refresh fails, force login                                                       |
+| `INVALID_REFRESH_TOKEN`   | 401  | Force login                                                                                          |
+| `REFRESH_SESSION_INVALID` | 401  | Force login                                                                                          |
+| `WORKSPACE_ACCESS_DENIED` | 403  | Do not retry; show permission state (also returned by `switch-workspace` for a non-member workspace) |
+| `WORKSPACE_NOT_FOUND`     | 404  | Do not retry until resource selection changes                                                        |
 
 For complete registry see `docs/errors.md`.
 

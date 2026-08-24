@@ -4,6 +4,7 @@ import {
   loginSchema,
   refreshTokenSchema,
   registerSchema,
+  switchWorkspaceSchema,
 } from "../../modules/auth/schema.js";
 import { ROUTE_PATTERNS } from "../../shared/routes.js";
 import {
@@ -154,6 +155,37 @@ export const authPaths: ZodOpenApiPathsObject = {
           },
         },
         ["400"],
+      ),
+    },
+  },
+  [ROUTE_PATTERNS.auth.switchWorkspace]: {
+    post: {
+      tags: ["Auth"],
+      summary: "Switch the authenticated session to another workspace",
+      description:
+        "Reissues a token pair scoped to a different workspace the caller is a member of. Revokes the session tied to the access token used to call this endpoint.",
+      security: [{ [BEARER_AUTH]: [] }],
+      requestBody: {
+        content: {
+          "application/json": {
+            schema: switchWorkspaceSchema,
+            example: { workspaceId: 2 },
+          },
+        },
+      },
+      responses: withErrors(
+        {
+          "200": {
+            description: "Token pair reissued for the target workspace",
+            content: {
+              "application/json": {
+                schema: successEnvelope(authResponseSchema),
+              },
+            },
+          },
+        },
+        ["400", "401", "403"],
+        { "403": "Not a member of the target workspace" },
       ),
     },
   },

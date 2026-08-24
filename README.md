@@ -160,6 +160,7 @@ This section lists REST endpoints.
 - `POST /api/auth/refresh`
 - `POST /api/auth/logout`
 - `GET /api/auth/me`
+- `POST /api/auth/switch-workspace`
 
 ### Workspaces
 
