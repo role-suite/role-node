@@ -1,31 +1,42 @@
 version: 2
 updates:
   - package-ecosystem: npm
-    directory: "/"
+    directory: /
     schedule:
-      interval: monthly
-    open-pull-requests-limit: 2
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: UTC
+    open-pull-requests-limit: 5
     groups:
-      npm-patch-minor:
-        update-types:
-          - patch
-          - minor
-    ignore:
-      - dependency-name: "*"
-        update-types:
-          - version-update:semver-major
+      npm-production:
+        dependency-type: production
+        update-types: [minor, patch]
+      npm-development:
+        dependency-type: development
+        update-types: [minor, patch]
+    labels:
+      - dependencies
+      - npm
+    commit-message:
+      prefix: chore
+      include: scope
 
   - package-ecosystem: github-actions
-    directory: "/"
+    directory: /
     schedule:
-      interval: monthly
-    open-pull-requests-limit: 2
+      interval: weekly
+      day: monday
+      time: "09:30"
+      timezone: UTC
+    open-pull-requests-limit: 5
     groups:
-      github-actions-patch-minor:
-        update-types:
-          - patch
-          - minor
-    ignore:
-      - dependency-name: "*"
-        update-types:
-          - version-update:semver-major
+      github-actions:
+        patterns: ["*"]
+        update-types: [minor, patch]
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: chore
+      include: scope

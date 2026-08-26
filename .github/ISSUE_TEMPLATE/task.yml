@@ -1,0 +1,21 @@
+name: Task
+description: Track internal maintenance or implementation work.
+title: "chore: "
+labels: [task]
+body:
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What needs to be done?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      placeholder: |
+        - Criterion 1
+        - Criterion 2
+    validations:
+      required: true

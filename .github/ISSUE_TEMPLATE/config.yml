@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/role-suite/role-node/security/policy
+    about: Please report security issues privately through GitHub Security Advisories.
+  - name: Support
+    url: https://github.com/role-suite/role-node/blob/main/SUPPORT.md
+    about: Please use the support channels before opening a bug for usage questions.

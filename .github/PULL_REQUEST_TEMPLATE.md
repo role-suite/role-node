@@ -1,15 +1,16 @@
 ## Summary
 
-What does this change do and why?
+Describe what changed and why.
 
 ## Testing
 
 - [ ] `pnpm verify`
-- [ ] Other (describe):
+- [ ] Other:
+- [ ] Not run; reason:
 
-## Checklist
+## Risk
 
-- [ ] Updated docs if needed
-- [ ] Added/updated tests
-- [ ] No breaking changes (or documented)
-- [ ] If release-impacting: updated `CHANGELOG.md` and `docs/compatibility.md`
+- [ ] Database or migration changes
+- [ ] API contract changes
+- [ ] Security-sensitive changes
+- [ ] Documentation updated where needed

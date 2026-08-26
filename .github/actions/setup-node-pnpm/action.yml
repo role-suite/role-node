@@ -1,11 +1,9 @@
 name: Setup Node.js and pnpm
-description: >
-  Sets up pnpm (version read from package.json's "packageManager" field - no hardcoded version
-  here, so it can never drift out of sync) and Node.js with the pnpm store cached.
+description: Set up Node.js, pnpm, and pnpm dependency caching.
 
 inputs:
   node-version:
-    description: Node.js version to install
+    description: Node.js version to use.
     required: false
     default: "22"
 
@@ -20,3 +18,9 @@ runs:
       with:
         node-version: ${{ inputs.node-version }}
         cache: pnpm
+
+    - name: Print tool versions
+      shell: bash
+      run: |
+        node --version
+        pnpm --version
