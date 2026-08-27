@@ -40,15 +40,6 @@ the JSON to generate Dart models and a request client instead of hand-writing ev
 this guide's prose examples. Regenerate whenever `role-node` bumps a minor/major version (see
 `docs/compatibility.md`).
 
-### About `role-sdk` / `role-client`
-
-`docs/compatibility.md` tracks version compatibility with two sibling repos, `role-sdk` and
-`role-client`, but neither this repo nor its docs state what language/platform they target. If
-you're building a new client (e.g. a Flutter/Dart app) and can't confirm those repos are
-Dart-compatible, don't assume they're a starting point — treat `role-node` as a plain REST/JSON
-API and either generate a client from `/docs/openapi.json` or hand-roll one against this guide
-and the module docs above.
-
 ## Base behavior
 
 ### REST transport
@@ -401,14 +392,9 @@ Client behavior:
 
 ### Request size limits
 
-- JSON request bodies are capped by `REQUEST_BODY_LIMIT`, default **1mb**
-  (`express.json({ limit: ... })` in `src/app.ts`).
-- **Known rough edge**: exceeding this limit currently surfaces as `500 INTERNAL_SERVER_ERROR`,
-  not a clean `413`, because the error handler (`src/shared/errors/error-handler.ts`) only
-  special-cases `ZodError` and the app's own `AppError` — a raw body-parser `PayloadTooLargeError`
-  falls through to the generic 500 branch. Treat an unexpected `500` on a payload-heavy request
-  (e.g. a large import-export import) as a signal to check payload size against 1mb before
-  assuming a server bug.
+- JSON request bodies are capped by `REQUEST_BODY_LIMIT`, default **1mb**.
+- Treat an unexpected `500` on a payload-heavy request, such as a large import/export import, as
+  a signal to check payload size against 1mb before assuming a retryable server failure.
 
 ### Time limits
 

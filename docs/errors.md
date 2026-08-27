@@ -21,6 +21,15 @@ All modules return the same machine-readable error envelope:
 - `error.details`: structured context (validation fields, params, upstream details).
 - `error.requestId`: request correlation id (`x-request-id` header value).
 
+## Common HTTP scenarios
+
+- `400`: validation and domain constraint failures.
+- `401`: missing token, invalid token, expired token, or invalid authenticated context.
+- `403`: authenticated user lacks workspace membership or the required role.
+- `404`: route or workspace-scoped resource was not found.
+- `409`: conflict such as duplicate email, duplicate environment name, or duplicate membership.
+- `500`: unexpected server error.
+
 ## Correlation id behavior
 
 - Every request is assigned a correlation id by `src/shared/middleware/request-id.ts`.

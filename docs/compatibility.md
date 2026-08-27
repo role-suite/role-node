@@ -16,6 +16,7 @@ Update this table on every release.
 - If your project is pinned to a release tag (for example `v1.0.0`), use the matching major/minor line.
 - If you consume unreleased changes from `main`, use `main` for `role-sdk` and `role-client` as well.
 - Keep role-node, role-sdk, and role-client on matching major/minor versions unless a release note states otherwise.
+- This repo does not document the language/platform targets for `role-sdk` or `role-client`. If you are building a new client and cannot confirm those repos are compatible with your platform, treat `role-node` as a plain REST/JSON API and generate or write a client against `/docs/openapi.json`, `docs/guides/client-integration.md`, and `docs/modules/*.md`.
 
 ## API URL versioning
 

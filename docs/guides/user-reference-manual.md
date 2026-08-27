@@ -12,7 +12,9 @@ It is intended for frontend developers, API integrators, and QA automation engin
 - All endpoints return JSON
 - Response envelope:
   - success: `{ "success": true, "data": ... }`
-  - error: `{ "success": false, "message": "...", "data"?: ... }`
+  - error: `{ "success": false, "error": { "code": "...", "message": "...", "details": {}, "requestId": "..." } }`
+
+For the complete error model and code registry, see `docs/errors.md`.
 
 ## Authentication model
 

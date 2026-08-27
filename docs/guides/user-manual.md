@@ -86,29 +86,12 @@ Then add variables using:
 
 ## 6) Optional organization features
 
-- Folders:
-  - `GET/POST/PATCH/DELETE /api/v1/workspaces/:workspaceId/collections/:collectionId/folders`
-- Endpoint examples:
-  - `GET/POST/PATCH/DELETE /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples`
+- Folders: organize collection endpoints into nested groups.
+- Endpoint examples: store documented example responses for saved endpoints.
 
-## 7) Body modes quick reference
-
-Endpoint bodies (saved on collection endpoints) support:
-
-- `raw`
-- `urlencoded`
-- `formdata`
-- `binary`
-- `none`
-
-## 8) Common error map
-
-- `401`: missing or invalid token
-- `403`: no access or insufficient role
-- `404`: resource not found in workspace scope
-
-## 9) Next docs
+## 7) Next docs
 
 - Full API reference: `docs/guides/user-reference-manual.md`
+- Error model and code registry: `docs/errors.md`
 - Developer guide: `docs/guides/developer-manual.md`
 - Implementation playbook: `docs/guides/implementation-manual.md`

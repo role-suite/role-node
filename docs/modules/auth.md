@@ -181,7 +181,9 @@ the plain numeric field.
 All responses use shared envelope from `src/shared/app-response.ts`:
 
 - success: `{ success: true, data: ... }`
-- error: `{ success: false, message, data? }`
+- error: `{ success: false, error: { code, message, details, requestId } }`
+
+For the complete error model and code registry, see `docs/errors.md`.
 
 ## Auth and session lifecycle
 

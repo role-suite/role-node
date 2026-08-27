@@ -20,6 +20,8 @@ Environment values are validated in `src/config/env.ts`.
 
 Database-related environment variables:
 
+- `NODE_ENV`: `development` | `test` | `production`
+- `PORT`: HTTP server port
 - `DB_HOST`: required database host
 - `DB_PORT`: required database port
 - `DB_USER`: required database user
@@ -48,6 +50,15 @@ When local DB is not available yet, set `ENABLE_STARTUP_VALIDATION=false`.
 - `pnpm db:migrate:status`: show applied/pending migration IDs
 - `pnpm db:reset:docker`: reset dockerized DBs (down -v, up -d)
 - `pnpm verify`: run full local quality checks
+
+## CI/CD
+
+- CI workflow: `.github/workflows/ci.yml` runs format, lint, test, build, and a final status gate.
+- Security workflow: `.github/workflows/security.yml` runs dependency audit and secret scanning.
+- CodeQL workflow: `.github/workflows/codeql.yml` runs static analysis for Actions and TypeScript.
+- Coverage badge workflow: `.github/workflows/coverage-badge.yml` updates `docs/badges/coverage.svg` on pushes to `main`.
+- CD workflow: `.github/workflows/cd.yml` builds and publishes Docker images to GHCR and deploys production from `v*` tags or manual dispatch.
+- Release workflow: `.github/workflows/release-tag.yml` performs semantic versioning from manual dispatch and creates the GitHub Release.
 
 ## Build and run
 
@@ -111,6 +122,11 @@ Coverage thresholds are defined in `vitest.config.ts`.
 - Smoke tests (`tests/smoke`): quick baseline health checks.
 - E2E tests (`tests/e2e`): full user flows across endpoints.
 
+## Known runtime caveats
+
+- JSON request bodies are capped by `REQUEST_BODY_LIMIT`, default `1mb`, through `express.json({ limit: ... })` in `src/app.ts`.
+- Exceeding the body limit currently falls through the generic error-handler branch and may surface as `500 INTERNAL_SERVER_ERROR` instead of `413`.
+
 ## Conventions
 
 - Keep module boundaries strict (no controller-to-repo direct access).
@@ -119,17 +135,6 @@ Coverage thresholds are defined in `vitest.config.ts`.
 - Keep side effects (I/O, DB) isolated to repository layer.
 - Add tests for both happy paths and failure paths.
 
-## Adding a new endpoint (checklist)
+## Implementation checklists
 
-1. Update or create schema for input/output constraints.
-2. Add/extend repo methods.
-3. Add service logic and domain guards.
-4. Add controller handler.
-5. Register route.
-6. Add unit tests (schema/service/repo).
-7. Add integration tests for endpoint behavior.
-
-## Current improvement backlog
-
-- Add CI workflow for `pnpm build` + `pnpm test:run` (and optional coverage gate).
-- Add or update relevant API docs when route behavior changes.
+See `docs/guides/implementation-manual.md` for endpoint implementation playbooks and documentation update checklists.

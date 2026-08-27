@@ -51,6 +51,12 @@ git checkout -b feature/workspace-invitations
 - Use the GitHub Actions workflow `Release Tag` and choose bump type (`patch`, `minor`, `major`).
 - The tag triggers the CD workflow to build and release the tagged version.
 
+Release flow:
+
+1. Run `Release` from GitHub Actions on `main` and choose `patch`, `minor`, or `major`.
+2. The workflow validates quality gates, writes the next semantic version to `package.json`, updates `CHANGELOG.md`, pushes a release commit, and creates a new `v*` tag.
+3. It then creates the GitHub Release, and the CD workflow runs automatically for that tag.
+
 Release checklist:
 
 - Update `CHANGELOG.md`.
