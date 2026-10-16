@@ -75,3 +75,30 @@ export const collectionEndpointExampleSchema = z
     updatedAt: z.iso.datetime(),
   })
   .meta({ id: "CollectionEndpointExample" });
+
+export const collectionVersionSchema = z
+  .object({
+    id: z.number().int(),
+    collectionId: z.number().int(),
+    versionNumber: z.number().int(),
+    label: z.string().nullable(),
+    source: z.enum(["auto", "manual", "restore", "import"]),
+    createdByUserId: z.number().int(),
+    restoredFromVersionId: z.number().int().nullable(),
+    createdAt: z.iso.datetime(),
+  })
+  .meta({ id: "CollectionVersion" });
+
+export const collectionVersionDetailSchema = collectionVersionSchema
+  .extend({
+    snapshot: z.unknown(),
+  })
+  .meta({ id: "CollectionVersionDetail" });
+
+export const collectionVersionRestoreSchema = z
+  .object({
+    collection: collectionSchema,
+    version: collectionVersionSchema,
+    restoredFromVersionId: z.number().int(),
+  })
+  .meta({ id: "CollectionVersionRestore" });

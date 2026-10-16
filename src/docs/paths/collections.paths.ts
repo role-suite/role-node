@@ -1,10 +1,12 @@
 import type { ZodOpenApiPathsObject } from "zod-openapi";
 
 import {
+  collectionVersionsQuerySchema,
   createCollectionEndpointExampleSchema,
   createCollectionEndpointSchema,
   createCollectionFolderSchema,
   createCollectionSchema,
+  createCollectionVersionSchema,
   updateCollectionEndpointExampleSchema,
   updateCollectionEndpointSchema,
   updateCollectionFolderSchema,
@@ -14,6 +16,7 @@ import {
   workspaceCollectionEndpointExampleByIdParamsSchema,
   workspaceCollectionFolderByIdParamsSchema,
   workspaceCollectionParamsSchema,
+  workspaceCollectionVersionByIdParamsSchema,
 } from "../../modules/collections/schema.js";
 import { ROUTE_PATTERNS } from "../../shared/routes.js";
 import {
@@ -21,10 +24,14 @@ import {
   collectionEndpointSchema,
   collectionFolderSchema,
   collectionSchema,
+  collectionVersionDetailSchema,
+  collectionVersionRestoreSchema,
+  collectionVersionSchema,
 } from "../schemas/collections.js";
 import {
   BEARER_AUTH,
   actionConfirmationSchema,
+  cursorPageEnvelope,
   listEnvelope,
   successEnvelope,
   withErrors,
@@ -492,6 +499,103 @@ export const collectionsPaths: ZodOpenApiPathsObject = {
             description: "Example deleted",
             content: {
               "application/json": { schema: actionConfirmationSchema },
+            },
+          },
+        },
+        ["401", "403", "404"],
+      ),
+    },
+  },
+  [ROUTE_PATTERNS.collections.versions]: {
+    get: {
+      tags: ["Collections"],
+      summary: "List collection versions",
+      description:
+        "Cursor-paginated version history, newest first, without snapshot bodies.",
+      security: auth,
+      requestParams: {
+        path: workspaceCollectionByIdParamsSchema,
+        query: collectionVersionsQuerySchema,
+      },
+      responses: withErrors(
+        {
+          "200": {
+            description: "Collection versions",
+            content: {
+              "application/json": {
+                schema: cursorPageEnvelope(collectionVersionSchema),
+              },
+            },
+          },
+        },
+        ["401", "403", "404"],
+      ),
+    },
+    post: {
+      tags: ["Collections"],
+      summary: "Create a named collection version",
+      security: auth,
+      requestParams: { path: workspaceCollectionByIdParamsSchema },
+      requestBody: {
+        content: {
+          "application/json": {
+            schema: createCollectionVersionSchema,
+            example: { label: "before-refactor" },
+          },
+        },
+      },
+      responses: withErrors(
+        {
+          "201": {
+            description: "Collection version created",
+            content: {
+              "application/json": {
+                schema: successEnvelope(collectionVersionDetailSchema),
+              },
+            },
+          },
+        },
+        ["400", "401", "403", "404"],
+      ),
+    },
+  },
+  [ROUTE_PATTERNS.collections.versionById]: {
+    get: {
+      tags: ["Collections"],
+      summary: "Get a collection version with its snapshot",
+      security: auth,
+      requestParams: { path: workspaceCollectionVersionByIdParamsSchema },
+      responses: withErrors(
+        {
+          "200": {
+            description: "Collection version",
+            content: {
+              "application/json": {
+                schema: successEnvelope(collectionVersionDetailSchema),
+              },
+            },
+          },
+        },
+        ["401", "403", "404"],
+      ),
+    },
+  },
+  [ROUTE_PATTERNS.collections.versionRestore]: {
+    post: {
+      tags: ["Collections"],
+      summary: "Restore a collection version",
+      description:
+        "Records the current state as a restore version, then rebuilds the collection from the snapshot with its original entity ids.",
+      security: auth,
+      requestParams: { path: workspaceCollectionVersionByIdParamsSchema },
+      responses: withErrors(
+        {
+          "200": {
+            description: "Collection restored",
+            content: {
+              "application/json": {
+                schema: successEnvelope(collectionVersionRestoreSchema),
+              },
             },
           },
         },

@@ -152,6 +152,31 @@ Create request:
 }
 ```
 
+### Collection versions
+
+History is automatic: every collection change records a snapshot version. Owners and admins can
+also create labeled versions and restore any version.
+
+- `GET /api/v1/workspaces/:workspaceId/collections/:collectionId/versions?limit=&cursor=`
+- `GET /api/v1/workspaces/:workspaceId/collections/:collectionId/versions/:versionId`
+- `POST /api/v1/workspaces/:workspaceId/collections/:collectionId/versions`
+- `POST /api/v1/workspaces/:workspaceId/collections/:collectionId/versions/:versionId/restore`
+
+Create version request (label optional):
+
+```json
+{
+  "label": "before-refactor"
+}
+```
+
+The versions list returns `{ items, cursor }` newest-first with metadata only
+(`id`, `versionNumber`, `label`, `source`, `createdByUserId`, `restoredFromVersionId`,
+`createdAt`). Fetch a single version for the full `snapshot` (folders, endpoints, examples).
+Restores rebuild the collection with the snapshot's entity ids and return the restored collection
+plus the recorded pre-restore version. Unknown version ids return
+`404 COLLECTION_VERSION_NOT_FOUND`.
+
 ### Collection folders
 
 - `GET /api/v1/workspaces/:workspaceId/collections/:collectionId/folders`
@@ -378,5 +403,5 @@ Request:
 
 ## Current limitations
 
-- No version snapshots and no fork/merge for collections yet
+- No fork/merge for collections yet (version snapshots and restore exist, see "Collection versions")
 - Import/export currently tracks jobs and summaries, not full async file lifecycle

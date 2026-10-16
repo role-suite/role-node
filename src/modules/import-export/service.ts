@@ -4,6 +4,7 @@ import { ERROR_CODES } from "../../shared/errors/error-codes.js";
 import type { DatabaseClient } from "../../types/db.js";
 import { authRepo } from "../auth/repo.js";
 import { collectionsRepo } from "../collections/repo.js";
+import { recordCollectionSnapshot } from "../collections/versions.service.js";
 import { environmentsRepo } from "../environments/repo.js";
 import {
   ENVIRONMENT_NAME_CONSTRAINT,
@@ -307,6 +308,12 @@ const importArtifact = async (
         );
       }
     }
+
+    await recordCollectionSnapshot(dbClient, {
+      collectionId: collection.id,
+      createdByUserId,
+      source: "import",
+    });
   }
 
   for (const environmentPayload of payload.environments ?? []) {

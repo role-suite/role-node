@@ -8,6 +8,7 @@ const COLLECTION_ID_PARAM = ":collectionId" as const;
 const ENDPOINT_ID_PARAM = ":endpointId" as const;
 const EXAMPLE_ID_PARAM = ":exampleId" as const;
 const FOLDER_ID_PARAM = ":folderId" as const;
+const VERSION_ID_PARAM = ":versionId" as const;
 const ENVIRONMENT_ID_PARAM = ":environmentId" as const;
 const VARIABLE_ID_PARAM = ":variableId" as const;
 const JOB_ID_PARAM = ":jobId" as const;
@@ -58,6 +59,9 @@ export const ROUTE_SEGMENTS = {
     endpointExampleById: `/${COLLECTION_ID_PARAM}/endpoints/${ENDPOINT_ID_PARAM}/examples/${EXAMPLE_ID_PARAM}`,
     folders: `/${COLLECTION_ID_PARAM}/folders`,
     folderById: `/${COLLECTION_ID_PARAM}/folders/${FOLDER_ID_PARAM}`,
+    versions: `/${COLLECTION_ID_PARAM}/versions`,
+    versionById: `/${COLLECTION_ID_PARAM}/versions/${VERSION_ID_PARAM}`,
+    versionRestore: `/${COLLECTION_ID_PARAM}/versions/${VERSION_ID_PARAM}/restore`,
   },
   environments: {
     list: "/",
@@ -112,6 +116,9 @@ export const ROUTE_PATTERNS = {
     endpointExampleById: `${WORKSPACES_BASE}${ROUTE_SEGMENTS.workspaces.nested.collections}${ROUTE_SEGMENTS.collections.endpointExampleById}`,
     folders: `${WORKSPACES_BASE}${ROUTE_SEGMENTS.workspaces.nested.collections}${ROUTE_SEGMENTS.collections.folders}`,
     folderById: `${WORKSPACES_BASE}${ROUTE_SEGMENTS.workspaces.nested.collections}${ROUTE_SEGMENTS.collections.folderById}`,
+    versions: `${WORKSPACES_BASE}${ROUTE_SEGMENTS.workspaces.nested.collections}${ROUTE_SEGMENTS.collections.versions}`,
+    versionById: `${WORKSPACES_BASE}${ROUTE_SEGMENTS.workspaces.nested.collections}${ROUTE_SEGMENTS.collections.versionById}`,
+    versionRestore: `${WORKSPACES_BASE}${ROUTE_SEGMENTS.workspaces.nested.collections}${ROUTE_SEGMENTS.collections.versionRestore}`,
   },
   environments: {
     list: `${WORKSPACES_BASE}${ROUTE_SEGMENTS.workspaces.nested.environments}`,

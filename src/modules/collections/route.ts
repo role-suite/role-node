@@ -85,3 +85,19 @@ collectionsRouter.delete(
   ROUTE_SEGMENTS.collections.folderById,
   collectionsController.removeFolder,
 );
+collectionsRouter.get(
+  ROUTE_SEGMENTS.collections.versions,
+  collectionsController.listVersions,
+);
+collectionsRouter.get(
+  ROUTE_SEGMENTS.collections.versionById,
+  collectionsController.getVersion,
+);
+collectionsRouter.post(
+  ROUTE_SEGMENTS.collections.versions,
+  collectionsController.createVersion,
+);
+collectionsRouter.post(
+  ROUTE_SEGMENTS.collections.versionRestore,
+  collectionsController.restoreVersion,
+);

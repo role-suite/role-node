@@ -47,6 +47,7 @@ export const ERROR_CODES = {
     FOLDER_SELF_PARENT: "COLLECTION_FOLDER_SELF_PARENT",
     ENDPOINT_NOT_FOUND: "COLLECTION_ENDPOINT_NOT_FOUND",
     EXAMPLE_NOT_FOUND: "COLLECTION_EXAMPLE_NOT_FOUND",
+    VERSION_NOT_FOUND: "COLLECTION_VERSION_NOT_FOUND",
   },
   environments: {
     MODIFY_FORBIDDEN: "ENVIRONMENTS_MODIFY_FORBIDDEN",
@@ -241,6 +242,10 @@ export const ERROR_CODE_DEFINITIONS: Record<ErrorCode, ErrorCodeDefinition> = {
   COLLECTION_EXAMPLE_NOT_FOUND: {
     status: 404,
     message: "Collection endpoint example not found",
+  },
+  COLLECTION_VERSION_NOT_FOUND: {
+    status: 404,
+    message: "Collection version not found",
   },
   ENVIRONMENTS_MODIFY_FORBIDDEN: {
     status: 403,

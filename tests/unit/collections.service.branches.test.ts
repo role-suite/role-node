@@ -7,6 +7,7 @@ const {
   findEndpointByIdMock,
   findFolderByIdMock,
   listFoldersByCollectionMock,
+  listEndpointsByCollectionMock,
   createFolderMock,
   updateFolderMock,
   deleteFolderByIdMock,
@@ -24,6 +25,7 @@ const {
   findEndpointByIdMock: vi.fn(),
   findFolderByIdMock: vi.fn(),
   listFoldersByCollectionMock: vi.fn(),
+  listEndpointsByCollectionMock: vi.fn(),
   createFolderMock: vi.fn(),
   updateFolderMock: vi.fn(),
   deleteFolderByIdMock: vi.fn(),
@@ -51,6 +53,7 @@ vi.mock("../../src/modules/collections/repo.js", () => ({
     findEndpointById: findEndpointByIdMock,
     findFolderById: findFolderByIdMock,
     listFoldersByCollection: listFoldersByCollectionMock,
+    listEndpointsByCollection: listEndpointsByCollectionMock,
     createFolder: createFolderMock,
     updateFolder: updateFolderMock,
     deleteFolderById: deleteFolderByIdMock,
@@ -69,6 +72,24 @@ vi.mock("../../src/modules/workspaces/events.service.js", () => ({
   },
 }));
 
+vi.mock("../../src/modules/collections/versions.repo.js", () => ({
+  collectionVersionsRepo: {
+    nextVersionNumber: vi.fn().mockResolvedValue(1),
+    create: vi.fn().mockResolvedValue({
+      id: 1,
+      collectionId: 20,
+      versionNumber: 1,
+      label: null,
+      source: "auto",
+      snapshot: {},
+      createdByUserId: 1,
+      restoredFromVersionId: null,
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+    }),
+    pruneAutoVersions: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
 import { collectionsService } from "../../src/modules/collections/service.js";
 
 const now = new Date("2026-01-01T00:00:00.000Z");
@@ -78,6 +99,9 @@ describe("collections service branches", () => {
     vi.clearAllMocks();
     findMembershipByUserAndWorkspaceMock.mockResolvedValue({ role: "owner" });
     findWorkspaceByIdMock.mockResolvedValue({ id: 5 });
+    listFoldersByCollectionMock.mockResolvedValue([]);
+    listEndpointsByCollectionMock.mockResolvedValue([]);
+    listExamplesByEndpointMock.mockResolvedValue([]);
     findByIdMock.mockResolvedValue({
       id: 20,
       workspaceId: 5,

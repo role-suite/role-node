@@ -133,6 +133,18 @@ type ImportExportJobRow = {
   completed_at: Date;
 };
 
+type CollectionVersionRow = {
+  id: number;
+  collection_id: number;
+  version_number: number;
+  label: string | null;
+  source: "auto" | "manual" | "restore" | "import";
+  snapshot_json: string;
+  created_by_user_id: number;
+  restored_from_version_id: number | null;
+  created_at: Date;
+};
+
 type WorkspaceEventRow = {
   id: number;
   workspace_id: number;
@@ -190,6 +202,7 @@ export const createAuthTestDb = (): DatabaseClient => {
   let collectionEndpointExamples: CollectionEndpointExampleRow[] = [];
   let collectionFolderId = 1;
   let collectionEndpointExampleId = 1;
+  let collectionVersions: CollectionVersionRow[] = [];
   let environments: EnvironmentRow[] = [];
   let environmentVariables: EnvironmentVariableRow[] = [];
   let importExportJobs: ImportExportJobRow[] = [];
@@ -197,6 +210,7 @@ export const createAuthTestDb = (): DatabaseClient => {
   let workspaceInvitations: WorkspaceInvitationRow[] = [];
   let collectionId = 1;
   let collectionEndpointId = 1;
+  let collectionVersionId = 1;
   let environmentId = 1;
   let environmentVariableId = 1;
   let importExportJobId = 1;
@@ -222,6 +236,7 @@ export const createAuthTestDb = (): DatabaseClient => {
       collectionEndpoints = [];
       collectionFolders = [];
       collectionEndpointExamples = [];
+      collectionVersions = [];
       environments = [];
       environmentVariables = [];
       importExportJobs = [];
@@ -233,6 +248,7 @@ export const createAuthTestDb = (): DatabaseClient => {
       sessionId = 1;
       collectionId = 1;
       collectionEndpointId = 1;
+      collectionVersionId = 1;
       environmentId = 1;
       environmentVariableId = 1;
       importExportJobId = 1;
@@ -746,6 +762,9 @@ export const createAuthTestDb = (): DatabaseClient => {
       collectionEndpoints = collectionEndpoints.filter(
         (item) => item.collection_id !== id,
       );
+      collectionVersions = collectionVersions.filter(
+        (item) => item.collection_id !== id,
+      );
       return { rows: [] as TRow[], rowCount: before - collections.length };
     }
 
@@ -755,7 +774,230 @@ export const createAuthTestDb = (): DatabaseClient => {
       collectionEndpoints = [];
       collectionFolders = [];
       collectionEndpointExamples = [];
+      collectionVersions = [];
       return { rows: [] as TRow[], rowCount: before };
+    }
+
+    if (
+      normalized.startsWith(
+        "select coalesce(max(version_number), 0) as version_number from collection_versions where collection_id =",
+      )
+    ) {
+      const collection = expectParam<number>(params, 0);
+      const maxVersion = collectionVersions
+        .filter((item) => item.collection_id === collection)
+        .reduce((max, item) => Math.max(max, item.version_number), 0);
+      return {
+        rows: castRows<TRow>([{ version_number: maxVersion }]),
+        rowCount: 1,
+      };
+    }
+
+    if (
+      normalized.startsWith("insert into collection_versions") &&
+      normalized.includes("returning")
+    ) {
+      const now = new Date();
+      const row: CollectionVersionRow = {
+        id: collectionVersionId++,
+        collection_id: expectParam<number>(params, 0),
+        version_number: expectParam<number>(params, 1),
+        label: expectParam<string | null>(params, 2),
+        source: expectParam<CollectionVersionRow["source"]>(params, 3),
+        snapshot_json: expectParam<string>(params, 4),
+        created_by_user_id: expectParam<number>(params, 5),
+        restored_from_version_id: expectParam<number | null>(params, 6),
+        created_at: now,
+      };
+      collectionVersions.push(row);
+      return { rows: castRows<TRow>([row]), rowCount: 1 };
+    }
+
+    if (
+      normalized.startsWith(
+        "select id, collection_id, version_number, label, source, snapshot_json, created_by_user_id, restored_from_version_id, created_at from collection_versions where collection_id =",
+      ) &&
+      normalized.includes("and id <")
+    ) {
+      const collection = expectParam<number>(params, 0);
+      const cursor = expectParam<number>(params, 1);
+      const limit = expectParam<number>(params, 2);
+      const rows = collectionVersions
+        .filter((item) => item.collection_id === collection && item.id < cursor)
+        .sort((a, b) => b.id - a.id)
+        .slice(0, limit);
+      return { rows: castRows<TRow>(rows), rowCount: rows.length };
+    }
+
+    if (
+      normalized.startsWith(
+        "select id, collection_id, version_number, label, source, snapshot_json, created_by_user_id, restored_from_version_id, created_at from collection_versions where collection_id =",
+      )
+    ) {
+      const collection = expectParam<number>(params, 0);
+      const limit = expectParam<number>(params, 1);
+      const rows = collectionVersions
+        .filter((item) => item.collection_id === collection)
+        .sort((a, b) => b.id - a.id)
+        .slice(0, limit);
+      return { rows: castRows<TRow>(rows), rowCount: rows.length };
+    }
+
+    if (
+      normalized.startsWith(
+        "select id, collection_id, version_number, label, source, snapshot_json, created_by_user_id, restored_from_version_id, created_at from collection_versions where id =",
+      )
+    ) {
+      const id = expectParam<number>(params, 0);
+      const row = collectionVersions.find((item) => item.id === id);
+      const rows = row ? castRows<TRow>([row]) : [];
+      return { rows, rowCount: rows.length };
+    }
+
+    if (
+      normalized.startsWith(
+        "delete from collection_versions where collection_id =",
+      ) &&
+      normalized.includes("not in")
+    ) {
+      const collection = expectParam<number>(params, 0);
+      const keep = expectParam<number>(params, 1);
+      const autoVersions = collectionVersions
+        .filter(
+          (item) =>
+            item.collection_id === collection &&
+            item.source === "auto" &&
+            item.label === null,
+        )
+        .sort((a, b) => b.id - a.id);
+      const keepIds = new Set(
+        autoVersions.slice(0, keep).map((item) => item.id),
+      );
+      const before = collectionVersions.length;
+      collectionVersions = collectionVersions.filter(
+        (item) =>
+          !(
+            item.collection_id === collection &&
+            item.source === "auto" &&
+            item.label === null &&
+            !keepIds.has(item.id)
+          ),
+      );
+      return {
+        rows: [] as TRow[],
+        rowCount: before - collectionVersions.length,
+      };
+    }
+
+    if (
+      normalized.startsWith(
+        "delete from collection_endpoint_examples where endpoint_id in",
+      )
+    ) {
+      const collection = expectParam<number>(params, 0);
+      const endpointIds = new Set(
+        collectionEndpoints
+          .filter((item) => item.collection_id === collection)
+          .map((item) => item.id),
+      );
+      const before = collectionEndpointExamples.length;
+      collectionEndpointExamples = collectionEndpointExamples.filter(
+        (item) => !endpointIds.has(item.endpoint_id),
+      );
+      return {
+        rows: [] as TRow[],
+        rowCount: before - collectionEndpointExamples.length,
+      };
+    }
+
+    if (
+      normalized.startsWith(
+        "delete from collection_endpoints where collection_id =",
+      )
+    ) {
+      const collection = expectParam<number>(params, 0);
+      const before = collectionEndpoints.length;
+      collectionEndpoints = collectionEndpoints.filter(
+        (item) => item.collection_id !== collection,
+      );
+      return {
+        rows: [] as TRow[],
+        rowCount: before - collectionEndpoints.length,
+      };
+    }
+
+    if (
+      normalized.startsWith(
+        "delete from collection_folders where collection_id =",
+      )
+    ) {
+      const collection = expectParam<number>(params, 0);
+      const before = collectionFolders.length;
+      collectionFolders = collectionFolders.filter(
+        (item) => item.collection_id !== collection,
+      );
+      return {
+        rows: [] as TRow[],
+        rowCount: before - collectionFolders.length,
+      };
+    }
+
+    if (normalized.startsWith("insert into collection_folders (id,")) {
+      const now = new Date();
+      const row: CollectionFolderRow = {
+        id: expectParam<number>(params, 0),
+        collection_id: expectParam<number>(params, 1),
+        parent_folder_id: null,
+        name: expectParam<string>(params, 2),
+        position: expectParam<number>(params, 3),
+        created_by_user_id: expectParam<number>(params, 4),
+        created_at: now,
+        updated_at: now,
+      };
+      collectionFolders.push(row);
+      return { rows: castRows<TRow>([row]), rowCount: 1 };
+    }
+
+    if (normalized.startsWith("insert into collection_endpoints (id,")) {
+      const now = new Date();
+      const row: CollectionEndpointRow = {
+        id: expectParam<number>(params, 0),
+        collection_id: expectParam<number>(params, 1),
+        folder_id: expectParam<number | null>(params, 2),
+        name: expectParam<string>(params, 3),
+        method: expectParam<CollectionEndpointRow["method"]>(params, 4),
+        url: expectParam<string>(params, 5),
+        headers_json: expectParam<string>(params, 6),
+        query_params_json: expectParam<string>(params, 7),
+        body_json: expectParam<string | null>(params, 8),
+        auth_json: expectParam<string | null>(params, 9),
+        position: expectParam<number>(params, 10),
+        created_by_user_id: expectParam<number>(params, 11),
+        created_at: now,
+        updated_at: now,
+      };
+      collectionEndpoints.push(row);
+      return { rows: castRows<TRow>([row]), rowCount: 1 };
+    }
+
+    if (
+      normalized.startsWith("insert into collection_endpoint_examples (id,")
+    ) {
+      const now = new Date();
+      const row: CollectionEndpointExampleRow = {
+        id: expectParam<number>(params, 0),
+        endpoint_id: expectParam<number>(params, 1),
+        name: expectParam<string>(params, 2),
+        status_code: expectParam<number>(params, 3),
+        headers_json: expectParam<string>(params, 4),
+        body_text: expectParam<string | null>(params, 5),
+        position: expectParam<number>(params, 6),
+        created_by_user_id: expectParam<number>(params, 7),
+        created_at: now,
+        updated_at: now,
+      };
+      collectionEndpointExamples.push(row);
+      return { rows: castRows<TRow>([row]), rowCount: 1 };
     }
 
     if (
@@ -1382,6 +1624,7 @@ export const createAuthTestDb = (): DatabaseClient => {
         collectionEndpointId,
         collectionFolderId,
         collectionEndpointExampleId,
+        collectionVersionId,
         environmentId,
         environmentVariableId,
         importExportJobId,
@@ -1395,6 +1638,7 @@ export const createAuthTestDb = (): DatabaseClient => {
         collectionEndpoints: [...collectionEndpoints],
         collectionFolders: [...collectionFolders],
         collectionEndpointExamples: [...collectionEndpointExamples],
+        collectionVersions: [...collectionVersions],
         environments: [...environments],
         environmentVariables: [...environmentVariables],
         importExportJobs: [...importExportJobs],
@@ -1414,6 +1658,7 @@ export const createAuthTestDb = (): DatabaseClient => {
           collectionEndpointId,
           collectionFolderId,
           collectionEndpointExampleId,
+          collectionVersionId,
           environmentId,
           environmentVariableId,
           importExportJobId,
@@ -1427,6 +1672,7 @@ export const createAuthTestDb = (): DatabaseClient => {
           collectionEndpoints,
           collectionFolders,
           collectionEndpointExamples,
+          collectionVersions,
           environments,
           environmentVariables,
           importExportJobs,
