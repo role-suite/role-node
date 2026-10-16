@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.1.2](https://github.com/role-suite/role-node/compare/v1.1.1...v1.1.2) (2026-10-16)
+
+
+### Bug Fixes
+
+* **docker:** strip the bundled npm and corepack from the runtime image ([7224a92](https://github.com/role-suite/role-node/commit/7224a926328304d68f123748cc1b4298cffae979))
+* **docker:** strip the bundled npm and corepack from the runtime image ([df1eec1](https://github.com/role-suite/role-node/commit/df1eec1fa59fa689b530539b6313f372f94cc9e4))
+
 ## [1.1.1](https://github.com/role-suite/role-node/compare/v1.1.0...v1.1.1) (2026-10-16)
 
 
