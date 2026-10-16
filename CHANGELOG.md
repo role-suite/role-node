@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.1.1](https://github.com/role-suite/role-node/compare/v1.1.0...v1.1.1) (2026-10-16)
+
+
+### Bug Fixes
+
+* **ci:** pass auth secrets to the image migration smoke step ([a4a9789](https://github.com/role-suite/role-node/commit/a4a9789c976d4aa449b35f9a6a28ff1a7f82c60d))
+* **ci:** pass auth secrets to the image migration smoke step ([b57ae2c](https://github.com/role-suite/role-node/commit/b57ae2c69418dc1add3e6c8afe1cdb9471f9d62b))
+
 ## [1.1.0](https://github.com/role-suite/role-node/compare/v1.0.0...v1.1.0) (2026-10-16)
 
 
