@@ -27,4 +27,18 @@ describe("runtime Dockerfile", () => {
       "/app/dist-migrations/migrations ./migrations",
     );
   });
+
+  it("strips the bundled npm and corepack from the runtime image", async () => {
+    const dockerfile = await readFile(
+      resolve(process.cwd(), "Dockerfile"),
+      "utf8",
+    );
+
+    expect(dockerfile).toContain(
+      "rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack",
+    );
+    expect(dockerfile).toContain(
+      "rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack",
+    );
+  });
 });
