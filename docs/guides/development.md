@@ -41,8 +41,9 @@ When local DB is not available yet, set `ENABLE_STARTUP_VALIDATION=false`.
 
 ## Common scripts
 
-- `pnpm dev`: start server with watch mode (`tsx` + `nodemon`)
+- `pnpm dev`: start server with watch mode (`tsx` + Node's native `--watch`)
 - `pnpm build`: compile TypeScript to `dist/`
+- `pnpm build:migrations`: compile the migration CLI bundled into the Docker image
 - `pnpm start`: run compiled server
 - `pnpm db:migrate`: apply pending migrations
 - `pnpm db:migrate:up [count]`: apply pending migrations (optionally limited)
@@ -53,12 +54,20 @@ When local DB is not available yet, set `ENABLE_STARTUP_VALIDATION=false`.
 
 ## CI/CD
 
-- CI workflow: `.github/workflows/ci.yml` runs format, lint, test, build, and a final status gate.
-- Security workflow: `.github/workflows/security.yml` runs dependency audit and secret scanning.
-- CodeQL workflow: `.github/workflows/codeql.yml` runs static analysis for Actions and TypeScript.
-- Coverage badge workflow: `.github/workflows/coverage-badge.yml` updates `docs/badges/coverage.svg` on pushes to `main`.
-- CD workflow: `.github/workflows/cd.yml` builds and publishes Docker images to GHCR and deploys production from `v*` tags or manual dispatch.
-- Release workflow: `.github/workflows/release-tag.yml` performs semantic versioning from manual dispatch and creates the GitHub Release.
+- Verify workflow: `.github/workflows/verify.yml` is a reusable workflow that runs format, lint,
+  typecheck, migrations, tests with coverage, and both builds against a Postgres service.
+- CI workflow: `.github/workflows/ci.yml` calls verify on pull requests and `main` pushes, then
+  performs a build-only Docker build.
+- CodeQL workflow: `.github/workflows/codeql.yml` runs static analysis for JavaScript/TypeScript.
+- Dependency review: `.github/workflows/dependency-review.yml` fails pull requests that introduce
+  high-severity or denied-license dependencies.
+- Release workflow: `.github/workflows/release-please.yml` maintains release PRs from conventional
+  commits; merging one creates the tag and GitHub Release, then chains image publishing.
+- Publish workflow: `.github/workflows/publish-image.yml` verifies the tag, smoke-tests the built
+  image (migrations + `/health`), scans it, and pushes multi-arch images to GHCR with SBOM and
+  provenance attestations. It can also be run manually to re-publish an existing tag.
+
+See `docs/guides/release.md` for the release process and image usage.
 
 ## Build and run
 
