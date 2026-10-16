@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.2.0](https://github.com/role-suite/role-node/compare/v1.1.2...v1.2.0) (2026-10-16)
+
+
+### Features
+
+* **collections:** add collection version history and restore ([5ea1ca1](https://github.com/role-suite/role-node/commit/5ea1ca1b335560355c24004645573ce5bbd40087))
+* **collections:** add collection version history and restore ([5034a51](https://github.com/role-suite/role-node/commit/5034a5108023ee17b26951012d608fc4fcf500c5))
+
 ## [1.1.2](https://github.com/role-suite/role-node/compare/v1.1.1...v1.1.2) (2026-10-16)
 
 
