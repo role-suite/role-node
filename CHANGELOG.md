@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [1.1.0](https://github.com/role-suite/role-node/compare/v1.0.0...v1.1.0) (2026-10-16)
+
+
+### Features
+
+* **ci:** rebuild release pipeline with release-please and self-migrating images ([081716b](https://github.com/role-suite/role-node/commit/081716bb1f45843d82fe68cb938131e92f1a3ad1))
+* **ci:** rebuild release pipeline with release-please and self-migrating images ([4e08e98](https://github.com/role-suite/role-node/commit/4e08e987d8d3dc1f4b426b258ffd1a5bdb00fbd7))
+
 ## [1.0.0] - 2026-08-26
 
 ### Fixed
