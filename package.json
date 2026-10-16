@@ -6,12 +6,13 @@
   "scripts": {
     "audit": "pnpm audit --audit-level high",
     "build": "tsc",
+    "build:migrations": "tsc -p tsconfig.migrations.json",
     "db:reset:docker": "docker compose down -v && docker compose up -d",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:migrate:down": "tsx scripts/migrate.ts down",
     "db:migrate:status": "tsx scripts/migrate.ts status",
     "db:migrate:up": "tsx scripts/migrate.ts up",
-    "dev": "nodemon --watch src --exec tsx src/server.ts",
+    "dev": "node --watch --import tsx src/server.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
@@ -21,7 +22,7 @@
     "test:watch": "vitest --watch",
     "test:run": "vitest --run",
     "typecheck": "tsc --noEmit",
-    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:run && pnpm build"
+    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:run && pnpm build && pnpm build:migrations"
   },
   "repository": {
     "type": "git",
@@ -39,31 +40,30 @@
   "dependencies": {
     "argon2": "^0.45.1",
     "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "express-rate-limit": "^8.6.2",
-    "jose": "^6.2.9",
-    "kysely": "^0.29.5",
-    "pg": "^8.23.0",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.1",
+    "jose": "^6.2.12",
+    "kysely": "^0.29.6",
+    "pg": "^8.23.1",
     "swagger-ui-express": "^5.0.1",
-    "zod": "^4.4.3",
-    "zod-openapi": "^6.0.1"
+    "zod": "^4.6.7",
+    "zod-openapi": "^6.0.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/express": "^5.0.6",
-    "@types/node": "^26.2.0",
+    "@types/node": "^26.6.5",
     "@types/pg": "^8.23.1",
     "@types/swagger-ui-express": "^4.1.8",
     "@vitest/coverage-v8": "^4.1.11",
-    "eslint": "^10.8.1",
-    "globals": "^17.11.0",
-    "nodemon": "^3.1.14",
-    "prettier": "^3.9.6",
-    "supertest": "^7.2.2",
-    "tsx": "^4.23.12",
+    "eslint": "^10.12.0",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.10",
+    "supertest": "^7.3.1",
+    "tsx": "^4.23.15",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.67.0",
-    "vite": "^8.2.2",
+    "typescript-eslint": "^8.71.2",
+    "vite": "^8.3.4",
     "vitest": "^4.1.11"
   }
 }

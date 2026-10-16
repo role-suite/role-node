@@ -1,13 +1,21 @@
 name: Publish Image
 
 on:
-  push:
-    tags:
-      - "v*.*.*"
+  workflow_call:
+    inputs:
+      tag:
+        description: Release tag to publish, for example v1.2.3.
+        required: true
+        type: string
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to publish, for example v1.2.3.
+        required: true
+        type: string
 
 concurrency:
-  group: publish-image-${{ github.ref }}
+  group: publish-image-${{ inputs.tag }}
   cancel-in-progress: false
 
 permissions:
@@ -19,20 +27,127 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  publish:
-    name: Publish Image
+  verify:
+    name: Verify
+    uses: ./.github/workflows/verify.yml
+    with:
+      ref: ${{ inputs.tag }}
+
+  smoke:
+    name: Build and Smoke Test
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
+    needs: verify
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: role_user
+          POSTGRES_PASSWORD: role_pass
+          POSTGRES_DB: role_node
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U role_user -d role_node"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build smoke image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: role-node:smoke
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run migrations from the image
+        run: |
+          docker run --rm --network host \
+            -e DB_HOST=127.0.0.1 \
+            -e DB_PORT=5432 \
+            -e DB_USER=role_user \
+            -e DB_PASSWORD=role_pass \
+            -e DB_NAME=role_node \
+            -e DB_SSL=false \
+            role-node:smoke node dist-migrations/scripts/migrate.js up
+
+      - name: Boot container and assert health
+        run: |
+          docker run -d --name role-node-smoke --network host \
+            -e NODE_ENV=production \
+            -e PORT=3000 \
+            -e DB_HOST=127.0.0.1 \
+            -e DB_PORT=5432 \
+            -e DB_USER=role_user \
+            -e DB_PASSWORD=role_pass \
+            -e DB_NAME=role_node \
+            -e DB_SSL=false \
+            -e ENABLE_STARTUP_VALIDATION=true \
+            -e AUTH_ACCESS_TOKEN_SECRET=smoke-access-secret-123456 \
+            -e AUTH_REFRESH_TOKEN_SECRET=smoke-refresh-secret-123456 \
+            role-node:smoke
+
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3000/health >/dev/null; then
+              echo "health check passed"
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "health check failed"
+          docker logs role-node-smoke
+          exit 1
+
+      - name: Scan image for vulnerabilities
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: role-node:smoke
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: HIGH,CRITICAL
+          vuln-type: os,library
+
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [verify, smoke]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag }}
+
+      - name: Resolve commit SHA
+        id: commit
+        run: echo "short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -40,21 +155,34 @@ jobs:
 
       - name: Extract metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            latest=false
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix=sha-
+            type=semver,pattern={{version}},value=${{ inputs.tag }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ inputs.tag }}
+            type=raw,value=sha-${{ steps.commit.outputs.short }}
+            type=raw,value=latest,enable=${{ !contains(inputs.tag, '-') }}
+          labels: |
+            org.opencontainers.image.title=Röle Node
+            org.opencontainers.image.description=Team-synced backend for Röle workspaces, collections, environments, and import/export
+          annotations: |
+            org.opencontainers.image.title=Röle Node
+            org.opencontainers.image.description=Team-synced backend for Röle workspaces, collections, environments, and import/export
 
       - name: Build and push image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+          sbom: true
+          provenance: mode=max
           cache-from: type=gha
           cache-to: type=gha,mode=max

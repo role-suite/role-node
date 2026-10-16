@@ -27,11 +27,11 @@ const isMigrationFile = (fileName: string): boolean => {
   return /\.migration\.(ts|js|mjs|cjs)$/u.test(fileName);
 };
 
-const assertHandler = (
+const assertHandler: (
   value: unknown,
   exportName: string,
   fileName: string,
-): asserts value is MigrationHandler => {
+) => asserts value is MigrationHandler = (value, exportName, fileName) => {
   if (typeof value !== "function") {
     throw new Error(
       `Migration '${fileName}' must export '${exportName}' function`,

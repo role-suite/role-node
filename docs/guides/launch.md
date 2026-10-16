@@ -35,7 +35,14 @@ Application runtime secrets are provisioned in the target platform, not in GitHu
 1. Provision an empty Postgres database.
 2. Configure production runtime environment variables and secrets.
 3. Run `pnpm verify` on the release commit.
-4. Run `pnpm db:migrate` against the production database before first traffic.
+4. Run migrations against the production database before first traffic, from the published image:
+
+   ```bash
+   docker run --rm --env-file production.env \
+     ghcr.io/role-suite/role-node:<version> \
+     node dist-migrations/scripts/migrate.js up
+   ```
+
 5. Publish/deploy the image through the CD workflow.
 6. Confirm `GET /health` returns `200`.
 7. Confirm startup logs include successful startup validation.
@@ -45,5 +52,5 @@ Application runtime secrets are provisioned in the target platform, not in GitHu
 ## Rollback Notes
 
 - Because this is greenfield, rollback is service/image rollback only unless a newly-applied migration must be reverted before traffic resumes.
-- Use `pnpm db:migrate:status` to inspect applied migrations.
-- Use `pnpm db:migrate:down [count]` only when the corresponding application rollback requires it.
+- Use `node dist-migrations/scripts/migrate.js status` inside the published image to inspect applied migrations (see `docs/guides/release.md`).
+- Use `node dist-migrations/scripts/migrate.js down` only when the corresponding application rollback requires it.

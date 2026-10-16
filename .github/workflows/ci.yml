@@ -14,81 +14,10 @@ concurrency:
 permissions:
   contents: read
 
-env:
-  CI: true
-  NODE_ENV: test
-  PORT: 3000
-  DB_HOST: localhost
-  DB_PORT: 5432
-  DB_USER: role_user
-  DB_PASSWORD: role_pass
-  DB_NAME: role_node
-  DB_POOL_MIN: 0
-  DB_POOL_MAX: 10
-  DB_SSL: "false"
-  ENABLE_STARTUP_VALIDATION: "false"
-  AUTH_ACCESS_TOKEN_SECRET: test-access-secret-123456
-  AUTH_REFRESH_TOKEN_SECRET: test-refresh-secret-123456
-  AUTH_ACCESS_TOKEN_TTL_SECONDS: 900
-  AUTH_REFRESH_TOKEN_TTL_SECONDS: 604800
-
 jobs:
   verify:
     name: Verify
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: role_user
-          POSTGRES_PASSWORD: role_pass
-          POSTGRES_DB: role_node
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U role_user -d role_node"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js and pnpm
-        uses: ./.github/actions/setup-node-pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Check formatting
-        run: pnpm format:check
-
-      - name: Lint
-        run: pnpm lint
-
-      - name: Typecheck
-        run: pnpm typecheck
-
-      - name: Run database migrations
-        run: pnpm db:migrate:up
-
-      - name: Test with coverage
-        run: pnpm test:coverage
-
-      - name: Build
-        run: pnpm build
-
-      - name: Upload coverage report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage/
-          if-no-files-found: ignore
-          retention-days: 7
+    uses: ./.github/workflows/verify.yml
 
   docker-build:
     name: Docker Build
@@ -98,13 +27,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Build image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile

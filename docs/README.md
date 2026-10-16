@@ -16,6 +16,7 @@ This folder is organized by concern for the public REST API and backend runtime.
 
 - `docs/guides/development.md`: Day-to-day development workflow.
 - `docs/guides/launch.md`: Greenfield production launch checklist.
+- `docs/guides/release.md`: Release process, container image usage, and migrations.
 - `docs/guides/client-integration.md`: Client integration flow, API usage, and error handling.
 - `docs/guides/user-manual.md`: End-user/API-consumer quickstart.
 - `docs/guides/user-reference-manual.md`: Full API user reference with payload examples.

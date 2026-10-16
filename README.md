@@ -88,10 +88,18 @@ Apply migrations:
 pnpm db:migrate
 ```
 
+## Releases
+
+Releases are automated with Release Please: merge the release PR it opens, and the `vX.Y.Z` tag,
+GitHub Release, and multi-arch image (`ghcr.io/role-suite/role-node`) are produced from that
+commit. The published image bundles the migration CLI, so deployments can migrate the database
+from the exact released artifact. See `docs/guides/release.md`.
+
 ## Scripts
 
 - `pnpm dev`: run server with file watch
 - `pnpm build`: compile TypeScript to `dist/`
+- `pnpm build:migrations`: compile the migration CLI bundled into the Docker image
 - `pnpm start`: run compiled server from `dist/`
 - `pnpm db:migrate`: apply pending migrations
 - `pnpm db:migrate:up`: apply pending migrations (optionally with count)
@@ -127,6 +135,7 @@ See `docs/guides/user-reference-manual.md` for endpoint and payload examples, or
 - `docs/guides/client-integration.md`: client integration patterns and SDK behavior
 - `docs/guides/user-reference-manual.md`: endpoint and payload reference
 - `docs/guides/launch.md`: greenfield production launch checklist
+- `docs/guides/release.md`: release process, container image, and migrations
 - `docs/compatibility.md`: role-node / role-sdk / role-client compatibility matrix
 - `docs/errors.md`: machine-readable error model and code registry
 - `docs/README.md`: documentation index

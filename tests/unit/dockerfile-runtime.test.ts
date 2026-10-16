@@ -14,4 +14,17 @@ describe("runtime Dockerfile", () => {
     expect(dockerfile).toContain("process.env.PORT ?? '3000'");
     expect(dockerfile).toContain("http://127.0.0.1:${port}/health");
   });
+
+  it("ships the compiled migration CLI so deployed images can migrate", async () => {
+    const dockerfile = await readFile(
+      resolve(process.cwd(), "Dockerfile"),
+      "utf8",
+    );
+
+    expect(dockerfile).toContain("pnpm build:migrations");
+    expect(dockerfile).toContain("/app/dist-migrations ./dist-migrations");
+    expect(dockerfile).toContain(
+      "/app/dist-migrations/migrations ./migrations",
+    );
+  });
 });

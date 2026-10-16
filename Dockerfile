@@ -7,9 +7,11 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
 FROM deps AS build
-COPY tsconfig.json ./
+COPY tsconfig.json tsconfig.migrations.json ./
 COPY src ./src
-RUN pnpm build
+COPY scripts ./scripts
+COPY migrations ./migrations
+RUN pnpm build && pnpm build:migrations
 
 FROM base AS prod-deps
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -22,6 +24,8 @@ ENV NODE_OPTIONS=--enable-source-maps
 RUN addgroup -S app && adduser -S app -G app
 COPY --from=prod-deps --chown=app:app /app/node_modules ./node_modules
 COPY --from=build --chown=app:app /app/dist ./dist
+COPY --from=build --chown=app:app /app/dist-migrations ./dist-migrations
+COPY --from=build --chown=app:app /app/dist-migrations/migrations ./migrations
 COPY --chown=app:app package.json ./
 USER app
 EXPOSE 3000
