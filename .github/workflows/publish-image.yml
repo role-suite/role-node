@@ -84,6 +84,8 @@ jobs:
             -e DB_PASSWORD=role_pass \
             -e DB_NAME=role_node \
             -e DB_SSL=false \
+            -e AUTH_ACCESS_TOKEN_SECRET=smoke-access-secret-123456 \
+            -e AUTH_REFRESH_TOKEN_SECRET=smoke-refresh-secret-123456 \
             role-node:smoke node dist-migrations/scripts/migrate.js up
 
       - name: Boot container and assert health
