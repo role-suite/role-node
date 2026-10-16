@@ -5,10 +5,12 @@ import { createAppError } from "../../shared/errors/app-error.js";
 import { ERROR_CODES } from "../../shared/errors/error-codes.js";
 
 import {
+  collectionVersionsQuerySchema,
   createCollectionEndpointExampleSchema,
   createCollectionEndpointSchema,
   createCollectionFolderSchema,
   createCollectionSchema,
+  createCollectionVersionSchema,
   updateCollectionEndpointExampleSchema,
   updateCollectionSchema,
   updateCollectionEndpointSchema,
@@ -18,8 +20,10 @@ import {
   workspaceCollectionEndpointByIdParamsSchema,
   workspaceCollectionFolderByIdParamsSchema,
   workspaceCollectionParamsSchema,
+  workspaceCollectionVersionByIdParamsSchema,
 } from "./schema.js";
 import { collectionsService } from "./service.js";
+import { collectionVersionsService } from "./versions.service.js";
 
 const requireAuthContext = (req: Request): NonNullable<Request["auth"]> => {
   if (!req.auth) {
@@ -294,5 +298,59 @@ export const collectionsController = {
       exampleId,
     );
     appResponse.sendAction(res, 200, "deleted");
+  },
+
+  async listVersions(req: Request, res: Response): Promise<void> {
+    const auth = requireAuthContext(req);
+    const { workspaceId, collectionId } =
+      workspaceCollectionByIdParamsSchema.parse(req.params);
+    const query = collectionVersionsQuerySchema.parse(req.query);
+    const result = await collectionVersionsService.listForCollection(
+      auth.userId,
+      workspaceId,
+      collectionId,
+      query,
+    );
+    appResponse.sendCursorPage(res, 200, result.items, result.cursor);
+  },
+
+  async getVersion(req: Request, res: Response): Promise<void> {
+    const auth = requireAuthContext(req);
+    const { workspaceId, collectionId, versionId } =
+      workspaceCollectionVersionByIdParamsSchema.parse(req.params);
+    const result = await collectionVersionsService.getForCollection(
+      auth.userId,
+      workspaceId,
+      collectionId,
+      versionId,
+    );
+    appResponse.sendObject(res, 200, result);
+  },
+
+  async createVersion(req: Request, res: Response): Promise<void> {
+    const auth = requireAuthContext(req);
+    const { workspaceId, collectionId } =
+      workspaceCollectionByIdParamsSchema.parse(req.params);
+    const payload = createCollectionVersionSchema.parse(req.body ?? {});
+    const result = await collectionVersionsService.createForCollection(
+      auth.userId,
+      workspaceId,
+      collectionId,
+      payload,
+    );
+    appResponse.sendObject(res, 201, result);
+  },
+
+  async restoreVersion(req: Request, res: Response): Promise<void> {
+    const auth = requireAuthContext(req);
+    const { workspaceId, collectionId, versionId } =
+      workspaceCollectionVersionByIdParamsSchema.parse(req.params);
+    const result = await collectionVersionsService.restoreForCollection(
+      auth.userId,
+      workspaceId,
+      collectionId,
+      versionId,
+    );
+    appResponse.sendObject(res, 200, result);
   },
 };

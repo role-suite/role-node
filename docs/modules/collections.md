@@ -50,6 +50,36 @@ Endpoint request body modes:
 - `PATCH /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples/:exampleId`
 - `DELETE /api/v1/workspaces/:workspaceId/collections/:collectionId/endpoints/:endpointId/examples/:exampleId`
 
+### Version routes
+
+- `GET /api/v1/workspaces/:workspaceId/collections/:collectionId/versions`
+- `GET /api/v1/workspaces/:workspaceId/collections/:collectionId/versions/:versionId`
+- `POST /api/v1/workspaces/:workspaceId/collections/:collectionId/versions`
+- `POST /api/v1/workspaces/:workspaceId/collections/:collectionId/versions/:versionId/restore`
+
+## Collection versioning
+
+Every collection-affecting mutation (collection, endpoint, folder, example create/update/delete)
+records a full-tree snapshot (`source: "auto"`) in the same transaction as the change. Imports
+record one snapshot per imported collection (`source: "import"`). Snapshots store folders,
+endpoints, and endpoint examples; entity ids and positions are preserved.
+
+- `POST .../versions` creates a named snapshot (`source: "manual"`). The body accepts an optional
+  `label` (1-120 chars).
+- `POST .../versions/:versionId/restore` restores a snapshot: the current state is first recorded
+  as a `restore` version, then folders, endpoints, and examples are rebuilt with their original
+  ids. Restored rows are attributed to the restoring user. Restore requires the writer role and
+  publishes `collection.updated` and `collection_version.restored` workspace events.
+- `GET .../versions` is cursor-paginated (`limit` 1-200 default 100, `cursor`) and returns
+  `{ items, cursor }`, newest first, without snapshot bodies. `GET .../versions/:versionId`
+  returns the full `snapshot`.
+- Retention: the newest 100 `auto` versions per collection are kept; `manual`, `import`, and
+  `restore` versions are never pruned.
+- `collection_version.created` events are published for manual versions only; automatic snapshots
+  are discovered through the versions listing.
+
+Version errors: `404 COLLECTION_VERSION_NOT_FOUND` for unknown or cross-collection version ids.
+
 ## Request payloads
 
 Create:
@@ -98,6 +128,22 @@ Table: `collections`
 - `updated_at`
 
 Migration: `migrations/20260320_002_create_collections_schema.migration.ts` (also creates `collection_folders`, `collection_endpoints`, and `collection_endpoint_examples`).
+
+### Version persistence
+
+Table: `collection_versions`
+
+- `id`
+- `collection_id` (FK -> `collections.id`, cascade)
+- `version_number` (per collection, unique with `collection_id`)
+- `label`
+- `source` (`auto` | `manual` | `restore` | `import`)
+- `snapshot_json` (full collection tree)
+- `created_by_user_id` (FK -> `auth_users.id`)
+- `restored_from_version_id` (FK -> `collection_versions.id`, for `restore` versions)
+- `created_at`
+
+Migration: `migrations/20261016_007_create_collection_versions_table.migration.ts`.
 
 ### Endpoint persistence
 

@@ -120,6 +120,12 @@ export const setCollectionsRepoDbClient = (
   dbOverride = dbClient;
 };
 
+export const resolveCollectionsDb = (
+  dbClient?: DatabaseClient,
+): DatabaseClient => {
+  return resolveDb(dbClient);
+};
+
 const resolveToken = (index: number): string => {
   return `$${index}`;
 };
@@ -243,9 +249,12 @@ export const collectionsRepo = {
     return result.rows.map(mapCollectionRow);
   },
 
-  async findById(id: number): Promise<Collection | undefined> {
+  async findById(
+    id: number,
+    dbClient?: DatabaseClient,
+  ): Promise<Collection | undefined> {
     const token = resolveToken(1);
-    const result = await resolveDb().query<CollectionRow>(
+    const result = await resolveDb(dbClient).query<CollectionRow>(
       `SELECT id, workspace_id, name, description, created_by_user_id, created_at, updated_at FROM ${COLLECTIONS_TABLE} WHERE id = ${token}`,
       [id],
     );
@@ -339,9 +348,10 @@ export const collectionsRepo = {
 
   async listEndpointsByCollection(
     collectionId: number,
+    dbClient?: DatabaseClient,
   ): Promise<CollectionEndpoint[]> {
     const token = resolveToken(1);
-    const result = await resolveDb().query<CollectionEndpointRow>(
+    const result = await resolveDb(dbClient).query<CollectionEndpointRow>(
       `SELECT id, collection_id, folder_id, name, method, url, headers_json, query_params_json, body_json, auth_json, position, created_by_user_id, created_at, updated_at FROM ${COLLECTION_ENDPOINTS_TABLE} WHERE collection_id = ${token} ORDER BY position ASC, id ASC`,
       [collectionId],
     );
@@ -444,9 +454,10 @@ export const collectionsRepo = {
 
   async listFoldersByCollection(
     collectionId: number,
+    dbClient?: DatabaseClient,
   ): Promise<CollectionFolder[]> {
     const token = resolveToken(1);
-    const result = await resolveDb().query<CollectionFolderRow>(
+    const result = await resolveDb(dbClient).query<CollectionFolderRow>(
       `SELECT id, collection_id, parent_folder_id, name, position, created_by_user_id, created_at, updated_at FROM ${COLLECTION_FOLDERS_TABLE} WHERE collection_id = ${token} ORDER BY position ASC, id ASC`,
       [collectionId],
     );
@@ -540,9 +551,12 @@ export const collectionsRepo = {
 
   async listExamplesByEndpoint(
     endpointId: number,
+    dbClient?: DatabaseClient,
   ): Promise<CollectionEndpointExample[]> {
     const token = resolveToken(1);
-    const result = await resolveDb().query<CollectionEndpointExampleRow>(
+    const result = await resolveDb(
+      dbClient,
+    ).query<CollectionEndpointExampleRow>(
       `SELECT id, endpoint_id, name, status_code, headers_json, body_text, position, created_by_user_id, created_at, updated_at FROM ${COLLECTION_ENDPOINT_EXAMPLES_TABLE} WHERE endpoint_id = ${token} ORDER BY position ASC, id ASC`,
       [endpointId],
     );

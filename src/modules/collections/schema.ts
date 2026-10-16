@@ -24,6 +24,22 @@ export const workspaceCollectionEndpointExampleByIdParamsSchema =
     exampleId: z.coerce.number().int().positive(),
   });
 
+export const workspaceCollectionVersionByIdParamsSchema =
+  workspaceCollectionByIdParamsSchema.extend({
+    versionId: z.coerce.number().int().positive(),
+  });
+
+export const collectionVersionsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(200).default(100),
+  cursor: z.coerce.number().int().positive().optional(),
+});
+
+export const createCollectionVersionSchema = z
+  .object({
+    label: z.string().trim().min(1).max(120).optional(),
+  })
+  .strict();
+
 const httpMethodSchema = z.enum([
   "GET",
   "POST",
@@ -292,4 +308,10 @@ export type CreateCollectionEndpointExampleInput = z.infer<
 >;
 export type UpdateCollectionEndpointExampleInput = z.infer<
   typeof updateCollectionEndpointExampleSchema
+>;
+export type CollectionVersionsQuery = z.infer<
+  typeof collectionVersionsQuerySchema
+>;
+export type CreateCollectionVersionInput = z.infer<
+  typeof createCollectionVersionSchema
 >;

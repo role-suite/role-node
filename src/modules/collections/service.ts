@@ -1,15 +1,28 @@
-import { authRepo, withAuthTransaction } from "../auth/repo.js";
+import { withAuthTransaction } from "../auth/repo.js";
 import { createAppError } from "../../shared/errors/app-error.js";
 import { ERROR_CODES } from "../../shared/errors/error-codes.js";
 import { workspaceEventsService } from "../workspaces/events.service.js";
 
 import {
+  requireAccessAndCollection,
+  requireWorkspaceMembership,
+  requireWorkspaceWriterRole,
+} from "./access.js";
+import {
+  asKeyValueList,
+  mapCollection,
+  mapExample,
+  type CollectionEndpointExampleResponse,
+  type CollectionResponse,
+  type EndpointKeyValue,
+} from "./mappers.js";
+import {
   collectionsRepo,
-  type Collection,
   type CollectionEndpoint,
   type CollectionEndpointExample,
   type CollectionFolder,
 } from "./repo.js";
+import { recordCollectionSnapshot } from "./versions.service.js";
 import type {
   CreateCollectionEndpointExampleInput,
   CreateCollectionEndpointInput,
@@ -20,25 +33,6 @@ import type {
   UpdateCollectionFolderInput,
   UpdateCollectionInput,
 } from "./schema.js";
-
-type WorkspaceRole = "owner" | "admin" | "member";
-
-type CollectionResponse = {
-  id: number;
-  _id: number;
-  workspaceId: number;
-  name: string;
-  description: string | null;
-  createdByUserId: number;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-type EndpointKeyValue = {
-  key: string;
-  value: string;
-  enabled?: boolean;
-};
 
 type EndpointBody =
   | {
@@ -112,43 +106,8 @@ type CollectionFolderResponse = {
   updatedAt: Date;
 };
 
-type CollectionEndpointExampleResponse = {
-  id: number;
-  endpointId: number;
-  name: string;
-  statusCode: number;
-  headers: EndpointKeyValue[];
-  body: string | null;
-  position: number;
-  createdByUserId: number;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-/**
- * Repo entities carry JSONB columns as already-parsed values (the pg driver
- * decodes jsonb on the way out), so response mapping only needs a type-safe
- * cast with a safe default, not a JSON.parse round trip.
- */
-const asKeyValueList = (value: unknown): EndpointKeyValue[] => {
-  return Array.isArray(value) ? (value as EndpointKeyValue[]) : [];
-};
-
 const toJson = (value: unknown): string => {
   return JSON.stringify(value);
-};
-
-const mapCollection = (collection: Collection): CollectionResponse => {
-  return {
-    id: collection.id,
-    _id: collection.id,
-    workspaceId: collection.workspaceId,
-    name: collection.name,
-    description: collection.description,
-    createdByUserId: collection.createdByUserId,
-    createdAt: collection.createdAt,
-    updatedAt: collection.updatedAt,
-  };
 };
 
 const normalizeEndpointBody = (value: unknown): EndpointBody | null => {
@@ -204,63 +163,6 @@ const mapFolder = (folder: CollectionFolder): CollectionFolderResponse => {
   };
 };
 
-const mapExample = (
-  example: CollectionEndpointExample,
-): CollectionEndpointExampleResponse => {
-  return {
-    id: example.id,
-    endpointId: example.endpointId,
-    name: example.name,
-    statusCode: example.statusCode,
-    headers: asKeyValueList(example.headers),
-    body: example.body,
-    position: example.position,
-    createdByUserId: example.createdByUserId,
-    createdAt: example.createdAt,
-    updatedAt: example.updatedAt,
-  };
-};
-
-const requireWorkspaceMembership = async (
-  userId: number,
-  workspaceId: number,
-): Promise<{ role: WorkspaceRole }> => {
-  const membership = await authRepo.findMembershipByUserAndWorkspace(
-    userId,
-    workspaceId,
-  );
-
-  if (!membership) {
-    throw createAppError(ERROR_CODES.workspaces.ACCESS_DENIED);
-  }
-
-  return { role: membership.role };
-};
-
-const requireWorkspaceWriterRole = async (
-  userId: number,
-  workspaceId: number,
-): Promise<void> => {
-  const membership = await requireWorkspaceMembership(userId, workspaceId);
-
-  if (membership.role === "member") {
-    throw createAppError(ERROR_CODES.collections.MODIFY_FORBIDDEN);
-  }
-};
-
-const requireCollectionInWorkspace = async (
-  workspaceId: number,
-  collectionId: number,
-): Promise<Collection> => {
-  const collection = await collectionsRepo.findById(collectionId);
-
-  if (!collection || collection.workspaceId !== workspaceId) {
-    throw createAppError(ERROR_CODES.collections.COLLECTION_NOT_FOUND);
-  }
-
-  return collection;
-};
-
 const requireFolderInCollection = async (
   collectionId: number,
   folderId: number,
@@ -298,25 +200,6 @@ const requireExampleForEndpoint = async (
   }
 
   return example;
-};
-
-/**
- * Runs the workspace-role check and the resource-scope check in parallel:
- * neither depends on the other's result, and both are independent DB round
- * trips, so serializing them (as separate `await`s) only adds latency.
- */
-const requireAccessAndCollection = async (
-  userId: number,
-  workspaceId: number,
-  collectionId: number,
-  roleCheck: (userId: number, workspaceId: number) => Promise<unknown>,
-): Promise<Collection> => {
-  const [, collection] = await Promise.all([
-    roleCheck(userId, workspaceId),
-    requireCollectionInWorkspace(workspaceId, collectionId),
-  ]);
-
-  return collection;
 };
 
 const validateParentFolderReference = async (
@@ -392,6 +275,12 @@ export const collectionsService = {
         tx,
       );
 
+      await recordCollectionSnapshot(tx, {
+        collectionId: row.id,
+        createdByUserId: userId,
+        source: "auto",
+      });
+
       return row;
     });
 
@@ -441,6 +330,12 @@ export const collectionsService = {
         },
         tx,
       );
+
+      await recordCollectionSnapshot(tx, {
+        collectionId: row.id,
+        createdByUserId: userId,
+        source: "auto",
+      });
 
       return row;
     });
@@ -563,6 +458,12 @@ export const collectionsService = {
         tx,
       );
 
+      await recordCollectionSnapshot(tx, {
+        collectionId,
+        createdByUserId: userId,
+        source: "auto",
+      });
+
       return row;
     });
 
@@ -651,6 +552,12 @@ export const collectionsService = {
         tx,
       );
 
+      await recordCollectionSnapshot(tx, {
+        collectionId,
+        createdByUserId: userId,
+        source: "auto",
+      });
+
       return row;
     });
 
@@ -687,6 +594,12 @@ export const collectionsService = {
         },
         tx,
       );
+
+      await recordCollectionSnapshot(tx, {
+        collectionId,
+        createdByUserId: userId,
+        source: "auto",
+      });
     });
   },
 
@@ -765,6 +678,12 @@ export const collectionsService = {
         tx,
       );
 
+      await recordCollectionSnapshot(tx, {
+        collectionId,
+        createdByUserId: userId,
+        source: "auto",
+      });
+
       return row;
     });
 
@@ -827,6 +746,12 @@ export const collectionsService = {
         tx,
       );
 
+      await recordCollectionSnapshot(tx, {
+        collectionId,
+        createdByUserId: userId,
+        source: "auto",
+      });
+
       return row;
     });
 
@@ -863,6 +788,12 @@ export const collectionsService = {
         },
         tx,
       );
+
+      await recordCollectionSnapshot(tx, {
+        collectionId,
+        createdByUserId: userId,
+        source: "auto",
+      });
     });
   },
 
@@ -948,6 +879,12 @@ export const collectionsService = {
         tx,
       );
 
+      await recordCollectionSnapshot(tx, {
+        collectionId,
+        createdByUserId: userId,
+        source: "auto",
+      });
+
       return row;
     });
 
@@ -1007,6 +944,12 @@ export const collectionsService = {
         tx,
       );
 
+      await recordCollectionSnapshot(tx, {
+        collectionId,
+        createdByUserId: userId,
+        source: "auto",
+      });
+
       return row;
     });
 
@@ -1046,6 +989,12 @@ export const collectionsService = {
         },
         tx,
       );
+
+      await recordCollectionSnapshot(tx, {
+        collectionId,
+        createdByUserId: userId,
+        source: "auto",
+      });
     });
   },
 };
