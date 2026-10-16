@@ -3,3 +3,4 @@ dist/
 dist-migrations/
 coverage/
 pnpm-lock.yaml
+CHANGELOG.md
